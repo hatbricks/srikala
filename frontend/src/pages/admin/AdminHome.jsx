@@ -1,0 +1,672 @@
+import { useEffect, useRef, useState } from 'react';
+import { api } from '../../data/api';
+import { compressImageFile } from '../../utils/compressImage';
+
+const sectionLabels = {
+  hero: 'Hero Banner',
+  showcase: 'Our Collections (rail)',
+  featured_categories: 'Shop by Category',
+  promo_banner: 'Promo Banner',
+  new_arrivals: 'New Arrivals',
+  featured: 'New Arrivals',
+  shop_by_style: 'Shop by Style (Home Grid)',
+  recommended: 'Recommended Sarees',
+  shipping_settings: 'Shipping',
+  story: 'Our Craft',
+  testimonials: 'Testimonials Heading',
+  social_links: 'Footer — Social & Contact Links',
+};
+
+// Plain text/textarea fields per section. Sections with extra custom UI
+// (hero's media slides, story's photo) are handled separately below.
+const sectionFields = {
+  hero: [
+    { key: 'eyebrow', label: 'Small label above heading', type: 'text' },
+    { key: 'heading', label: 'Heading (line 1)', type: 'text' },
+    { key: 'heading2', label: 'Heading (script line 2)', type: 'text' },
+    { key: 'subheading', label: 'Subheading', type: 'textarea' },
+    { key: 'ctaLabel', label: 'Button text', type: 'text' },
+    { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  showcase: [
+    { key: 'note', label: 'Italic note (left)', type: 'textarea' },
+    { key: 'heading', label: 'Heading (right)', type: 'text' },
+  ],
+  promo_banner: [
+    { key: 'heading', label: 'Heading', type: 'text' },
+    { key: 'subheading', label: 'Subheading', type: 'text' },
+    { key: 'ctaLabel', label: 'Button text', type: 'text' },
+    { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  featured_categories: [
+    { key: 'heading', label: 'Heading', type: 'text' },
+  ],
+  new_arrivals: [
+    { key: 'eyebrow', label: 'Eyebrow text above heading (e.g. Fresh Off The Loom)', type: 'text' },
+    { key: 'heading', label: 'Heading', type: 'text' },
+    { key: 'subheading', label: 'Subheading description', type: 'textarea' },
+    { key: 'ctaLabel', label: 'Button text', type: 'text' },
+    { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  featured: [
+    { key: 'eyebrow', label: 'Eyebrow text above heading (e.g. Fresh Off The Loom)', type: 'text' },
+    { key: 'heading', label: 'Heading', type: 'text' },
+    { key: 'subheading', label: 'Subheading description', type: 'textarea' },
+    { key: 'ctaLabel', label: 'Button text', type: 'text' },
+    { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  shop_by_style: [
+    { key: 'eyebrow', label: 'Small label above heading', type: 'text' },
+    { key: 'heading', label: 'Section Heading (e.g. Shop by Style)', type: 'text' },
+  ],
+  recommended: [
+    { key: 'heading', label: 'Heading', type: 'text' },
+  ],
+  shipping_settings: [
+    { key: 'fee', label: 'Standard shipping fee (₹)', type: 'number' },
+    { key: 'freeThreshold', label: 'Free shipping when order total is at least (₹) — set to 0 to turn off free shipping', type: 'number' },
+  ],
+  story: [
+    { key: 'eyebrow', label: 'Small label above heading', type: 'text' },
+    { key: 'heading', label: 'Heading', type: 'text' },
+    { key: 'body', label: 'Paragraph', type: 'textarea' },
+    { key: 'ctaLabel', label: 'Button text', type: 'text' },
+    { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  testimonials: [
+    { key: 'heading', label: 'Heading', type: 'text' },
+  ],
+  social_links: [
+    { key: 'whatsapp', label: 'WhatsApp number (with country code, digits only — e.g. 917842225444)', type: 'text' },
+    { key: 'facebook', label: 'Facebook page URL', type: 'text' },
+    { key: 'twitter', label: 'Twitter / X profile URL', type: 'text' },
+    { key: 'instagram', label: 'Instagram profile URL', type: 'text' },
+  ],
+};
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}function HeroSlidesEditor({ slides = [], onChange, sizeHint }) {
+  const photoInput = useRef(null);
+  const videoInput = useRef(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleFiles(e, type) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      // Images get resized/compressed like everywhere else. Video can't
+      // go through the same canvas-based resize, so it's still read raw
+      // — that's what the "keep clips short and compressed" hint below
+      // is warning about.
+      const added = await Promise.all(files.map(async (f) => ({
+        type,
+        url: type === 'video' ? await readFileAsDataUrl(f) : await compressImageFile(f, { maxDimension: 2000 }),
+      })));
+      onChange([...slides, ...added]);
+    } finally {
+      setBusy(false);
+      e.target.value = '';
+    }
+  }
+
+  function removeSlide(i) {
+    onChange(slides.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div className="slides-editor">
+      {sizeHint && <p className="field-hint size-hint">📐 Recommended size: <strong>{sizeHint}</strong></p>}
+      <p className="field-hint">
+        These play in order on the home page banner. Mix photos and short video clips (a few seconds, no sound needed — it plays muted).
+        Large videos make the page slow to load, so keep clips short and compressed.
+      </p>
+      {slides.length > 1 && (
+        <p className="field-hint slides-order-note">
+          There are <strong>{slides.length} slides</strong> below — they play one after another in this order.
+          Uploading <em>adds</em> a new slide rather than replacing an existing one, so remove any you no longer
+          want with the <strong>×</strong> button.
+        </p>
+      )}
+
+      {slides.length > 0 && (
+        <div className="slides-grid">
+          {slides.map((s, i) => (
+            // Keyed by source, not index — a <video> whose src attribute
+            // changes doesn't reload, so index keys made the thumbnails
+            // show the wrong (previous) clip after removing a slide.
+            <div className="slide-thumb" key={`${i}-${s.url?.slice(-32)}`}>
+              {s.type === 'video' ? (
+                <video src={s.url} muted playsInline />
+              ) : (
+                <img src={s.url} alt="" />
+              )}
+              <span className="slide-order-badge">{i + 1}</span>
+              <span className="slide-type-badge">{s.type}</span>
+              <button type="button" className="slide-remove" onClick={() => removeSlide(i)} aria-label={`Remove slide ${i + 1}`}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="slide-upload-actions">
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => photoInput.current?.click()}>
+          {busy ? 'Uploading…' : '+ Add Photo'}
+        </button>
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => videoInput.current?.click()}>
+          {busy ? 'Uploading…' : '+ Add Video'}
+        </button>
+        <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => handleFiles(e, 'image')} />
+        <input ref={videoInput} type="file" accept="video/*" multiple hidden onChange={(e) => handleFiles(e, 'video')} />
+      </div>
+
+      {slides.length === 0 && (
+        <p className="field-hint" style={{ marginTop: 8 }}>No banners uploaded yet{sizeHint ? ' for this view' : ''} — the home page will show the default built-in banner until you add at least one.</p>
+      )}
+    </div>
+  );
+}
+
+// Search-and-select picker for curating which products show in the
+// "Featured Sarees" / "Recommended Sarees" home sections. Selection order
+// is the display order — reorder with the arrows on each chip.
+function ProductPicker({ products, selectedIds = [], onChange, max = 12 }) {
+  const [query, setQuery] = useState('');
+  const selected = selectedIds.map((id) => products.find((p) => p.id === id)).filter(Boolean);
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? products.filter((p) => !selectedIds.includes(p.id) && p.name.toLowerCase().includes(q)).slice(0, 8)
+    : [];
+
+  function add(id) {
+    if (selectedIds.includes(id) || selectedIds.length >= max) return;
+    onChange([...selectedIds, id]);
+    setQuery('');
+  }
+  function remove(id) {
+    onChange(selectedIds.filter((x) => x !== id));
+  }
+  function move(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= selectedIds.length) return;
+    const next = [...selectedIds];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
+  return (
+    <div className="product-picker">
+      {selected.length > 0 && (
+        <div className="picker-selected">
+          {selected.map((p, i) => (
+            <div className="picker-chip" key={p.id}>
+              <img src={p.image} alt="" />
+              <span className="picker-chip-name">{p.name}</span>
+              <div className="picker-chip-actions">
+                <button type="button" onClick={() => move(i, -1)} disabled={i === 0} aria-label={`Move ${p.name} up`}>↑</button>
+                <button type="button" onClick={() => move(i, 1)} disabled={i === selected.length - 1} aria-label={`Move ${p.name} down`}>↓</button>
+                <button type="button" onClick={() => remove(p.id)} aria-label={`Remove ${p.name}`} className="picker-chip-remove">×</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <input
+        type="text"
+        placeholder={selectedIds.length >= max ? `Up to ${max} selected` : 'Search products to add...'}
+        value={query}
+        disabled={selectedIds.length >= max}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
+      {results.length > 0 && (
+        <div className="picker-results">
+          {results.map((p) => (
+            <button type="button" key={p.id} className="picker-result-item" onClick={() => add(p.id)}>
+              <img src={p.image} alt="" />
+              <span>{p.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selectedIds.length === 0 && (
+        <p className="field-hint">Nothing picked yet — falls back to the automatic default until you add at least one.</p>
+      )}
+    </div>
+  );
+}
+
+function CategoryPicker({ categories = [], selectedIds = [], onChange, max = 6 }) {
+  const selected = selectedIds.map((id) => categories.find((c) => c.id === id)).filter(Boolean);
+  const unselected = categories.filter((c) => !selectedIds.includes(c.id));
+
+  function add(id) {
+    if (selectedIds.includes(id) || selectedIds.length >= max) return;
+    onChange([...selectedIds, id]);
+  }
+  function remove(id) {
+    onChange(selectedIds.filter((x) => x !== id));
+  }
+  function move(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= selectedIds.length) return;
+    const next = [...selectedIds];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    onChange(next);
+  }
+
+  return (
+    <div className="product-picker">
+      <div className="picker-chips">
+        {selected.map((c, i) => (
+          <div key={c.id} className="picker-chip">
+            <img src={c.image} alt="" />
+            <span className="picker-chip-name">{c.name}</span>
+            <div className="picker-chip-actions">
+              <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move left">‹</button>
+              <button type="button" disabled={i === selected.length - 1} onClick={() => move(i, 1)} aria-label="Move right">›</button>
+              <button type="button" onClick={() => remove(c.id)} aria-label="Remove">×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {unselected.length > 0 && selectedIds.length < max && (
+        <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {unselected.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className="btn btn-outline"
+              style={{ fontSize: '12px', padding: '5px 12px' }}
+              onClick={() => add(c.id)}
+            >
+              + {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {selectedIds.length === 0 && (
+        <p className="field-hint">Nothing picked yet — defaults to the top 5 styles from the catalog.</p>
+      )}
+    </div>
+  );
+}
+
+export default function AdminHome() {
+  const [sections, setSections] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [drafts, setDrafts] = useState({});
+  const [error, setError] = useState('');
+  const [savedKey, setSavedKey] = useState('');
+  const storyFileInput = useRef(null);
+
+  useEffect(() => {
+    api
+      .getAllHomeSections()
+      .then(({ sections }) => {
+        setSections(sections);
+        const map = {};
+        sections.forEach((s) => { map[s.section_key] = { ...s.content, enabled: s.enabled }; });
+        setDrafts(map);
+      })
+      .catch((err) => setError(err.message));
+    api.getProducts().then(({ products }) => setProducts(products)).catch(() => {});
+    api.getCategories().then(({ categories }) => setCategories(categories)).catch(() => {});
+  }, []);
+
+  function updateField(key, field, value) {
+    setDrafts((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  }
+
+  async function handleStoryImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await compressImageFile(file);
+    updateField('story', 'image', dataUrl);
+  }
+
+  async function handleSave(key) {
+    setError('');
+    const { enabled, ...content } = drafts[key] || {};
+    try {
+      const { section } = await api.updateHomeSection(key, { content, enabled });
+      setSections((prev) => prev.map((s) => (s.section_key === key ? section : s)));
+      setSavedKey(key);
+      setTimeout(() => setSavedKey(''), 2000);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function toggleEnabled(key, current) {
+    updateField(key, 'enabled', !current);
+    try {
+      await api.updateHomeSection(key, { enabled: !current });
+      setSections((prev) => prev.map((s) => (s.section_key === key ? { ...s, enabled: !current } : s)));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div>
+      <div className="admin-page-head">
+        <h1>Home Page</h1>
+        <p>Every section on the home screen — edit the text, upload banner media, and toggle sections on or off.</p>
+      </div>
+
+      {error && <p className="admin-error">{error}</p>}
+
+      <div className="section-list">
+        {sections.map((s) => {
+          const fields = sectionFields[s.section_key] || [];
+          const draft = drafts[s.section_key] || {};
+          return (
+            <div className="section-card" key={s.section_key}>
+              <div className="section-card-head">
+                <h3>{sectionLabels[s.section_key] || s.title || s.section_key}</h3>
+                {s.section_key !== 'hero' && (
+                  <label className="toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.enabled !== false}
+                      onChange={() => toggleEnabled(s.section_key, draft.enabled !== false)}
+                    />
+                    Visible on home page
+                  </label>
+                )}
+              </div>
+
+              {fields.map((f) => (
+                <label key={f.key} className="field-label">
+                  {f.label}
+                  {f.type === 'textarea' ? (
+                    <textarea
+                      rows={3}
+                      value={draft[f.key] || ''}
+                      onChange={(e) => updateField(s.section_key, f.key, e.target.value)}
+                    />
+                  ) : f.type === 'number' ? (
+                    <input
+                      type="number"
+                      min="0"
+                      value={draft[f.key] ?? ''}
+                      onChange={(e) => updateField(s.section_key, f.key, e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={draft[f.key] || ''}
+                      onChange={(e) => updateField(s.section_key, f.key, e.target.value)}
+                    />
+                  )}
+                </label>
+              ))}
+
+              {s.section_key === 'hero' && (
+                <>
+                  <label className="field-label">
+                    Banner photos &amp; videos — Desktop / PC view
+                    <HeroSlidesEditor
+                      slides={draft.slides || []}
+                      onChange={(slides) => updateField('hero', 'slides', slides)}
+                      sizeHint="1920 × 1080px (landscape, 16:9) or similar wide crop"
+                    />
+                  </label>
+
+                  <label className="field-label">
+                    Banner photos &amp; videos — Mobile view
+                    <HeroSlidesEditor
+                      slides={draft.mobileSlides || []}
+                      onChange={(slides) => updateField('hero', 'mobileSlides', slides)}
+                      sizeHint="1080 × 1350px (portrait, 4:5) — a tall crop reads better on phones"
+                    />
+                  </label>
+                </>
+              )}
+
+              {s.section_key === 'story' && (
+                <label className="field-label">
+                  Photo
+                  <input type="file" accept="image/*" ref={storyFileInput} onChange={handleStoryImage} />
+                  {draft.image && (
+                    <div className="story-preview">
+                      <img src={draft.image} alt="Preview" />
+                    </div>
+                  )}
+                </label>
+              )}
+
+              {(s.section_key === 'new_arrivals' || s.section_key === 'featured') && (
+                <label className="field-label">
+                  Products shown as New Arrivals
+                  <ProductPicker
+                    products={products}
+                    selectedIds={draft.productIds || []}
+                    onChange={(ids) => updateField(s.section_key, 'productIds', ids)}
+                    max={8}
+                  />
+                  <span className="field-hint">
+                    Leave empty to automatically showcase the newest active sarees from your catalog. Or pick specific sarees above to curate this section manually.
+                  </span>
+                </label>
+              )}
+
+              {s.section_key === 'shop_by_style' && (
+                <label className="field-label">
+                  Styles shown in this section (Card 1 [wide], Card 2 [portrait], Cards 3–5)
+                  <CategoryPicker
+                    categories={categories}
+                    selectedIds={draft.categoryIds || []}
+                    onChange={(ids) => updateField(s.section_key, 'categoryIds', ids)}
+                    max={6}
+                  />
+                  <span className="field-hint">
+                    Selection order determines placement: 1st style spans 2 columns (e.g. Kanchivaram), 2nd style is portrait (e.g. Banarasi), and 3rd–5th styles appear in the lower row.
+                  </span>
+                </label>
+              )}
+
+              {s.section_key === 'featured_categories' && (
+                <label className="field-label">
+                  Categories displayed in this section
+                  <CategoryPicker
+                    categories={categories}
+                    selectedIds={draft.categoryIds || []}
+                    onChange={(ids) => updateField(s.section_key, 'categoryIds', ids)}
+                    max={6}
+                  />
+                </label>
+              )}
+
+              {s.section_key === 'recommended' && (
+                <label className="field-label">
+                  Products shown as recommendations
+                  <ProductPicker
+                    products={products}
+                    selectedIds={draft.productIds || []}
+                    onChange={(ids) => updateField(s.section_key, 'productIds', ids)}
+                    max={12}
+                  />
+                  <span className="field-hint">
+                    Shown at the bottom of the home page and on every product page (the product being viewed is skipped automatically). Leave empty for a random pick from the catalog each time.
+                  </span>
+                </label>
+              )}
+
+              <div className="section-card-foot">
+                <button className="btn btn-primary" onClick={() => handleSave(s.section_key)}>Save</button>
+                {savedKey === s.section_key && <span className="saved-msg">Saved ✓</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <style>{`
+        .admin-page-head { margin-bottom: 30px; }
+        .admin-page-head h1 { font-size: 26px; margin-bottom: 8px; }
+        .admin-page-head p { font-size: 13px; color: var(--ink-400); max-width: 560px; line-height: 1.6; }
+        .admin-error { font-size: 12.5px; color: #a13a3a; margin-bottom: 16px; }
+
+        .section-list { display: flex; flex-direction: column; gap: 18px; max-width: 620px; }
+        .section-card {
+          background: var(--paper);
+          border-radius: var(--radius-md);
+          padding: 22px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .section-card-head { display: flex; align-items: center; justify-content: space-between; }
+        .section-card-head h3 { font-family: var(--font-display); font-size: 16px; color: var(--maroon-900); margin: 0; }
+        .toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-600); }
+        .toggle input { accent-color: var(--maroon-900); }
+
+        .field-label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); }
+        .field-label input[type="text"], .field-label textarea, .field-label input[type="file"] {
+          padding: 11px 12px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--stone-200);
+          font-family: var(--font-body);
+          font-size: 13.5px;
+        }
+        .field-hint { font-size: 11.5px; color: var(--ink-400); line-height: 1.6; margin: 0; }
+        .size-hint { color: var(--maroon-700); background: var(--blush-300); padding: 7px 10px; border-radius: var(--radius-sm); }
+
+        .story-preview { width: 90px; height: 90px; border-radius: var(--radius-sm); overflow: hidden; margin-top: 4px; }
+        .story-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+        .product-picker { display: flex; flex-direction: column; gap: 8px; }
+        .product-picker input[type="text"] { padding: 11px 12px; border-radius: var(--radius-sm); border: 1px solid var(--stone-200); font-family: var(--font-body); font-size: 13.5px; }
+        .picker-selected { display: flex; flex-direction: column; gap: 6px; }
+        .picker-chip {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 8px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--stone-200);
+          background: var(--paper);
+        }
+        .picker-chip img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
+        .picker-chip-name { flex: 1; font-size: 12.5px; color: var(--ink-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .picker-chip-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+        .picker-chip-actions button {
+          width: 22px;
+          height: 22px;
+          border-radius: 6px;
+          border: 1px solid var(--stone-200);
+          background: var(--ivory);
+          font-size: 11px;
+          color: var(--ink-600);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .picker-chip-actions button:disabled { opacity: 0.35; }
+        .picker-chip-remove { color: #a13a3a !important; }
+        .picker-results {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          max-height: 220px;
+          overflow-y: auto;
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 6px;
+        }
+        .picker-result-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 8px;
+          border-radius: 8px;
+          background: none;
+          border: none;
+          text-align: left;
+          font-size: 12.5px;
+          color: var(--ink-700);
+        }
+        .picker-result-item:hover { background: var(--blush-400); }
+        .picker-result-item img { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
+
+        .slides-editor { display: flex; flex-direction: column; gap: 12px; }
+        .slides-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .slide-thumb {
+          position: relative;
+          width: 100px;
+          height: 72px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          border: 1px solid var(--stone-200);
+          background: var(--stone-100);
+        }
+        .slide-thumb img, .slide-thumb video { width: 100%; height: 100%; object-fit: cover; }
+        .slide-order-badge {
+          position: absolute;
+          left: 4px;
+          top: 4px;
+          background: var(--maroon-900);
+          color: #fff;
+          font-size: 9.5px;
+          font-weight: 600;
+          min-width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 0 4px;
+        }
+        .slides-order-note { background: var(--stone-100); border-radius: var(--radius-sm); padding: 8px 10px; }
+        .slide-type-badge {
+          position: absolute;
+          left: 4px;
+          bottom: 4px;
+          background: rgba(0,0,0,0.55);
+          color: #fff;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .slide-remove {
+          position: absolute;
+          top: 3px;
+          right: 3px;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: rgba(0,0,0,0.6);
+          color: #fff;
+          border: none;
+          font-size: 13px;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .slide-upload-actions { display: flex; gap: 10px; }
+        .slide-upload-actions .btn { padding: 9px 16px; font-size: 12.5px; }
+
+        .section-card-foot { display: flex; align-items: center; gap: 12px; }
+        .section-card-foot .btn { padding: 10px 18px; font-size: 13px; }
+        .saved-msg { font-size: 12.5px; color: #3c7a3c; }
+      `}</style>
+    </div>
+  );
+}

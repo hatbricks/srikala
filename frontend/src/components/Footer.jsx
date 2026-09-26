@@ -1,0 +1,295 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../data/api';
+import BRAND from '../config/brand';
+
+const defaultSocial = {
+  whatsapp: BRAND.contact.whatsapp,
+  facebook: BRAND.contact.facebook,
+  twitter: BRAND.contact.twitter,
+  instagram: BRAND.contact.instagram,
+};
+
+function whatsappUrl(number) {
+  const digits = (number || '').replace(/[^\d]/g, '');
+  return digits ? `https://wa.me/${digits}` : '';
+}
+
+export default function Footer() {
+  const [social, setSocial] = useState(defaultSocial);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSent, setNewsletterSent] = useState(false);
+
+  useEffect(() => {
+    api
+      .getHomeSection('social_links')
+      .then(({ section }) => {
+        if (section?.content) setSocial({ ...defaultSocial, ...section.content });
+      })
+      .catch(() => {});
+  }, []);
+
+  const wa = whatsappUrl(social.whatsapp || BRAND.contact.whatsapp);
+
+  function handleNewsletter(e) {
+    e.preventDefault();
+    if (newsletterEmail.trim()) {
+      setNewsletterSent(true);
+      setNewsletterEmail('');
+    }
+  }
+
+  return (
+    <footer className="site-footer">
+      <div className="container footer-grid">
+        {/* Brand Column */}
+        <div className="footer-brand">
+          <Link to="/" className="footer-logo-link">
+            <img src={BRAND.assets.logoWhite} alt={BRAND.name} className="footer-logo" width="140" height="42" />
+          </Link>
+          <p className="footer-desc">
+            {BRAND.description}
+          </p>
+
+          <div className="social-links">
+            {social.instagram && (
+              <a href={social.instagram} target="_blank" rel="noreferrer" aria-label={`${BRAND.name} on Instagram`} className="social-link">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.6" />
+                  <circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" />
+                </svg>
+              </a>
+            )}
+            {wa && (
+              <a href={wa} target="_blank" rel="noreferrer" aria-label={`Chat with ${BRAND.name} on WhatsApp`} className="social-link">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.7-1.2A9 9 0 1 0 12 3z" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M8.5 8.7c.2-.5.4-.5.6-.5h.5c.2 0 .4 0 .6.4.2.5.7 1.6.7 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4l-.4.5c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.6-.7c.2-.2.4-.2.6-.1l1.5.7c.2.1.4.2.4.4.1.5-.1 1.4-.6 1.8-.6.5-1.6.8-2.6.5-1.8-.5-3.7-1.6-5.1-3.1-1.3-1.3-2.1-2.7-2.4-3.4-.3-.7-.4-1.7.2-2.4z" fill="currentColor" />
+                </svg>
+              </a>
+            )}
+            {social.facebook && (
+              <a href={social.facebook} target="_blank" rel="noreferrer" aria-label={`${BRAND.name} on Facebook`} className="social-link">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15.5 8.5h-2a1 1 0 0 0-1 1V12h3l-.4 3h-2.6v7h-3v-7H8v-3h2.5V9.2c0-2.3 1.4-3.7 3.6-3.7h1.9v3z" fill="currentColor" />
+                </svg>
+              </a>
+            )}
+            {social.twitter && (
+              <a href={social.twitter} target="_blank" rel="noreferrer" aria-label={`${BRAND.name} on Twitter / X`} className="social-link">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 4l7.2 9.4L4.4 20H6l6-6.4 4.5 6.4H20l-7.5-9.9L19 4h-1.6l-5.5 5.9L8 4H4z" fill="currentColor" />
+                </svg>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Shop Column */}
+        <div className="footer-col">
+          <h4>Shop</h4>
+          <Link to="/products">Sarees</Link>
+          <Link to="/products?sort=newest">New Arrivals</Link>
+          <Link to="/#collections">Collections</Link>
+          <Link to="/products">Best Sellers</Link>
+        </div>
+
+        {/* Information Column */}
+        <div className="footer-col">
+          <h4>Information</h4>
+          <Link to="/about">About Us</Link>
+          <Link to="/contact">Contact Us</Link>
+          <Link to="/orders">Orders &amp; Tracking</Link>
+          <Link to="/about">Heritage &amp; Craft</Link>
+        </div>
+
+        {/* Customer Care / Newsletter */}
+        <div className="footer-col footer-col-wide">
+          <h4>Customer Care</h4>
+          <p className="contact-item">
+            <span className="contact-label">Phone:</span>
+            <a href={`tel:${BRAND.contact.phone.replace(/\s+/g, '')}`}>{BRAND.contact.phone}</a>
+          </p>
+          <p className="contact-item">
+            <span className="contact-label">Email:</span>
+            <a href={`mailto:${BRAND.contact.email}`}>{BRAND.contact.email}</a>
+          </p>
+          <p className="contact-item addr">
+            {BRAND.contact.address}
+          </p>
+
+          <div className="newsletter-box">
+            <h5>Join Our Inner Circle</h5>
+            <p className="newsletter-sub">Receive exclusive previews of new handloom drops and festive collections.</p>
+            {newsletterSent ? (
+              <p className="newsletter-success">Thank you for subscribing to Sri Kala updates.</p>
+            ) : (
+              <form className="newsletter-form" onSubmit={handleNewsletter}>
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  aria-label="Email for newsletter"
+                />
+                <button type="submit" className="newsletter-btn">Subscribe</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container footer-bottom">
+        <span>&copy; {new Date().getFullYear()} {BRAND.legalName}. All rights reserved.</span>
+        <div className="footer-bottom-links">
+          <span>Handcrafted with devotion</span>
+        </div>
+      </div>
+
+      <style>{`
+        .site-footer {
+          background: var(--maroon-950);
+          color: var(--blush-300);
+          padding-top: 72px;
+          border-top: 1px solid rgba(197, 139, 56, 0.2);
+        }
+        .footer-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr 1.6fr;
+          gap: 44px;
+          padding-bottom: 52px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .footer-brand .footer-logo {
+          height: 38px;
+          width: auto;
+          display: block;
+        }
+        .footer-brand .footer-desc {
+          font-size: 13.5px;
+          line-height: 1.75;
+          color: var(--blush-300);
+          opacity: 0.85;
+          max-width: 290px;
+          margin: 18px 0 20px;
+        }
+        .social-links { display: flex; gap: 10px; }
+        .social-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid rgba(197, 139, 56, 0.35);
+          color: var(--brand-gold-light);
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .social-link svg { width: 16px; height: 16px; }
+        .social-link:hover {
+          background: rgba(197, 139, 56, 0.2);
+          border-color: var(--brand-gold-light);
+          transform: translateY(-2px);
+        }
+        .footer-col h4 {
+          font-family: var(--font-body);
+          color: var(--brand-gold-light);
+          font-size: 12px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          font-weight: 600;
+          margin-bottom: 20px;
+        }
+        .footer-col a, .footer-col p {
+          display: block;
+          font-size: 13.5px;
+          color: var(--blush-300);
+          opacity: 0.85;
+          margin-bottom: 12px;
+          line-height: 1.6;
+          transition: opacity 0.2s ease, color 0.2s ease;
+        }
+        .footer-col a:hover { opacity: 1; color: var(--brand-gold-light); }
+        .contact-item { margin-bottom: 8px; }
+        .contact-label { color: var(--brand-gold-light); font-weight: 500; margin-right: 6px; }
+        .addr { font-size: 13px; line-height: 1.5; opacity: 0.75; }
+
+        .newsletter-box {
+          margin-top: 22px;
+          padding: 16px 18px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(197, 139, 56, 0.2);
+          border-radius: var(--radius-md);
+        }
+        .newsletter-box h5 {
+          margin: 0 0 6px;
+          font-family: var(--font-display);
+          font-size: 15px;
+          color: var(--brand-gold-light);
+          font-weight: 400;
+        }
+        .newsletter-sub {
+          font-size: 12px;
+          line-height: 1.5;
+          color: var(--blush-300);
+          opacity: 0.75;
+          margin: 0 0 12px;
+        }
+        .newsletter-form {
+          display: flex;
+          gap: 8px;
+        }
+        .newsletter-form input {
+          flex: 1;
+          padding: 9px 12px;
+          font-size: 13px;
+          font-family: var(--font-body);
+          background: rgba(0, 0, 0, 0.25);
+          border: 1px solid rgba(197, 139, 56, 0.3);
+          border-radius: var(--radius-sm);
+          color: #ffffff;
+          outline: none;
+        }
+        .newsletter-form input:focus {
+          border-color: var(--brand-gold-light);
+        }
+        .newsletter-btn {
+          padding: 9px 16px;
+          font-size: 12.5px;
+          font-weight: 600;
+          background: var(--brand-secondary);
+          color: #ffffff;
+          border: none;
+          border-radius: var(--radius-sm);
+          transition: background 0.2s ease;
+        }
+        .newsletter-btn:hover {
+          background: var(--brand-accent);
+        }
+        .newsletter-success {
+          font-size: 12.5px;
+          color: var(--brand-gold-light);
+          margin: 0;
+        }
+
+        .footer-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 24px 32px;
+          font-size: 12.5px;
+          opacity: 0.7;
+        }
+        @media (max-width: 980px) {
+          .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
+        }
+        @media (max-width: 580px) {
+          .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+          .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+        }
+      `}</style>
+    </footer>
+  );
+}

@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600" fill="none">
+  <defs>
+    <!-- Royal Kanchivaram Zari Gold Gradients -->
+    <linearGradient id="zariPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF8DC" stop-opacity="0.95" />
+      <stop offset="25%" stop-color="#E5BF60" stop-opacity="0.9" />
+      <stop offset="60%" stop-color="#C58B38" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#8B5216" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="zariGleam" x1="10%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDF5" />
+      <stop offset="35%" stop-color="#E8C368" />
+      <stop offset="70%" stop-color="#BD832E" />
+      <stop offset="100%" stop-color="#7A420E" />
+    </linearGradient>
+
+    <linearGradient id="zariStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#DFB254" />
+      <stop offset="50%" stop-color="#B87D2A" />
+      <stop offset="100%" stop-color="#6F3609" />
+    </linearGradient>
+
+    <linearGradient id="zariSoftFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7DF9E" stop-opacity="0.22" />
+      <stop offset="50%" stop-color="#DAA545" stop-opacity="0.14" />
+      <stop offset="100%" stop-color="#9C5E1B" stop-opacity="0.06" />
+    </linearGradient>
+
+    <linearGradient id="lotusCrimson" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B261D" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#581E15" stop-opacity="0.08" />
+    </linearGradient>
+
+    <!-- Authentic Saree Jacquard Zari Mesh Pattern -->
+    <pattern id="sareeZariMesh" width="10" height="10" patternUnits="userSpaceOnUse">
+      <path d="M 0 5 L 5 0 L 10 5 L 5 10 Z" fill="none" stroke="url(#zariStroke)" stroke-width="0.45" stroke-opacity="0.4" />
+      <circle cx="5" cy="5" r="0.8" fill="url(#zariPrimary)" />
+    </pattern>
+
+    <!-- Subtle luxury emboss shadow -->
+    <filter id="zariSheen" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#6B3809" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <g id="royal-saree-manga" filter="url(#zariSheen)">
+    <!-- ==================== 1. BASE LOTUS PEDESTAL (ASANA) ==================== -->
+    <g id="base-pedestal">
+      <path d="M 235 510 C 205 512 175 498 170 478 C 165 456 186 444 205 452 C 222 460 220 480 206 486 C 196 490 188 482 192 474" fill="none" stroke="url(#zariStroke)" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M 325 510 C 355 512 385 498 390 478 C 395 456 374 444 355 452 C 338 460 340 480 354 486 C 364 490 372 482 368 474" fill="none" stroke="url(#zariStroke)" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M 280 464 C 264 484 258 506 280 518 C 302 506 296 484 280 464 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.8" />
+      <path d="M 280 474 L 280 512" stroke="url(#zariStroke)" stroke-width="1.2" stroke-dasharray="2,2"/>
+      <circle cx="280" cy="460" r="2.5" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <path d="M 275 472 C 248 484 228 502 246 515 C 264 515 272 498 275 472 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.5" />
+      <path d="M 285 472 C 312 484 332 502 314 515 C 296 515 288 498 285 472 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.5" />
+      <path d="M 250 484 C 226 495 210 509 224 518 C 240 518 248 505 250 484 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <path d="M 310 484 C 334 495 350 509 336 518 C 320 518 312 505 310 484 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <path d="M 195 518 Q 280 528 365 518" stroke="url(#zariStroke)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M 205 524 Q 280 534 355 524" stroke="url(#zariStroke)" stroke-width="1.2" fill="none"/>
+      <circle cx="205.0" cy="521.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="215.0" cy="522.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="225.0" cy="523.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="235.0" cy="523.9" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="245.0" cy="524.7" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="255.0" cy="525.3" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="265.0" cy="525.8" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="275.0" cy="526.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="285.0" cy="526.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="295.0" cy="525.8" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="305.0" cy="525.3" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="315.0" cy="524.7" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="325.0" cy="523.9" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="335.0" cy="523.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="345.0" cy="522.0" r="1.5" fill="url(#zariPrimary)" />
+      <circle cx="355.0" cy="521.0" r="1.5" fill="url(#zariPrimary)" />
+    </g>
+
+    <!-- ==================== 2. MAIN MANGO SILHOUETTE ==================== -->
+    <g id="manga-body">
+      <!-- Warm Gold Parchment Fill -->
+      <path d="M 245 470 C 165 455 105 385 86 280 C 72 185 118 105 205 68 C 255 46 325 48 375 78 C 420 106 438 152 422 198 C 404 242 360 252 328 230 C 298 275 285 340 292 410 C 298 445 310 460 315 470 Z" fill="url(#zariSoftFill)" />
+      <!-- Saree Jacquard Brocade Mesh Overlay -->
+      <path d="M 245 470 C 165 455 105 385 86 280 C 72 185 118 105 205 68 C 255 46 325 48 375 78 C 420 106 438 152 422 198 C 404 242 360 252 328 230 C 298 275 285 340 292 410 C 298 445 310 460 315 470 Z" fill="url(#sareeZariMesh)" opacity="0.45" />
+      <!-- Outer Defining Zari Stroke -->
+      <path d="M 245 470 C 165 455 105 385 86 280 C 72 185 118 105 205 68 C 255 46 325 48 375 78 C 420 106 438 152 422 198 C 404 242 360 252 328 230 C 298 275 285 340 292 410 C 298 445 310 460 315 470 Z" fill="none" stroke="url(#zariStroke)" stroke-width="2.5" stroke-linejoin="round" />
+      <path d="M 244 458 C 172 444 120 376 104 282 C 92 196 132 122 208 88 C 250 68 312 70 358 96 C 398 120 412 158 398 194 C 382 230 348 234 324 216 C 304 260 298 328 304 398 C 308 432 314 452 315 458 Z" fill="none" stroke="url(#zariStroke)" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.85" />
+    </g>
+
+    <!-- ==================== 3. KORVAI TEMPLE BORDER (GOPURAM SPIKES) ==================== -->
+    <g id="korvai-temple-border">
+      <path d="M 245 470 L 225.0 480.6 L 212 462 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="228.5" y1="466.0" x2="225.0" y2="480.6" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="225.0" cy="480.6" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 212 462 L 188.6 467.6 L 178 446 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="195.0" y1="454.0" x2="188.6" y2="467.6" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="188.6" cy="467.6" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 178 446 L 153.6 445.7 L 148 422 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="163.0" y1="434.0" x2="153.6" y2="445.7" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="153.6" cy="445.7" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 148 422 L 123.4 415.5 L 122 390 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="135.0" y1="406.0" x2="123.4" y2="415.5" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="123.4" cy="415.5" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 122 390 L 95.8 379.1 L 104 352 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="113.0" y1="371.0" x2="95.8" y2="379.1" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="95.8" cy="379.1" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 104 352 L 79.7 336.2 L 92 310 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="98.0" y1="331.0" x2="79.7" y2="336.2" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="79.7" cy="336.2" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 92 310 L 70.2 290.0 L 86 265 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="89.0" y1="287.5" x2="70.2" y2="290.0" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="70.2" cy="290.0" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 86 265 L 70.2 240.0 L 92 220 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="89.0" y1="242.5" x2="70.2" y2="240.0" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="70.2" cy="240.0" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 92 220 L 82.2 192.2 L 108 178 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="100.0" y1="199.0" x2="82.2" y2="192.2" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="82.2" cy="192.2" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 108 178 L 105.3 148.3 L 134 140 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="121.0" y1="159.0" x2="105.3" y2="148.3" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="105.3" cy="148.3" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 134 140 L 139.4 109.8 L 170 108 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="152.0" y1="124.0" x2="139.4" y2="109.8" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="139.4" cy="109.8" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 170 108 L 182.9 79.3 L 214 84 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="192.0" y1="96.0" x2="182.9" y2="79.3" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="182.9" cy="79.3" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 214 84 L 232.0 58.0 L 262 68 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="238.0" y1="76.0" x2="232.0" y2="58.0" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="232.0" cy="58.0" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 262 68 L 285.5 47.1 L 312 64 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="287.0" y1="66.0" x2="285.5" y2="47.1" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="285.5" cy="47.1" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 312 64 L 339.9 50.4 L 360 74 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="336.0" y1="69.0" x2="339.9" y2="50.4" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="339.9" cy="50.4" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 360 74 L 387.7 73.1 L 400 98 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="380.0" y1="86.0" x2="387.7" y2="73.1" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="387.7" cy="73.1" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 400 98 L 424.5 107.7 L 424 134 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="412.0" y1="116.0" x2="424.5" y2="107.7" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="424.5" cy="107.7" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 424 134 L 440.0 153.3 L 426 174 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="425.0" y1="154.0" x2="440.0" y2="153.3" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="440.0" cy="153.3" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 426 174 L 430.6 199.4 L 408 212 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="417.0" y1="193.0" x2="430.6" y2="199.4" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="430.6" cy="199.4" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+      <path d="M 408 212 L 399.7 236.3 L 374 236 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.3" />
+      <line x1="391.0" y1="224.0" x2="399.7" y2="236.3" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <circle cx="399.7" cy="236.3" r="2.2" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7"/>
+    </g>
+
+    <!-- ==================== 4. MOTI MALA (PEARL BEADS TRACK) ==================== -->
+    <g id="moti-mala">
+      <circle cx="245" cy="470" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="212" cy="462" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="178" cy="446" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="148" cy="422" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="122" cy="390" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="104" cy="352" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="92" cy="310" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="86" cy="265" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="92" cy="220" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="108" cy="178" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="134" cy="140" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="170" cy="108" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="214" cy="84" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="262" cy="68" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="312" cy="64" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="360" cy="74" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="400" cy="98" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="424" cy="134" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="426" cy="174" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="408" cy="212" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+      <circle cx="374" cy="236" r="2.4" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.7" />
+    </g>
+
+    <!-- ==================== 5. KALGI CREST & SARPECH PLUMES ==================== -->
+    <g id="crest-curl">
+      <!-- Golden Shankha / Nautilus spiral in mango head -->
+      <path d="M 375 78 C 395 95 410 120 405 150 C 400 178 375 198 348 190 C 325 182 318 158 332 140 C 344 125 365 128 372 142 C 376 152 368 162 358 160 C 352 158 350 150 354 146" fill="none" stroke="url(#zariStroke)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 375 78 C 395 95 410 120 405 150 C 400 178 375 198 348 190 C 325 182 318 158 332 140 C 344 125 365 128 372 142" fill="none" stroke="url(#zariPrimary)" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <circle cx="355" cy="153" r="2.8" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8" />
+      <!-- Plume 1 -->
+      <path d="M 382 88 C 420 70, 450 80, 475 65" fill="none" stroke="url(#zariStroke)" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M 475 65 C 483 59, 491 61, 493 68 C 490 75, 482 73, 475 65 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.1"/>
+      <circle cx="484.0" cy="67.0" r="1.8" fill="#FFFDF5"/>
+      <!-- Plume 2 -->
+      <path d="M 402 104 C 445 95, 480 110, 505 98" fill="none" stroke="url(#zariStroke)" stroke-width="1.6500000000000001" stroke-linecap="round"/>
+      <path d="M 505 98 C 513 92, 521 94, 523 101 C 520 108, 512 106, 505 98 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.1"/>
+      <circle cx="514.0" cy="100.0" r="1.8" fill="#FFFDF5"/>
+      <!-- Plume 3 -->
+      <path d="M 418 126 C 465 125, 495 145, 520 140" fill="none" stroke="url(#zariStroke)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 520 140 C 528 134, 536 136, 538 143 C 535 150, 527 148, 520 140 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.1"/>
+      <circle cx="529.0" cy="142.0" r="1.8" fill="#FFFDF5"/>
+      <!-- Plume 4 -->
+      <path d="M 424 154 C 468 160, 492 188, 512 192" fill="none" stroke="url(#zariStroke)" stroke-width="1.35" stroke-linecap="round"/>
+      <path d="M 512 192 C 520 186, 528 188, 530 195 C 527 202, 519 200, 512 192 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.1"/>
+      <circle cx="521.0" cy="194.0" r="1.8" fill="#FFFDF5"/>
+      <!-- Plume 5 -->
+      <path d="M 416 184 C 455 198, 475 230, 490 242" fill="none" stroke="url(#zariStroke)" stroke-width="1.2000000000000002" stroke-linecap="round"/>
+      <path d="M 490 242 C 498 236, 506 238, 508 245 C 505 252, 497 250, 490 242 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.1"/>
+      <circle cx="499.0" cy="244.0" r="1.8" fill="#FFFDF5"/>
+    </g>
+
+    <!-- ==================== 6. SACRED LOTUS (KAMALAM) ==================== -->
+    <g id="central-lotus" transform="translate(196, 310) scale(0.95)">
+      <path d="M -24 32 Q 0 42 24 32 Q 0 22 -24 32 Z" fill="url(#zariStroke)" />
+      <path d="M -6 30 C -36 26 -56 10 -58 -10 C -46 -15 -30 4 -10 18 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M 6 30 C 36 26 56 10 58 -10 C 46 -15 30 4 10 18 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M -4 26 C -32 12 -46 -8 -38 -34 C -26 -28 -16 -6 0 12 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M 4 26 C 32 12 46 -8 38 -34 C 26 -28 16 -6 0 12 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M -2 22 C -18 2 -26 -24 -12 -50 C -4 -34 -1 -12 0 8 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M 2 22 C 18 2 26 -24 12 -50 C 4 -34 1 -12 0 8 Z" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M 0 -60 C -14 -40 -10 -10 0 16 C 10 -10 14 -40 0 -60 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.8"/>
+      <line x1="0" y1="-56" x2="0" y2="12" stroke="url(#zariStroke)" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="0" cy="-64" r="3" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1"/>
+      <circle cx="-8" cy="-56" r="2.2" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+      <circle cx="8" cy="-56" r="2.2" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+    </g>
+
+    <!-- ==================== 7. KODI VISIRI (FLORAL CREEPER) ==================== -->
+    <g id="floral-creeper">
+      <path d="M 196 240 C 190 190 230 155 252 125 C 268 102 292 95 324 105 C 346 114 352 136 342 155 C 334 170 316 172 310 162" fill="none" stroke="url(#zariStroke)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M 196 240 C 190 190 230 155 252 125 C 268 102 292 95 324 105" fill="none" stroke="url(#zariPrimary)" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <path d="M 218 190 C 195 180 180 155 190 135 C 198 120 216 125 214 140 C 212 150 204 150 200 144" fill="none" stroke="url(#zariStroke)" stroke-width="1.5"/>
+      <path d="M 190 135 C 178 130 166 110 176 98 C 188 88 200 102 194 116 C 190 125 184 127 182 124 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="1.2"/>
+      <circle cx="186" cy="110" r="1.5" fill="#FFFDF5"/>
+      <path d="M 270 114 C 290 96 312 88 328 92 C 322 106 304 116 284 112 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.3"/>
+      <line x1="270" y1="114" x2="328" y2="92" stroke="url(#zariStroke)" stroke-width="0.8"/>
+      <path d="M 196 375 C 188 405 208 430 228 445 C 242 455 255 460 268 464" fill="none" stroke="url(#zariStroke)" stroke-width="1.8"/>
+      <path d="M 218 420 C 198 426 184 440 194 452 C 208 452 218 440 222 426 Z" fill="url(#zariSoftFill)" stroke="url(#zariStroke)" stroke-width="1.2"/>
+    </g>
+
+    <!-- ==================== 8. TRADITIONAL SAREE BUTTIS ==================== -->
+    <g id="saree-buttis">
+      <g transform="translate(65, 110) rotate(15) scale(0.75)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(50, 260) rotate(45) scale(0.85)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(68, 440) rotate(-20) scale(0.8)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(150, 545) rotate(30) scale(0.7)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(425, 480) rotate(-15) scale(0.8)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(485, 360) rotate(25) scale(0.9)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(530, 240) rotate(-10) scale(0.85)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(485, 55) rotate(40) scale(0.75)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <g transform="translate(275, 25) rotate(0) scale(0.85)">
+        <circle cx="0" cy="0" r="3" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 -3 C -4 -10 -8 -14 0 -19 C 8 -14 4 -10 0 -3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 0 3 C -4 10 -8 14 0 19 C 8 14 4 10 0 3 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M -3 0 C -10 -4 -14 -8 -19 0 C -14 8 -10 4 -3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <path d="M 3 0 C 10 -4 14 -8 19 0 C 14 8 10 4 3 0 Z" fill="url(#zariGleam)" stroke="url(#zariStroke)" stroke-width="0.8"/>
+        <circle cx="0" cy="0" r="1.3" fill="#FFFDF5"/>
+      </g>
+      <path d="M 40 174 Q 40 180 46 180 Q 40 180 40 186 Q 40 180 34 180 Q 40 180 40 174 Z" fill="url(#zariPrimary)" />
+      <path d="M 540 133 Q 540 140 547 140 Q 540 140 540 147 Q 540 140 533 140 Q 540 140 540 133 Z" fill="url(#zariPrimary)" />
+      <path d="M 515 294 Q 515 300 521 300 Q 515 300 515 306 Q 515 300 509 300 Q 515 300 515 294 Z" fill="url(#zariPrimary)" />
+      <path d="M 370 26 Q 370 32 376 32 Q 370 32 370 38 Q 370 32 364 32 Q 370 32 370 26 Z" fill="url(#zariPrimary)" />
+      <path d="M 125 45 Q 125 50 130 50 Q 125 50 125 55 Q 125 50 120 50 Q 125 50 125 45 Z" fill="url(#zariPrimary)" />
+      <path d="M 395 535 Q 395 540 400 540 Q 395 540 395 545 Q 395 540 390 540 Q 395 540 395 535 Z" fill="url(#zariPrimary)" />
+    </g>
+
+    <!-- ==================== 9. PALLU CORNER BORDER BRACKETS ==================== -->
+    <g id="corner-borders" opacity="0.6">
+      <path d="M 18 18 L 140 18" stroke="url(#zariStroke)" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M 18 18 L 18 140" stroke="url(#zariStroke)" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M 24 24 L 115 24" stroke="url(#zariStroke)" stroke-width="0.8" stroke-dasharray="3,2"/>
+      <path d="M 24 24 L 24 115" stroke="url(#zariStroke)" stroke-width="0.8" stroke-dasharray="3,2"/>
+      <circle cx="18" cy="18" r="3.5" fill="url(#zariPrimary)" stroke="url(#zariStroke)" stroke-width="1"/>
+    </g>
+
+  </g>
+</svg>

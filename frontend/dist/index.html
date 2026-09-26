@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#581e15" />
+    <meta name="google-site-verification" content="GuFN7WXU0E1TdEMqb2FXdfpmK6bA0p-gdQeN-7z4GjA" />
+
+    <!-- Must run synchronously, before React (or anything else) loads, and
+         before the browser applies its own automatic scroll-restoration
+         for this history entry. Doing this inside a React useEffect is too
+         late — the app has already mounted and painted by then, so the
+         browser can briefly jump to a remembered scroll position (often
+         showing the footer) right on load before React's own reset takes
+         over. Setting it here removes that window entirely. -->
+    <script>
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+    </script>
+
+    <title>Sri Kala — Silk Emporium | Timeless Indian Sarees</title>
+    <meta name="description" content="Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition. Pure silk, handloom, and festive collections." />
+    <meta name="keywords" content="Sri Kala, Sri Kala Silk Emporium, pure silk sarees online India, Kanjivaram silk saree online, Banarasi silk saree online, pattu sarees online, South Indian bridal sarees, wedding sarees online India, organza sarees online, handloom sarees direct from weavers, sarees Hyderabad" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://www.srikala.com/" />
+
+    <!-- Open Graph — this static baseline is what link-preview bots
+         (WhatsApp, Facebook, Twitter/X, iMessage) actually see, since
+         those don't execute JavaScript. Pages override these once React
+         mounts, for crawlers/browsers that do run JS. -->
+    <meta property="og:site_name" content="Sri Kala" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sri Kala — Silk Emporium | Timeless Indian Sarees" />
+    <meta property="og:description" content="Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition. Pure silk, handloom, and festive collections." />
+    <meta property="og:image" content="https://www.srikala.com/images/model-saree.png" />
+    <meta property="og:url" content="https://www.srikala.com/" />
+    <meta property="og:locale" content="en_IN" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Sri Kala — Silk Emporium | Timeless Indian Sarees" />
+    <meta name="twitter:description" content="Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition. Pure silk, handloom, and festive collections." />
+    <meta name="twitter:image" content="https://www.srikala.com/images/model-saree.png" />
+    <script type="module" crossorigin src="/assets/index-CJpn24vJ.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Bku8NAep.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

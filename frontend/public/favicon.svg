@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="48" fill="#2A0C10" stroke="#C58B38" stroke-width="3"/>
+  <circle cx="50" cy="50" r="43" fill="none" stroke="#D4AF37" stroke-width="1" stroke-dasharray="2 2"/>
+  <!-- Lotus & Floral Motif -->
+  <path d="M50 24 C53 35 62 44 68 47 C60 50 54 48 50 56 C46 48 40 50 32 47 C38 44 47 35 50 24 Z" fill="#E5A93C"/>
+  <path d="M50 32 C51 38 56 43 60 45 C55 47 52 46 50 50 C48 46 45 47 40 45 C44 43 49 38 50 32 Z" fill="#FBDFB2"/>
+  <!-- Central Diamond -->
+  <polygon points="50,18 53,22 50,26 47,22" fill="#FBDFB2"/>
+  <!-- Sri Kala SK stylized mark -->
+  <text x="50" y="72" font-family="'Marcellus', 'Cinzel', Georgia, serif" font-size="22" font-weight="bold" fill="#FDFBF7" text-anchor="middle" letter-spacing="2">SK</text>
+  <text x="50" y="83" font-family="Helvetica, Arial, sans-serif" font-size="6.5" font-weight="600" fill="#D4AF37" text-anchor="middle" letter-spacing="2.5">SRI KALA</text>
+  <path d="M28 87 L72 87" stroke="#C58B38" stroke-width="0.8"/>
+  <circle cx="50" cy="87" r="1.5" fill="#FBDFB2"/>
+</svg>
