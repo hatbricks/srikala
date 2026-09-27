@@ -167,6 +167,8 @@ function DesktopHeroSlider({ slides }) {
         </div>
       ))}
 
+      <div className="hero-dark-layer" aria-hidden="true" />
+
       {slides.length > 1 && (
         <>
           <button type="button" className="hero-arrow hero-arrow-prev" onClick={() => goTo(active - 1)} aria-label="Previous banner">
@@ -252,6 +254,8 @@ function MobileHeroSlider({ slides }) {
         ))}
       </div>
 
+      <div className="hero-dark-layer" aria-hidden="true" />
+
       {slides.length > 1 && (
         <div className="hero-slider-dots">
           {slides.map((s, i) => (
@@ -301,6 +305,20 @@ function HeroSliderStyles() {
         height: 100%;
         object-fit: cover;
         object-position: center;
+      }
+      .hero-dark-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: linear-gradient(
+          180deg,
+          rgba(15, 4, 6, 0.45) 0%,
+          rgba(20, 5, 8, 0.28) 45%,
+          rgba(15, 4, 6, 0.65) 100%
+        );
+        backdrop-filter: brightness(0.85) contrast(1.05);
+        -webkit-backdrop-filter: brightness(0.85) contrast(1.05);
       }
 
       .hero-arrow {

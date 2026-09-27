@@ -11,7 +11,6 @@ const links = [
   { to: '/', label: 'Home', end: true },
   { to: '/#collections', label: 'Collections' },
   { to: '/products', label: 'Sarees' },
-  { to: '/products?sort=newest', label: 'New Arrivals' },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];

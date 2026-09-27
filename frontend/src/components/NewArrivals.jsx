@@ -63,9 +63,27 @@ export default function NewArrivals({
         .new-arrivals {
           position: relative;
           overflow: hidden;
-          background: var(--paper);
-          padding: 80px 0 90px;
-          border-top: 1px solid rgba(197, 139, 56, 0.14);
+          background-color: #ffffff;
+          background-image: url('/images/new-arrivals-bg.jpg');
+          background-repeat: no-repeat;
+          background-position: center top;
+          background-size: 100% auto;
+          padding: 140px 0 100px;
+          border-top: 1px solid rgba(197, 139, 56, 0.2);
+        }
+        .new-arrivals::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(255, 255, 255, 0.05) 40%,
+            rgba(255, 255, 255, 0.75) 75%,
+            #ffffff 100%
+          );
+          pointer-events: none;
+          z-index: 0;
         }
         .new-arrivals .container {
           position: relative;
@@ -77,7 +95,7 @@ export default function NewArrivals({
           top: -30px;
           right: -70px;
           width: 360px;
-          opacity: 0.24;
+          opacity: 0.18;
           mix-blend-mode: multiply;
           transform: rotate(-15deg);
         }
@@ -93,7 +111,15 @@ export default function NewArrivals({
           align-items: flex-end;
           justify-content: space-between;
           gap: 24px;
-          margin-bottom: 40px;
+          margin-bottom: 50px;
+          background: linear-gradient(135deg, rgba(255, 253, 248, 0.88) 0%, rgba(253, 246, 234, 0.72) 100%);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          padding: 24px 32px;
+          border-radius: var(--radius-md);
+          border: 1px solid rgba(197, 139, 56, 0.3);
+          box-shadow: 0 12px 32px rgba(88, 30, 21, 0.08);
+          max-width: 760px;
         }
         .new-arrivals-title-group {
           max-width: 600px;
@@ -156,7 +182,9 @@ export default function NewArrivals({
 
         @media (max-width: 980px) {
           .new-arrivals {
-            padding: 60px 0 70px;
+            padding: 80px 0 70px;
+            background-size: cover;
+            background-position: 65% top;
           }
           .new-arrivals-heading {
             font-size: 30px;
@@ -168,19 +196,22 @@ export default function NewArrivals({
         }
         @media (max-width: 600px) {
           .new-arrivals {
-            padding: 48px 0 56px;
+            padding: 50px 0 60px;
+            background-size: cover;
+            background-position: 75% top;
           }
           .new-arrivals-head {
             flex-direction: column;
             align-items: flex-start;
             gap: 16px;
             margin-bottom: 28px;
+            padding: 18px 20px;
           }
           .new-arrivals-heading {
-            font-size: 25px;
+            font-size: 24px;
           }
           .new-arrivals-sub {
-            font-size: 13.5px;
+            font-size: 13px;
           }
           .new-arrivals-grid {
             gap: 16px;

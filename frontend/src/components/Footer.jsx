@@ -17,8 +17,6 @@ function whatsappUrl(number) {
 
 export default function Footer() {
   const [social, setSocial] = useState(defaultSocial);
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSent, setNewsletterSent] = useState(false);
 
   useEffect(() => {
     api
@@ -30,14 +28,6 @@ export default function Footer() {
   }, []);
 
   const wa = whatsappUrl(social.whatsapp || BRAND.contact.whatsapp);
-
-  function handleNewsletter(e) {
-    e.preventDefault();
-    if (newsletterEmail.trim()) {
-      setNewsletterSent(true);
-      setNewsletterEmail('');
-    }
-  }
 
   return (
     <footer className="site-footer">
@@ -118,26 +108,6 @@ export default function Footer() {
           <p className="contact-item addr">
             {BRAND.contact.address}
           </p>
-
-          <div className="newsletter-box">
-            <h5>Join Our Inner Circle</h5>
-            <p className="newsletter-sub">Receive exclusive previews of new handloom drops and festive collections.</p>
-            {newsletterSent ? (
-              <p className="newsletter-success">Thank you for subscribing to Sri Kala updates.</p>
-            ) : (
-              <form className="newsletter-form" onSubmit={handleNewsletter}>
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  aria-label="Email for newsletter"
-                />
-                <button type="submit" className="newsletter-btn">Subscribe</button>
-              </form>
-            )}
-          </div>
         </div>
       </div>
 
@@ -215,64 +185,6 @@ export default function Footer() {
         .contact-item { margin-bottom: 8px; }
         .contact-label { color: var(--brand-gold-light); font-weight: 500; margin-right: 6px; }
         .addr { font-size: 13px; line-height: 1.5; opacity: 0.75; }
-
-        .newsletter-box {
-          margin-top: 22px;
-          padding: 16px 18px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(197, 139, 56, 0.2);
-          border-radius: var(--radius-md);
-        }
-        .newsletter-box h5 {
-          margin: 0 0 6px;
-          font-family: var(--font-display);
-          font-size: 15px;
-          color: var(--brand-gold-light);
-          font-weight: 400;
-        }
-        .newsletter-sub {
-          font-size: 12px;
-          line-height: 1.5;
-          color: var(--blush-300);
-          opacity: 0.75;
-          margin: 0 0 12px;
-        }
-        .newsletter-form {
-          display: flex;
-          gap: 8px;
-        }
-        .newsletter-form input {
-          flex: 1;
-          padding: 9px 12px;
-          font-size: 13px;
-          font-family: var(--font-body);
-          background: rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(197, 139, 56, 0.3);
-          border-radius: var(--radius-sm);
-          color: #ffffff;
-          outline: none;
-        }
-        .newsletter-form input:focus {
-          border-color: var(--brand-gold-light);
-        }
-        .newsletter-btn {
-          padding: 9px 16px;
-          font-size: 12.5px;
-          font-weight: 600;
-          background: var(--brand-secondary);
-          color: #ffffff;
-          border: none;
-          border-radius: var(--radius-sm);
-          transition: background 0.2s ease;
-        }
-        .newsletter-btn:hover {
-          background: var(--brand-accent);
-        }
-        .newsletter-success {
-          font-size: 12.5px;
-          color: var(--brand-gold-light);
-          margin: 0;
-        }
 
         .footer-bottom {
           display: flex;

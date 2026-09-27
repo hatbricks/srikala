@@ -6,6 +6,7 @@ import LogoIntro from './components/LogoIntro';
 import RequireAuth from './components/RequireAuth';
 import ScrollToTop from './components/ScrollToTop';
 import SmoothScroll from './components/SmoothScroll';
+import WhatsAppButton from './components/WhatsAppButton';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Home from './pages/Home';
@@ -60,6 +61,7 @@ function PublicSite() {
       </main>
       <Footer />
       <BottomNav />
+      <WhatsAppButton />
     </>
   );
 }

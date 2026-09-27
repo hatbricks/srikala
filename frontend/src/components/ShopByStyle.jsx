@@ -49,7 +49,12 @@ export default function ShopByStyle({
                 loading="lazy"
               />
               <div className="style-card-overlay" aria-hidden="true" />
-              <span className="style-card-label">{style.name}</span>
+              <div className="style-card-label-wrap">
+                <span className="style-card-label">
+                  <span>{style.name}</span>
+                  <span className="style-card-arrow" aria-hidden="true">→</span>
+                </span>
+              </div>
             </Link>
           ))}
         </ScrollReveal>
@@ -125,17 +130,44 @@ export default function ShopByStyle({
           background: linear-gradient(to top, rgba(0, 0, 0, 0.68) 0%, rgba(0, 0, 0, 0.18) 40%, transparent 70%);
           pointer-events: none;
         }
-        .style-card-label {
+        .style-card-label-wrap {
           position: absolute;
-          bottom: 22px;
-          left: 24px;
+          bottom: 20px;
+          left: 20px;
+          right: 20px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .style-card-label {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 18px;
+          background: rgba(32, 8, 11, 0.75);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(251, 223, 162, 0.4);
+          border-radius: 999px;
           color: #ffffff;
           font-family: var(--font-heading, 'Marcellus', serif);
-          font-size: 20px;
+          font-size: 15px;
           font-weight: 500;
           letter-spacing: 0.02em;
-          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
-          z-index: 2;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+          transition: background 0.3s ease, border-color 0.3s ease;
+        }
+        .style-card-arrow {
+          display: inline-block;
+          font-size: 14px;
+          color: var(--brand-gold-light, #fbdfa2);
+          transition: transform 0.25s ease;
+        }
+        .style-card:hover .style-card-arrow {
+          transform: translateX(4px);
+        }
+        .style-card:hover .style-card-label {
+          background: rgba(45, 12, 17, 0.9);
+          border-color: rgba(251, 223, 162, 0.75);
         }
         /* Asymmetric bento grid matching user reference photo */
         .style-card-1 {
@@ -164,22 +196,22 @@ export default function ShopByStyle({
           }
           .style-card-1 {
             grid-column: span 2;
-            height: 320px;
+            height: 280px;
           }
           .style-card-2,
           .style-card-3,
           .style-card-4 {
             grid-column: span 1;
-            height: 280px;
+            height: 260px;
           }
           .style-card-5 {
             grid-column: span 2;
-            height: 280px;
+            height: 260px;
           }
         }
         @media (max-width: 600px) {
           .shop-by-style {
-            padding: 48px 0 54px;
+            padding: 44px 0 92px;
           }
           .shop-by-style-head {
             margin-bottom: 22px;
@@ -188,22 +220,43 @@ export default function ShopByStyle({
             font-size: 26px;
           }
           .style-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
           }
-          .style-card-1,
+          .style-card {
+            border-radius: 14px;
+          }
+          .style-card-1 {
+            grid-column: span 2;
+            height: 190px;
+          }
           .style-card-2,
           .style-card-3,
           .style-card-4,
           .style-card-5,
           .style-card-6 {
             grid-column: span 1;
-            height: 230px;
+            height: 220px;
+          }
+          .style-card-label-wrap {
+            bottom: 12px;
+            left: 10px;
+            right: 10px;
           }
           .style-card-label {
-            bottom: 14px;
-            left: 16px;
-            font-size: 16px;
+            padding: 6px 12px;
+            font-size: 12.5px;
+            gap: 6px;
+            width: auto;
+            max-width: 100%;
+          }
+          .style-card-label span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .style-card-arrow {
+            font-size: 12px;
           }
         }
       `}</style>
