@@ -80,8 +80,11 @@ export const api = {
   me: () => request('/api/auth/me'),
   updateMe: (payload) => request('/api/auth/me', { method: 'PUT', body: payload }),
   changePassword: (payload) => request('/api/auth/change-password', { method: 'POST', body: payload }),
+  completeProfile: (payload) => request('/api/auth/complete-profile', { method: 'POST', body: payload }),
   getAddresses: () => request('/api/auth/addresses'),
   addAddress: (payload) => request('/api/auth/addresses', { method: 'POST', body: payload }),
+  updateAddress: (id, payload) => request(`/api/auth/addresses/${id}`, { method: 'PUT', body: payload }),
+  setDefaultAddress: (id) => request(`/api/auth/addresses/${id}/default`, { method: 'PUT' }),
   deleteAddress: (id) => request(`/api/auth/addresses/${id}`, { method: 'DELETE' }),
 
   // categories
@@ -98,6 +101,9 @@ export const api = {
   createProduct: (payload) => request('/api/products', { method: 'POST', body: payload }),
   updateProduct: (id, payload) => request(`/api/products/${id}`, { method: 'PUT', body: payload }),
   deleteProduct: (id) => request(`/api/products/${id}`, { method: 'DELETE' }),
+  addVariant: (productId, payload) => request(`/api/products/${productId}/variants`, { method: 'POST', body: payload }),
+  updateVariant: (productId, variantId, payload) => request(`/api/products/${productId}/variants/${variantId}`, { method: 'PUT', body: payload }),
+  deleteVariant: (productId, variantId) => request(`/api/products/${productId}/variants/${variantId}`, { method: 'DELETE' }),
 
   // home sections (CMS)
   getHomeSections: () => request('/api/home-sections', { auth: false }),
@@ -117,7 +123,32 @@ export const api = {
   verifyOrder: (payload) => request('/api/orders/verify', { method: 'POST', body: payload }),
   getMyOrders: () => request('/api/orders'),
   getAllOrders: () => request('/api/orders/admin/all'),
+  cancelOrder: (id, payload) => request(`/api/orders/${id}/cancel`, { method: 'POST', body: payload }),
+  trackOrder: (id) => request(`/api/orders/${id}/track`),
+  updateOrderStatus: (id, payload) => request(`/api/orders/admin/${id}/status`, { method: 'PUT', body: payload }),
+  assignOrderAWB: (id) => request(`/api/orders/admin/${id}/assign-awb`, { method: 'POST' }),
   downloadInvoice: (id) => downloadFile(`/api/orders/${id}/invoice`, `SriKala-Invoice-${id}.pdf`),
+
+  // shipping & logistics
+  calculateShipping: (payload) => request('/api/shipping/calculate', { method: 'POST', body: payload, auth: false }),
+  getPickupLocations: () => request('/api/pickup-locations'),
+  addPickupLocation: (payload) => request('/api/pickup-locations', { method: 'POST', body: payload }),
+  setDefaultPickupLocation: (id) => request(`/api/pickup-locations/${id}/default`, { method: 'PUT' }),
+  deletePickupLocation: (id) => request(`/api/pickup-locations/${id}`, { method: 'DELETE' }),
+  syncPickupLocations: () => request('/api/pickup-locations/sync', { method: 'POST' }),
+
+  // returns & refunds
+  submitReturn: (payload) => request('/api/returns', { method: 'POST', body: payload }),
+  getMyReturns: () => request('/api/returns'),
+  getAllReturns: () => request('/api/returns/admin/all'),
+  updateReturnStatus: (id, payload) => request(`/api/returns/admin/${id}`, { method: 'PUT', body: payload }),
+
+  // settings & admin cms
+  getSettings: () => request('/api/settings', { auth: false }),
+  getSetting: (key) => request(`/api/settings/${key}`, { auth: false }),
+  updateSetting: (key, value) => request(`/api/settings/${key}`, { method: 'PUT', body: { value } }),
+  getAdminMetrics: () => request('/api/admin/metrics'),
+  getAuditLogs: () => request('/api/admin/audit-logs'),
 
   // coupons
   validateCoupon: (payload) => request('/api/coupons/validate', { method: 'POST', body: payload }),
@@ -138,7 +169,6 @@ export const api = {
   createPolicyTier: (payload) => request('/api/cancellation-policy', { method: 'POST', body: payload }),
   updatePolicyTier: (id, payload) => request(`/api/cancellation-policy/${id}`, { method: 'PUT', body: payload }),
   deletePolicyTier: (id) => request(`/api/cancellation-policy/${id}`, { method: 'DELETE' }),
-  cancelOrder: (id) => request(`/api/orders/${id}/cancel`, { method: 'POST' }),
 };
 
 export { BASE_URL };

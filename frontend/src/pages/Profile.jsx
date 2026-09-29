@@ -32,16 +32,60 @@ export default function Profile() {
     setTimeout(() => setSavedMsg(false), 2500);
   }
 
-  async function handleAddAddress(e) {
+  const [editingAddressId, setEditingAddressId] = useState(null);
+
+  async function handleSaveAddress(e) {
     e.preventDefault();
-    if (!form.line1.trim() || !form.city.trim() || !form.pincode.trim()) return;
-    const { address } = await api.addAddress(form);
-    setAddresses((prev) => [address, ...prev]);
-    setForm(emptyAddress);
-    setShowForm(false);
+    if (!form.line1.trim() || !form.city.trim() || !form.state.trim() || !form.pincode.trim()) return;
+    try {
+      if (editingAddressId) {
+        const { address } = await api.updateAddress(editingAddressId, form);
+        setAddresses((prev) => prev.map((a) => (a.id === editingAddressId ? address : a)));
+      } else {
+        const { address } = await api.addAddress(form);
+        setAddresses((prev) => [address, ...prev]);
+      }
+      setForm(emptyAddress);
+      setEditingAddressId(null);
+      setShowForm(false);
+      api.getAddresses().then(({ addresses }) => setAddresses(addresses)).catch(() => {});
+    } catch (err) {
+      alert(err.message || 'Could not save address.');
+    }
+  }
+
+  function handleEditAddress(addr) {
+    setForm({
+      name: addr.name || '',
+      mobile: addr.mobile || '',
+      line1: addr.line1 || '',
+      line2: addr.line2 || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.pincode || '',
+      country: addr.country || 'India',
+      isDefault: Boolean(addr.is_default),
+    });
+    setEditingAddressId(addr.id);
+    setShowForm(true);
+  }
+
+  async function handleSetDefault(id) {
+    try {
+      await api.setDefaultAddress(id);
+      setAddresses((prev) =>
+        prev.map((a) => ({
+          ...a,
+          is_default: a.id === id,
+        })).sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0))
+      );
+    } catch (err) {
+      alert(err.message || 'Could not set default address.');
+    }
   }
 
   async function handleDeleteAddress(id) {
+    if (!window.confirm('Delete this address?')) return;
     await api.deleteAddress(id);
     setAddresses((prev) => prev.filter((a) => a.id !== id));
   }
@@ -159,55 +203,109 @@ export default function Profile() {
             <div className="panel-head">
               <h3>Saved Addresses</h3>
               {!showForm && (
-                <button type="button" className="add-link" onClick={() => setShowForm(true)}>+ Add address</button>
+                <button
+                  type="button"
+                  className="add-link"
+                  onClick={() => {
+                    setForm(emptyAddress);
+                    setEditingAddressId(null);
+                    setShowForm(true);
+                  }}
+                >
+                  + Add address
+                </button>
               )}
             </div>
 
             {addresses.length === 0 && !showForm && <p className="empty">No addresses saved yet.</p>}
 
             {addresses.map((a) => (
-              <div className="saved-address" key={a.id}>
+              <div className={`saved-address ${a.is_default ? 'is-default' : ''}`} key={a.id}>
                 <div>
-                  <strong>{a.name}</strong> · {a.mobile}
-                  <p>{a.line1}, {a.city}, {a.state} — {a.pincode}</p>
+                  <div className="address-title-row">
+                    <strong>{a.name}</strong> · {a.mobile}
+                    {a.is_default && <span className="default-badge">Default</span>}
+                  </div>
+                  <p>
+                    {a.line1}
+                    {a.line2 ? `, ${a.line2}` : ''}
+                    <br />
+                    {a.city}, {a.state} — {a.pincode}, {a.country || 'India'}
+                  </p>
                 </div>
-                <button onClick={() => handleDeleteAddress(a.id)} className="danger">Remove</button>
+                <div className="address-actions">
+                  {!a.is_default && (
+                    <button type="button" onClick={() => handleSetDefault(a.id)} className="action-btn make-default">
+                      Set as default
+                    </button>
+                  )}
+                  <button type="button" onClick={() => handleEditAddress(a)} className="action-btn edit">
+                    Edit
+                  </button>
+                  <button type="button" onClick={() => handleDeleteAddress(a.id)} className="action-btn danger">
+                    Remove
+                  </button>
+                </div>
               </div>
             ))}
 
             {showForm && (
-              <form className="address-form" onSubmit={handleAddAddress}>
+              <form className="address-form" onSubmit={handleSaveAddress}>
+                <h4>{editingAddressId ? 'Edit Address' : 'New Delivery Address'}</h4>
                 <div className="form-row">
                   <label>
-                    Full name
+                    Full name *
                     <input type="text" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
                   </label>
                   <label>
-                    Mobile number
+                    Mobile number *
                     <input type="tel" value={form.mobile} onChange={(e) => setForm((f) => ({ ...f, mobile: e.target.value }))} required />
                   </label>
                 </div>
                 <label>
-                  Address
+                  Address Line 1 (House No, Street, Area) *
                   <input type="text" placeholder="House no, street, area" value={form.line1} onChange={(e) => setForm((f) => ({ ...f, line1: e.target.value }))} required />
+                </label>
+                <label>
+                  Address Line 2 (Landmark, Colony)
+                  <input type="text" placeholder="Landmark or colony (optional)" value={form.line2 || ''} onChange={(e) => setForm((f) => ({ ...f, line2: e.target.value }))} />
                 </label>
                 <div className="form-row three">
                   <label>
-                    City
+                    City *
                     <input type="text" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} required />
                   </label>
                   <label>
-                    State
+                    State *
                     <input type="text" value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} required />
                   </label>
                   <label>
-                    Pincode
+                    Pincode *
                     <input type="text" value={form.pincode} onChange={(e) => setForm((f) => ({ ...f, pincode: e.target.value }))} required />
                   </label>
                 </div>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.isDefault)}
+                    onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
+                  />
+                  <span>Make this my default delivery address</span>
+                </label>
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary">Save Address</button>
-                  <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">
+                    {editingAddressId ? 'Update Address' : 'Save Address'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setShowForm(false);
+                      setEditingAddressId(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
             )}
@@ -258,12 +356,43 @@ export default function Profile() {
           gap: 14px;
           border: 1px solid var(--stone-200);
           border-radius: var(--radius-sm);
-          padding: 14px 16px;
+          padding: 16px 18px;
           margin-bottom: 12px;
           font-size: 13.5px;
+          background: var(--paper);
         }
-        .saved-address p { margin: 4px 0 0; color: var(--ink-600); }
-        .saved-address .danger { background: none; border: none; font-size: 12px; color: #a13a3a; white-space: nowrap; }
+        .saved-address.is-default {
+          border-color: var(--gold-500);
+          background: #fdfaf3;
+        }
+        .address-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .default-badge {
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          background: var(--gold-500);
+          color: #fff;
+          padding: 2px 7px;
+          border-radius: 999px;
+          font-weight: 600;
+        }
+        .saved-address p { margin: 6px 0 0; color: var(--ink-600); line-height: 1.5; }
+        .address-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .action-btn { background: none; border: none; font-size: 12px; cursor: pointer; padding: 0; }
+        .action-btn.make-default { color: var(--gold-600); border-bottom: 1px solid var(--gold-500); }
+        .action-btn.edit { color: var(--maroon-900); text-decoration: underline; }
+        .action-btn.danger { color: #a13a3a; text-decoration: underline; }
+
+        .checkbox-label {
+          display: flex;
+          flex-direction: row !important;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          font-size: 13px !important;
+          color: var(--ink-600);
+        }
+        .checkbox-label input { accent-color: var(--maroon-900); }
 
         .address-form {
           background: var(--stone-100);
@@ -274,6 +403,7 @@ export default function Profile() {
           gap: 14px;
           margin-top: 8px;
         }
+        .address-form h4 { margin: 0 0 4px; font-size: 15px; color: var(--maroon-900); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
         .address-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); }

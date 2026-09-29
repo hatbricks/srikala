@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../data/api';
 
-const emptyForm = { code: '', type: 'percent', value: '', minOrder: '', expiresAt: '', active: true };
+const emptyForm = {
+  code: '',
+  type: 'percent',
+  value: '',
+  minOrder: '',
+  maxDiscount: '',
+  startDate: '',
+  expiresAt: '',
+  usageLimit: '',
+  perUserLimit: 1,
+  firstOrderOnly: false,
+  active: true,
+};
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
@@ -28,7 +40,12 @@ export default function AdminCoupons() {
         type: form.type,
         value: Number(form.value),
         minOrder: Number(form.minOrder) || 0,
+        maxDiscount: form.maxDiscount ? Number(form.maxDiscount) : null,
+        startDate: form.startDate ? new Date(form.startDate).toISOString() : null,
         expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
+        usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
+        perUserLimit: Number(form.perUserLimit) || 1,
+        firstOrderOnly: Boolean(form.firstOrderOnly),
         active: form.active,
       });
       setForm(emptyForm);
@@ -59,15 +76,18 @@ export default function AdminCoupons() {
 
   function describe(c) {
     const amount = c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off`;
+    const max = c.type === 'percent' && c.max_discount ? ` (up to ₹${c.max_discount})` : '';
     const min = c.min_order > 0 ? ` on orders above ₹${c.min_order}` : '';
-    return amount + min;
+    const first = c.first_order_only ? ' · 1st order only' : '';
+    const limit = c.usage_limit ? ` · Max ${c.usage_limit} uses` : '';
+    return amount + max + min + first + limit;
   }
 
   return (
     <div>
       <div className="admin-page-head">
         <h1>Coupons</h1>
-        <p>Create discount codes for checkout. Each coupon can be used once per customer account — enforced automatically once a customer's payment for that order goes through.</p>
+        <p>Create discount codes for checkout. Enforce usage limits, date windows, minimum order values, and first-order privileges automatically.</p>
       </div>
 
       {error && <p className="admin-error">{error}</p>}
@@ -81,7 +101,7 @@ export default function AdminCoupons() {
             <input
               type="text"
               value={form.code}
-              placeholder="e.g. WELCOME10"
+              placeholder="e.g. FESTIVE20"
               onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
               required
             />
@@ -108,6 +128,19 @@ export default function AdminCoupons() {
             </label>
           </div>
 
+          {form.type === 'percent' && (
+            <label>
+              Max discount cap (₹) <span className="opt-tag">optional</span>
+              <input
+                type="number"
+                min="1"
+                value={form.maxDiscount}
+                placeholder="e.g. 1500 (leave blank for unlimited)"
+                onChange={(e) => setForm((f) => ({ ...f, maxDiscount: e.target.value }))}
+              />
+            </label>
+          )}
+
           <div className="form-row">
             <label>
               Minimum order (₹)
@@ -120,6 +153,26 @@ export default function AdminCoupons() {
               />
             </label>
             <label>
+              Limit per customer
+              <input
+                type="number"
+                min="1"
+                value={form.perUserLimit}
+                onChange={(e) => setForm((f) => ({ ...f, perUserLimit: e.target.value }))}
+              />
+            </label>
+          </div>
+
+          <div className="form-row">
+            <label>
+              Valid from
+              <input
+                type="date"
+                value={form.startDate}
+                onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+              />
+            </label>
+            <label>
               Expires on
               <input
                 type="date"
@@ -128,6 +181,26 @@ export default function AdminCoupons() {
               />
             </label>
           </div>
+
+          <label>
+            Total redemption cap <span className="opt-tag">optional</span>
+            <input
+              type="number"
+              min="1"
+              value={form.usageLimit}
+              placeholder="e.g. 50 (leave empty for unlimited)"
+              onChange={(e) => setForm((f) => ({ ...f, usageLimit: e.target.value }))}
+            />
+          </label>
+
+          <label className="checkbox-row">
+            <input
+              type="checkbox"
+              checked={form.firstOrderOnly}
+              onChange={(e) => setForm((f) => ({ ...f, firstOrderOnly: e.target.checked }))}
+            />
+            Valid for customer&apos;s first order only
+          </label>
 
           <label className="checkbox-row">
             <input

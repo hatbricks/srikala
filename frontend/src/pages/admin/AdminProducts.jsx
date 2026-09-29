@@ -3,7 +3,32 @@ import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
 
-const emptyForm = { name: '', category: '', price: '', mrp: '', discountPercent: '', stock: '', description: '', image: '', images: [], active: true };
+const emptyForm = {
+  name: '',
+  category: '',
+  price: '',
+  mrp: '',
+  discountPercent: '',
+  stock: '',
+  sku: '',
+  shortDescription: '',
+  description: '',
+  weightGrams: 500,
+  lengthCm: 30,
+  widthCm: 20,
+  heightCm: 5,
+  returnAvailable: true,
+  returnWindowHours: 24,
+  cancellationAvailable: true,
+  tags: '',
+  seoTitle: '',
+  seoDescription: '',
+  slug: '',
+  image: '',
+  images: [],
+  active: true,
+  variants: [],
+};
 
 // Keeps MRP / discount % / price in sync with each other, whichever one the
 // admin actually typed into. Rounds to whole rupees since that's what the
@@ -95,19 +120,7 @@ export default function AdminProducts() {
     if (fileInput.current) fileInput.current.value = '';
   }
 
-  // Any two of MRP / Discount % / Price can be filled in, in any order,
-  // and the third fills itself in. MRP is the "anchor" when present
-  // (matches how pricing displays on the site — MRP struck through next
-  // to Price) — but which field gets computed is decided ONCE per typing
-  // session in a field, then stuck to for the rest of that session. Without
-  // that stickiness, typing a two-digit discount (say "15") would recompute
-  // MRP after the first keystroke, and then — because MRP now has a value —
-  // the SECOND keystroke would see "MRP is present" and flip to recomputing
-  // Price instead, silently overwriting whatever price was typed. Sticking
-  // to the same target field for as long as the admin keeps typing in the
-  // same box avoids that flip; it only re-decides once they move to a
-  // different field.
-  const pricingEditRef = useRef(null); // { editing: 'mrp' | 'discountPercent' | 'price', target: string | null }
+  const pricingEditRef = useRef(null);
 
   function computeField(target, f) {
     if (target === 'price') return priceFromDiscount(f.mrp, f.discountPercent);
@@ -123,8 +136,6 @@ export default function AdminProducts() {
       if (pricingEditRef.current?.editing === editing) {
         target = pricingEditRef.current.target;
       } else {
-        // Freshly decide, based on which of the OTHER two fields already
-        // have a value — MRP wins as the anchor when both are candidates.
         if (editing === 'mrp') target = next.discountPercent !== '' ? 'price' : (next.price !== '' ? 'discountPercent' : null);
         else if (editing === 'discountPercent') target = next.mrp !== '' ? 'price' : (next.price !== '' ? 'mrp' : null);
         else target = next.mrp !== '' ? 'discountPercent' : (next.discountPercent !== '' ? 'mrp' : null);
@@ -150,6 +161,40 @@ export default function AdminProducts() {
     handlePricingFieldChange('price', value);
   }
 
+  function addVariant() {
+    setForm((f) => ({
+      ...f,
+      variants: [
+        ...(f.variants || []),
+        {
+          colorName: '',
+          colorCode: '#8B0000',
+          sku: '',
+          stock: Number(f.stock) || 5,
+          price: f.price || '',
+          mrp: f.mrp || '',
+          weightGrams: f.weightGrams || 500,
+          active: true,
+        },
+      ],
+    }));
+  }
+
+  function updateVariantField(index, field, value) {
+    setForm((f) => {
+      const next = [...(f.variants || [])];
+      next[index] = { ...next[index], [field]: value };
+      return { ...f, variants: next };
+    });
+  }
+
+  function removeVariant(index) {
+    setForm((f) => ({
+      ...f,
+      variants: (f.variants || []).filter((_, i) => i !== index),
+    }));
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name.trim() || !form.category) return;
@@ -161,10 +206,24 @@ export default function AdminProducts() {
       price: Number(form.price) || 0,
       mrp: Number(form.mrp) || Number(form.price) || 0,
       stock: Number(form.stock) || 0,
+      sku: form.sku,
+      shortDescription: form.shortDescription,
       description: form.description,
+      weightGrams: Number(form.weightGrams) || 500,
+      lengthCm: Number(form.lengthCm) || 30,
+      widthCm: Number(form.widthCm) || 20,
+      heightCm: Number(form.heightCm) || 5,
+      returnAvailable: Boolean(form.returnAvailable),
+      returnWindowHours: Number(form.returnWindowHours) || 24,
+      cancellationAvailable: Boolean(form.cancellationAvailable),
+      tags: form.tags ? (Array.isArray(form.tags) ? form.tags : form.tags.split(',').map((t) => t.trim()).filter(Boolean)) : [],
+      seoTitle: form.seoTitle,
+      seoDescription: form.seoDescription,
+      slug: form.slug,
       image: form.image || 'https://images.unsplash.com/photo-1717585679395-bbe39b5fb6bc?auto=format&fit=crop&w=800&q=80',
       images: form.images || [],
       active: form.active !== false,
+      variants: form.variants || [],
     };
 
     try {
@@ -180,14 +239,6 @@ export default function AdminProducts() {
     }
   }
 
-  // The product list is deliberately fetched without gallery images (see
-  // the comment in server/src/routes/products.js) to keep the collection
-  // page fast, so `product.images` here is always empty even for products
-  // that do have a gallery. Fill the form from the list immediately for a
-  // snappy feel, then fetch the single full product (which does include
-  // the gallery) and patch that in — otherwise saving after editing even
-  // an unrelated field like price would submit `images: []` and silently
-  // wipe out the product's existing gallery photos.
   async function handleEdit(product) {
     pricingEditRef.current = null;
     setForm({
@@ -197,18 +248,36 @@ export default function AdminProducts() {
       mrp: product.mrp,
       discountPercent: discountFromPrices(product.mrp, product.price),
       stock: product.stock,
-      description: product.description,
+      sku: product.sku || '',
+      shortDescription: product.shortDescription || '',
+      description: product.description || '',
+      weightGrams: product.weightGrams ?? 500,
+      lengthCm: product.lengthCm ?? 30,
+      widthCm: product.widthCm ?? 20,
+      heightCm: product.heightCm ?? 5,
+      returnAvailable: product.returnAvailable ?? true,
+      returnWindowHours: product.returnWindowHours ?? 24,
+      cancellationAvailable: product.cancellationAvailable ?? true,
+      tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
+      seoTitle: product.seoTitle || '',
+      seoDescription: product.seoDescription || '',
+      slug: product.slug || '',
       image: product.image,
-      images: [],
+      images: product.images || [],
       active: product.active,
+      variants: product.variants || [],
     });
     setEditingId(product.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       const { product: full } = await api.getProduct(product.id);
-      setForm((f) => (f.images.length ? f : { ...f, images: full.images || [] }));
+      setForm((f) => ({
+        ...f,
+        images: full.images || f.images,
+        variants: full.variants || f.variants,
+      }));
     } catch {
-      /* list data already populated the rest of the form; gallery just stays empty to edit */
+      /* list data already populated form */
     }
   }
 
@@ -327,13 +396,34 @@ export default function AdminProducts() {
               )}
             </div>
 
+            <div className="form-row">
+              <label>
+                SKU
+                <input
+                  type="text"
+                  value={form.sku}
+                  placeholder="e.g. SK-KANJI-001"
+                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                />
+              </label>
+              <label>
+                Short description
+                <input
+                  type="text"
+                  value={form.shortDescription}
+                  placeholder="One-line summary for cards"
+                  onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
+                />
+              </label>
+            </div>
+
             <label>
-              Description
+              Full Description
               <textarea
                 rows="3"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Weave, colour, occasion..."
+                placeholder="Weave, colour, occasion, blouse details, care instructions..."
               />
             </label>
           </div>
@@ -352,26 +442,197 @@ export default function AdminProducts() {
               </label>
             </div>
 
-            <label>
-              Price (₹) <span className="required-mark">*</span>
-              <input type="number" min="0" value={form.price} onChange={(e) => handlePriceChange(e.target.value)} required />
-            </label>
-
-            <label>
-              Stock <span className="required-mark">*</span>
-              <input
-                type="number"
-                min="0"
-                value={form.stock}
-                placeholder="e.g. 25"
-                onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                required
-              />
-            </label>
+            <div className="form-row">
+              <label>
+                Price (₹) <span className="required-mark">*</span>
+                <input type="number" min="0" value={form.price} onChange={(e) => handlePriceChange(e.target.value)} required />
+              </label>
+              <label>
+                Total Stock <span className="required-mark">*</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.stock}
+                  placeholder="e.g. 25"
+                  onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                  required
+                />
+              </label>
+            </div>
             {stockNum === 0 && (
               <p className="stock-warning">
-                Stock is set to 0 — this product will show as <strong>Out of Stock</strong> on the site the moment you save it. Enter the actual quantity available if that's not intended.
+                Stock is set to 0 — this product will show as <strong>Out of Stock</strong> on the site the moment you save it.
               </p>
+            )}
+          </div>
+
+          <div className="form-section">
+            <p className="section-label">Shipping &amp; dimensions</p>
+            <p className="field-hint">Used by Shiprocket to determine courier availability and dynamic shipping rates.</p>
+            <div className="form-row">
+              <label>
+                Weight (grams) *
+                <input
+                  type="number"
+                  min="50"
+                  step="50"
+                  value={form.weightGrams}
+                  placeholder="e.g. 600"
+                  onChange={(e) => setForm((f) => ({ ...f, weightGrams: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Length (cm)
+                <input
+                  type="number"
+                  min="1"
+                  value={form.lengthCm}
+                  placeholder="e.g. 30"
+                  onChange={(e) => setForm((f) => ({ ...f, lengthCm: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="form-row">
+              <label>
+                Width (cm)
+                <input
+                  type="number"
+                  min="1"
+                  value={form.widthCm}
+                  placeholder="e.g. 20"
+                  onChange={(e) => setForm((f) => ({ ...f, widthCm: e.target.value }))}
+                />
+              </label>
+              <label>
+                Height (cm)
+                <input
+                  type="number"
+                  min="1"
+                  value={form.heightCm}
+                  placeholder="e.g. 5"
+                  onChange={(e) => setForm((f) => ({ ...f, heightCm: e.target.value }))}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <p className="section-label">Return &amp; cancellation policies</p>
+            <div className="policy-checkboxes">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.returnAvailable)}
+                  onChange={(e) => setForm((f) => ({ ...f, returnAvailable: e.target.checked }))}
+                />
+                <span>Return Available for this product</span>
+              </label>
+
+              {form.returnAvailable && (
+                <label className="return-window-select">
+                  Return Window
+                  <select
+                    value={form.returnWindowHours}
+                    onChange={(e) => setForm((f) => ({ ...f, returnWindowHours: Number(e.target.value) }))}
+                  >
+                    <option value={8}>8 hours after delivery</option>
+                    <option value={24}>24 hours after delivery (standard)</option>
+                    <option value={48}>48 hours after delivery</option>
+                    <option value={72}>72 hours after delivery</option>
+                    <option value={168}>7 days after delivery</option>
+                  </select>
+                </label>
+              )}
+
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.cancellationAvailable)}
+                  onChange={(e) => setForm((f) => ({ ...f, cancellationAvailable: e.target.checked }))}
+                />
+                <span>Cancellation Allowed before dispatch</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <div className="section-head-row">
+              <div>
+                <p className="section-label">Product color variants</p>
+                <p className="field-hint">Add selectable color options with their own inventory, SKU, and color swatch.</p>
+              </div>
+              <button type="button" className="btn btn-outline btn-sm add-variant-btn" onClick={addVariant}>
+                + Add Color
+              </button>
+            </div>
+
+            {(!form.variants || form.variants.length === 0) ? (
+              <p className="empty-hint">No color variants added yet. Customers will buy this as a single product.</p>
+            ) : (
+              <div className="variants-list">
+                {form.variants.map((v, i) => (
+                  <div className="variant-item-card" key={i}>
+                    <div className="variant-top-row">
+                      <div className="color-swatch-picker">
+                        <input
+                          type="color"
+                          value={v.colorCode || '#8B0000'}
+                          onChange={(e) => updateVariantField(i, 'colorCode', e.target.value)}
+                          title="Pick swatch color"
+                        />
+                        <span className="swatch-code">{v.colorCode || '#8B0000'}</span>
+                      </div>
+                      <input
+                        type="text"
+                        className="variant-name-input"
+                        placeholder="Color Name (e.g. Royal Maroon)"
+                        value={v.colorName || ''}
+                        onChange={(e) => updateVariantField(i, 'colorName', e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="variant-remove-btn"
+                        onClick={() => removeVariant(i)}
+                        title="Remove color"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="variant-fields-grid">
+                      <label>
+                        SKU
+                        <input
+                          type="text"
+                          placeholder="e.g. SK-P1-RED"
+                          value={v.sku || ''}
+                          onChange={(e) => updateVariantField(i, 'sku', e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Stock
+                        <input
+                          type="number"
+                          min="0"
+                          value={v.stock ?? ''}
+                          onChange={(e) => updateVariantField(i, 'stock', Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        Price (₹) <span className="opt-tag">optional</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Inherit"
+                          value={v.price ?? ''}
+                          onChange={(e) => updateVariantField(i, 'price', e.target.value ? Number(e.target.value) : '')}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
@@ -408,6 +669,48 @@ export default function AdminProducts() {
               {galleryBusy ? 'Uploading…' : '+ Add gallery photo'}
             </button>
             <input ref={galleryInput} type="file" accept="image/*" multiple hidden onChange={handleGalleryFiles} />
+          </div>
+
+          <div className="form-section">
+            <p className="section-label">SEO &amp; discovery</p>
+            <label>
+              Tags (comma separated)
+              <input
+                type="text"
+                placeholder="e.g. bridal, festive, gold zari, pure silk"
+                value={form.tags}
+                onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+              />
+            </label>
+            <div className="form-row">
+              <label>
+                SEO Title
+                <input
+                  type="text"
+                  placeholder="Custom title tag for search engines"
+                  value={form.seoTitle}
+                  onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))}
+                />
+              </label>
+              <label>
+                URL Slug
+                <input
+                  type="text"
+                  placeholder="e.g. purple-kanjivaram-gold-zari"
+                  value={form.slug}
+                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                />
+              </label>
+            </div>
+            <label>
+              SEO Meta Description
+              <textarea
+                rows="2"
+                placeholder="Brief summary for Google search results"
+                value={form.seoDescription}
+                onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
+              />
+            </label>
           </div>
 
           <div className="form-actions">
@@ -542,6 +845,63 @@ export default function AdminProducts() {
           line-height: 1.6;
           margin: 0;
         }
+
+        .policy-checkboxes { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-700); cursor: pointer; }
+        .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--maroon-900); }
+        .return-window-select { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-600); margin-left: 24px; }
+        .return-window-select select { font-size: 12.5px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--stone-300); }
+
+        .section-head-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .add-variant-btn { padding: 4px 12px; font-size: 12px; }
+        .variants-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+        .variant-item-card {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .variant-top-row { display: flex; align-items: center; gap: 10px; }
+        .color-swatch-picker {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #fff;
+          border: 1px solid var(--stone-300);
+          border-radius: 6px;
+          padding: 3px 8px;
+        }
+        .color-swatch-picker input[type="color"] {
+          width: 24px;
+          height: 24px;
+          border: none;
+          padding: 0;
+          background: none;
+          cursor: pointer;
+        }
+        .swatch-code { font-size: 11px; font-family: monospace; color: var(--ink-600); }
+        .variant-name-input { flex: 1; font-size: 13px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--stone-300); }
+        .variant-remove-btn {
+          background: none;
+          border: none;
+          color: #a13a3a;
+          font-size: 14px;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+        .variant-remove-btn:hover { background: #f6e3e3; }
+        .variant-fields-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 10px;
+        }
+        .variant-fields-grid label { font-size: 11.5px; display: flex; flex-direction: column; gap: 4px; color: var(--ink-600); }
+        .variant-fields-grid input { font-size: 12.5px; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--stone-300); }
+        .opt-tag { font-size: 10px; color: var(--ink-400); font-weight: normal; }
 
         .preview-thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
         .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }

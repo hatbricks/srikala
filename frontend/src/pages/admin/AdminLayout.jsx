@@ -10,8 +10,11 @@ const links = [
   { to: '/admin/categories', label: 'Categories' },
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/orders', label: 'Orders' },
+  { to: '/admin/returns', label: 'Returns & Refunds' },
+  { to: '/admin/pickup-locations', label: 'Pickup Warehouses' },
   { to: '/admin/coupons', label: 'Coupons' },
   { to: '/admin/cancellation-policy', label: 'Cancellation Policy' },
+  { to: '/admin/settings', label: 'Store Settings' },
   { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/testimonials', label: 'Testimonials' },
 ];

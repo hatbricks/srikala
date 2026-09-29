@@ -27,10 +27,32 @@ export function verifyPaymentSignature({ orderId, paymentId, signature }) {
   return expected === signature;
 }
 
-// Verifies Razorpay webhook signatures (X-Razorpay-Signature header), for
-// the optional /api/orders/webhook route — useful as a backstop in case the
-// client never calls /verify (closed tab, network drop, etc).
+// Verifies Razorpay webhook signatures (X-Razorpay-Signature header)
 export function verifyWebhookSignature(rawBody, signatureHeader, webhookSecret) {
-  const expected = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+  const secret = webhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret || !signatureHeader) return false;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
   return expected === signatureHeader;
+}
+
+// Issue a real refund via Razorpay
+export async function createRazorpayRefund({ paymentId, amountInRupees, notes = {} }) {
+  if (!razorpayEnabled || !razorpay) {
+    console.warn('[razorpay] refund requested in simulated mode (no live keys):', { paymentId, amountInRupees });
+    return {
+      id: `rfnd_sim_${Date.now()}`,
+      payment_id: paymentId,
+      amount: Math.round(Number(amountInRupees) * 100),
+      currency: 'INR',
+      status: 'processed',
+      simulated: true,
+    };
+  }
+
+  const amountPaise = Math.round(Number(amountInRupees) * 100);
+  const refund = await razorpay.payments.refund(paymentId, {
+    amount: amountPaise,
+    notes,
+  });
+  return refund;
 }

@@ -144,13 +144,95 @@ async function main() {
   console.log(`Seeded ${categories.length} categories`);
 
   for (const p of products) {
+    const sku = `SK-${p.id.toUpperCase()}`;
     await pool.query(
-      `INSERT INTO products (id,name,category_id,price,mrp,stock,description,image) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-       ON CONFLICT (id) DO UPDATE SET name=$2, category_id=$3, price=$4, mrp=$5, stock=$6, description=$7, image=$8`,
-      [p.id, p.name, p.category, p.price, p.mrp, p.stock, p.description, p.image]
+      `INSERT INTO products (id,name,category_id,price,mrp,stock,description,image,sku,weight_grams,return_available,return_window_hours,cancellation_available)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,650,TRUE,24,TRUE)
+       ON CONFLICT (id) DO UPDATE SET
+         name=$2, category_id=$3, price=$4, mrp=$5, stock=$6, description=$7, image=$8, sku=$9`,
+      [p.id, p.name, p.category, p.price, p.mrp, p.stock, p.description, p.image, sku]
+    );
+
+    // Seed sample color variants if none exist for this product
+    const { rows: existingVariants } = await pool.query('SELECT id FROM product_variants WHERE product_id = $1 LIMIT 1', [p.id]);
+    if (!existingVariants.length) {
+      const colors = [
+        { name: 'Royal Crimson', code: '#8B0000', stock: Math.max(1, Math.floor(p.stock / 2)) },
+        { name: 'Peacock Teal', code: '#005f73', stock: Math.max(1, Math.ceil(p.stock / 2)) },
+        { name: 'Antique Gold', code: '#c58b38', stock: Math.max(1, p.stock) },
+      ];
+      for (const [idx, c] of colors.entries()) {
+        await pool.query(
+          `INSERT INTO product_variants (product_id, color_name, color_code, sku, price, mrp, stock, weight_grams)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 650)`,
+          [p.id, c.name, c.code, `${sku}-${idx + 1}`, p.price, p.mrp, c.stock]
+        );
+      }
+    }
+  }
+  console.log(`Seeded ${products.length} products and their color variants`);
+
+  // Default Shiprocket Pickup Location
+  const { rows: existingPickup } = await pool.query('SELECT id FROM pickup_locations LIMIT 1');
+  if (!existingPickup.length) {
+    await pool.query(
+      `INSERT INTO pickup_locations (
+         pickup_location_name, name, email, phone, address, address_2, city, state, pincode, country, is_default, active
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE,TRUE)`,
+      [
+        'Primary Hub',
+        'Sri Kala Logistics',
+        'orders@srikala.com',
+        '9876543210',
+        '12 Gandhi Road, Heritage Quarter',
+        'Near Sannadhi Street',
+        'Kanchipuram',
+        'Tamil Nadu',
+        '631501',
+        'India'
+      ]
+    );
+    console.log('Seeded default Shiprocket pickup location');
+  }
+
+  // Global Settings
+  const defaultSettings = [
+    {
+      key: 'shipping',
+      value: {
+        mode: 'shiprocket', // 'shiprocket' | 'flat'
+        fallbackFee: 100,
+        freeShippingThreshold: 5000,
+        packagingAllowanceGrams: 100,
+        defaultPickupPincode: '631501',
+      },
+    },
+    {
+      key: 'returns',
+      value: {
+        globalEnabled: true,
+        defaultWindowHours: 24,
+        allowPhotoUpload: true,
+        policyNote: 'Return request must be placed within 24 hours of delivery. Saree must be unworn with original tags and fold intact.',
+      },
+    },
+    {
+      key: 'cancellations',
+      value: {
+        globalEnabled: true,
+        allowBeforeShipment: true,
+      },
+    },
+  ];
+
+  for (const s of defaultSettings) {
+    await pool.query(
+      `INSERT INTO settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = $2`,
+      [s.key, JSON.stringify(s.value)]
     );
   }
-  console.log(`Seeded ${products.length} products`);
+  console.log('Seeded global store settings');
 
   for (const s of homeSections) {
     await pool.query(

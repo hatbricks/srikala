@@ -7,11 +7,8 @@ import { useCart } from '../context/CartContext';
 import { api } from '../data/api';
 import { formatINR } from '../data/store';
 
-const emptyAddress = { name: '', mobile: '', line1: '', city: '', state: '', pincode: '' };
+const emptyAddress = { name: '', mobile: '', line1: '', line2: '', city: '', state: '', pincode: '', country: 'India', isDefault: false };
 
-// Fallback only, used until the real settings load from the CMS (or if
-// that fetch fails) — the actual charge always comes from the server's
-// own order-creation response, never from this constant.
 const DEFAULT_SHIPPING = { fee: 100, freeThreshold: 0 };
 
 function loadRazorpayScript() {
@@ -41,20 +38,27 @@ export default function Checkout() {
   const [shippingSettings, setShippingSettings] = useState(DEFAULT_SHIPPING);
   const [couponError, setCouponError] = useState('');
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [shippingEstimate, setShippingEstimate] = useState(null);
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
+  const [shippingError, setShippingError] = useState('');
   const navigate = useNavigate();
 
   const discount = coupon?.discount || 0;
   const qualifiesForFreeShipping = shippingSettings.freeThreshold > 0 && subtotal >= shippingSettings.freeThreshold;
-  const shippingFee = qualifiesForFreeShipping ? 0 : shippingSettings.fee;
+  const effectiveShippingFee = shippingEstimate ? shippingEstimate.fee : (qualifiesForFreeShipping ? 0 : shippingSettings.fee);
   const amountToFreeShipping = shippingSettings.freeThreshold > 0 ? Math.max(shippingSettings.freeThreshold - subtotal, 0) : 0;
-  const total = Math.max(subtotal - discount, 0) + shippingFee;
+  const total = Math.max(subtotal - discount, 0) + effectiveShippingFee;
 
   async function handleApplyCoupon() {
     if (!couponInput.trim()) return;
     setApplyingCoupon(true);
     setCouponError('');
     try {
-      const result = await api.validateCoupon({ code: couponInput.trim(), subtotal });
+      const result = await api.validateCoupon({
+        code: couponInput.trim(),
+        subtotal,
+        items: items.map((i) => ({ productId: i.id, qty: i.qty })),
+      });
       setCoupon({ code: result.code, discount: result.discount });
     } catch (err) {
       setCoupon(null);
@@ -71,10 +75,6 @@ export default function Checkout() {
   }
 
   useEffect(() => {
-    // Only shipping_settings is needed here — see the comment in
-    // ProductDetail.jsx for why fetching the full home-sections payload
-    // (hero video included, ~15MB) on a page that has nothing to do with
-    // Home is worth avoiding.
     api.getHomeSection('shipping_settings').then(({ section }) => {
       if (section?.content) {
         const { fee, freeThreshold } = section.content;
@@ -89,8 +89,10 @@ export default function Checkout() {
       .getAddresses()
       .then(({ addresses }) => {
         setAddresses(addresses);
-        if (addresses.length) setSelectedId(addresses[0].id);
-        else {
+        if (addresses.length) {
+          const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
+          setSelectedId(defaultAddr.id);
+        } else {
           setForm((f) => ({ ...f, name: user?.name || '', mobile: user?.mobile || '' }));
           setShowForm(true);
         }
@@ -98,12 +100,39 @@ export default function Checkout() {
       .catch(() => setShowForm(true));
   }, [user]);
 
+  // Dynamically calculate shipping when address or cart changes
+  useEffect(() => {
+    const address = addresses.find((a) => a.id === selectedId);
+    if (address?.pincode && /^[1-9][0-9]{5}$/.test(address.pincode) && items.length > 0) {
+      setCalculatingShipping(true);
+      setShippingError('');
+      api
+        .calculateShipping({
+          pincode: address.pincode,
+          items: items.map((i) => ({ productId: i.id, variantId: i.variantId, qty: i.qty })),
+          subtotal,
+        })
+        .then((res) => {
+          setShippingEstimate({
+            fee: res.shippingFee,
+            etd: res.estimatedDays,
+            courierName: res.courierName,
+            freeShipping: res.freeShipping,
+          });
+        })
+        .catch((err) => {
+          setShippingError(err.message || 'Courier serviceability check failed.');
+        })
+        .finally(() => setCalculatingShipping(false));
+    }
+  }, [selectedId, addresses, items, subtotal]);
+
   async function handleSaveAddress(e) {
     e.preventDefault();
     if (!form.line1.trim() || !form.city.trim() || !form.pincode.trim()) return;
     try {
       const { address } = await api.addAddress(form);
-      setAddresses((prev) => [address, ...prev]);
+      setAddresses((prev) => (address.is_default ? [address, ...prev.map((a) => ({ ...a, is_default: false }))] : [address, ...prev]));
       setSelectedId(address.id);
       setShowForm(false);
       setForm(emptyAddress);
@@ -122,18 +151,25 @@ export default function Checkout() {
       await loadRazorpayScript();
 
       const orderPayload = {
-        items: items.map((i) => ({ productId: i.id, qty: i.qty })),
+        items: items.map((i) => ({
+          productId: i.id,
+          variantId: i.variantId || undefined,
+          qty: i.qty,
+        })),
         address: {
           name: address.name,
           mobile: address.mobile,
           line1: address.line1,
+          line2: address.line2 || '',
           city: address.city,
           state: address.state,
           pincode: address.pincode,
+          country: address.country || 'India',
         },
         couponCode: coupon?.code || undefined,
+        shippingFee: effectiveShippingFee,
       };
-      const { orderId: localOrderId, razorpayOrderId, amount, currency, keyId } = await api.createOrder(orderPayload);
+      const { orderId: localOrderId, orderNumber, razorpayOrderId, amount, currency, keyId } = await api.createOrder(orderPayload);
 
       const rzp = new window.Razorpay({
         key: keyId,
@@ -271,10 +307,13 @@ export default function Checkout() {
             <h3 className="items-heading">Items</h3>
             <div className="checkout-items">
               {items.map((item) => (
-                <div className="checkout-item" key={item.id}>
+                <div className="checkout-item" key={item.key || item.id}>
                   <img src={item.image} alt={item.name} />
                   <div>
                     <p>{item.name}</p>
+                    {item.variantName && (
+                      <span className="checkout-variant-tag">Color: {item.variantName}</span>
+                    )}
                     <span>Qty {item.qty}</span>
                   </div>
                   <span className="item-total">{formatINR(item.price * item.qty)}</span>
@@ -317,8 +356,17 @@ export default function Checkout() {
             {discount > 0 && (
               <div className="summary-row discount-row"><span>Coupon discount</span><span>−{formatINR(discount)}</span></div>
             )}
-            <div className="summary-row"><span>Shipping</span><span>{shippingFee === 0 ? 'Free' : formatINR(shippingFee)}</span></div>
-            {amountToFreeShipping > 0 && (
+            <div className="summary-row">
+              <span>Shipping {shippingEstimate?.courierName ? `(${shippingEstimate.courierName})` : ''}</span>
+              <span>{calculatingShipping ? 'Calculating…' : effectiveShippingFee === 0 ? 'Free' : formatINR(effectiveShippingFee)}</span>
+            </div>
+            {shippingEstimate?.etd && (
+              <p className="shipping-etd-nudge">Estimated delivery: {shippingEstimate.etd}</p>
+            )}
+            {shippingError && (
+              <p className="shipping-error-nudge">{shippingError}</p>
+            )}
+            {amountToFreeShipping > 0 && effectiveShippingFee > 0 && (
               <p className="free-shipping-nudge">
                 Add {formatINR(amountToFreeShipping)} more to get free shipping.
               </p>

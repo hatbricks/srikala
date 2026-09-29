@@ -39,8 +39,8 @@ export default function Login() {
     setError('');
     setBusy(true);
     try {
-      const { needsMobile } = await googleLogin(credential);
-      if (needsMobile) {
+      const res = await googleLogin(credential);
+      if (res?.needsProfile || res?.needsMobile) {
         navigate('/complete-profile', { replace: true, state: { from: redirectTo } });
       } else {
         navigate(redirectTo, { replace: true });

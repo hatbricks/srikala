@@ -5,35 +5,82 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 const router = Router();
 
 function computeDiscount(coupon, subtotal) {
-  const raw = coupon.type === 'flat' ? coupon.value : Math.round((subtotal * coupon.value) / 100);
+  let raw = coupon.type === 'flat' ? Number(coupon.value) : Math.round((subtotal * Number(coupon.value)) / 100);
+  if (coupon.type === 'percent' && coupon.max_discount && Number(coupon.max_discount) > 0) {
+    raw = Math.min(raw, Number(coupon.max_discount));
+  }
   return Math.max(0, Math.min(raw, subtotal)); // never discount below ₹0 or more than the subtotal
 }
 
-async function findUsableCoupon(code, userId) {
+async function findUsableCoupon(code, userId, items = []) {
   const { rows } = await query('SELECT * FROM coupons WHERE code = $1', [String(code || '').trim().toUpperCase()]);
   const coupon = rows[0];
   if (!coupon) return { error: 'Invalid coupon code.' };
   if (!coupon.active) return { error: 'This coupon is no longer active.' };
-  if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return { error: 'This coupon has expired.' };
 
-  const { rows: used } = await query(
-    'SELECT 1 FROM coupon_redemptions WHERE coupon_id = $1 AND user_id = $2',
+  const now = new Date();
+  if (coupon.start_date && new Date(coupon.start_date) > now) {
+    return { error: 'This coupon is not active yet.' };
+  }
+  if (coupon.expires_at && new Date(coupon.expires_at) < now) {
+    return { error: 'This coupon has expired.' };
+  }
+
+  // Global usage limit
+  if (coupon.usage_limit && coupon.usage_limit > 0) {
+    const { rows: totalUsed } = await query(
+      'SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_id = $1',
+      [coupon.id]
+    );
+    if (parseInt(totalUsed[0]?.count || 0, 10) >= coupon.usage_limit) {
+      return { error: 'This coupon usage limit has been reached.' };
+    }
+  }
+
+  // Per user limit
+  const perUserLimit = coupon.per_user_limit || 1;
+  const { rows: userUsed } = await query(
+    'SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_id = $1 AND user_id = $2',
     [coupon.id, userId]
   );
-  if (used.length) return { error: "You've already used this coupon." };
+  if (parseInt(userUsed[0]?.count || 0, 10) >= perUserLimit) {
+    return { error: perUserLimit === 1 ? "You've already used this coupon." : `You have reached the limit of ${perUserLimit} uses for this coupon.` };
+  }
+
+  // First order only
+  if (coupon.first_order_only) {
+    const { rows: userOrders } = await query(
+      "SELECT 1 FROM orders WHERE user_id = $1 AND payment_status = 'paid' LIMIT 1",
+      [userId]
+    );
+    if (userOrders.length > 0) {
+      return { error: 'This coupon is only valid on your first order.' };
+    }
+  }
+
+  // Item/category applicability restrictions
+  const appProds = Array.isArray(coupon.applicable_products) ? coupon.applicable_products : [];
+  const appCats = Array.isArray(coupon.applicable_categories) ? coupon.applicable_categories : [];
+  if (items && items.length > 0 && (appProds.length > 0 || appCats.length > 0)) {
+    const hasMatch = items.some((item) => {
+      const matchProd = appProds.length === 0 || appProds.includes(item.productId || item.id);
+      const matchCat = appCats.length === 0 || appCats.includes(item.category || item.categoryId);
+      return matchProd && matchCat;
+    });
+    if (!hasMatch) {
+      return { error: 'This coupon is not applicable to any items in your bag.' };
+    }
+  }
 
   return { coupon };
 }
 
-// POST /api/coupons/validate — checked when the customer clicks "Apply" on
-// the cart/checkout page. Doesn't reserve or redeem anything yet; the
-// redemption only gets recorded once payment is confirmed (see
-// orders.js /verify), so re-checking the same code before paying is fine.
+// POST /api/coupons/validate
 router.post('/validate', requireAuth, async (req, res) => {
-  const { code, subtotal } = req.body || {};
+  const { code, subtotal, items } = req.body || {};
   if (!code) return res.status(400).json({ error: 'Enter a coupon code.' });
 
-  const { coupon, error } = await findUsableCoupon(code, req.user.id);
+  const { coupon, error } = await findUsableCoupon(code, req.user.id, items);
   if (error) return res.status(400).json({ error });
 
   const sub = Number(subtotal) || 0;
@@ -46,7 +93,8 @@ router.post('/validate', requireAuth, async (req, res) => {
     valid: true,
     code: coupon.code,
     type: coupon.type,
-    value: coupon.value,
+    value: Number(coupon.value),
+    maxDiscount: coupon.max_discount ? Number(coupon.max_discount) : null,
     discount,
   });
 });
@@ -59,7 +107,22 @@ router.get('/', requireAdmin, async (_req, res) => {
 });
 
 router.post('/', requireAdmin, async (req, res) => {
-  const { code, type, value, minOrder, expiresAt, active } = req.body || {};
+  const {
+    code,
+    type,
+    value,
+    minOrder,
+    maxDiscount,
+    startDate,
+    expiresAt,
+    usageLimit,
+    perUserLimit,
+    applicableCategories,
+    applicableProducts,
+    firstOrderOnly,
+    active,
+  } = req.body || {};
+
   const cleanCode = String(code || '').trim().toUpperCase();
   if (!cleanCode) return res.status(400).json({ error: 'Coupon code is required.' });
   if (!['percent', 'flat'].includes(type)) return res.status(400).json({ error: 'Type must be percent or flat.' });
@@ -69,9 +132,27 @@ router.post('/', requireAdmin, async (req, res) => {
 
   try {
     const { rows } = await query(
-      `INSERT INTO coupons (code, type, value, min_order, active, expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [cleanCode, type, numValue, Number(minOrder) || 0, active !== false, expiresAt || null]
+      `INSERT INTO coupons (
+         code, type, value, min_order, max_discount, start_date, expires_at,
+         usage_limit, per_user_limit, applicable_categories, applicable_products,
+         first_order_only, active
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [
+        cleanCode,
+        type,
+        numValue,
+        Number(minOrder) || 0,
+        maxDiscount ? Number(maxDiscount) : null,
+        startDate || null,
+        expiresAt || null,
+        usageLimit ? Number(usageLimit) : null,
+        perUserLimit ? Number(perUserLimit) : 1,
+        JSON.stringify(applicableCategories || []),
+        JSON.stringify(applicableProducts || []),
+        Boolean(firstOrderOnly),
+        active !== false,
+      ]
     );
     res.status(201).json({ coupon: rows[0] });
   } catch (err) {
@@ -81,22 +162,51 @@ router.post('/', requireAdmin, async (req, res) => {
 });
 
 router.put('/:id', requireAdmin, async (req, res) => {
-  const { code, type, value, minOrder, expiresAt, active } = req.body || {};
+  const {
+    code,
+    type,
+    value,
+    minOrder,
+    maxDiscount,
+    startDate,
+    expiresAt,
+    usageLimit,
+    perUserLimit,
+    applicableCategories,
+    applicableProducts,
+    firstOrderOnly,
+    active,
+  } = req.body || {};
+
   const { rows } = await query(
     `UPDATE coupons SET
        code = COALESCE($1, code),
        type = COALESCE($2, type),
        value = COALESCE($3, value),
        min_order = COALESCE($4, min_order),
-       expires_at = COALESCE($5, expires_at),
-       active = COALESCE($6, active)
-     WHERE id = $7 RETURNING *`,
+       max_discount = COALESCE($5, max_discount),
+       start_date = COALESCE($6, start_date),
+       expires_at = COALESCE($7, expires_at),
+       usage_limit = COALESCE($8, usage_limit),
+       per_user_limit = COALESCE($9, per_user_limit),
+       applicable_categories = COALESCE($10, applicable_categories),
+       applicable_products = COALESCE($11, applicable_products),
+       first_order_only = COALESCE($12, first_order_only),
+       active = COALESCE($13, active)
+     WHERE id = $14 RETURNING *`,
     [
       code ? String(code).trim().toUpperCase() : null,
       type || null,
       value !== undefined ? Number(value) : null,
       minOrder !== undefined ? Number(minOrder) : null,
-      expiresAt !== undefined ? expiresAt : null,
+      maxDiscount !== undefined ? (maxDiscount ? Number(maxDiscount) : null) : null,
+      startDate !== undefined ? (startDate || null) : null,
+      expiresAt !== undefined ? (expiresAt || null) : null,
+      usageLimit !== undefined ? (usageLimit ? Number(usageLimit) : null) : null,
+      perUserLimit !== undefined ? Number(perUserLimit) : null,
+      applicableCategories !== undefined ? JSON.stringify(applicableCategories) : null,
+      applicableProducts !== undefined ? JSON.stringify(applicableProducts) : null,
+      firstOrderOnly !== undefined ? Boolean(firstOrderOnly) : null,
       active !== undefined ? active : null,
       req.params.id,
     ]

@@ -14,6 +14,12 @@ import couponRoutes from './routes/coupons.js';
 import testimonialRoutes from './routes/testimonials.js';
 import cancellationPolicyRoutes from './routes/cancellationPolicy.js';
 import sitemapRoutes from './routes/sitemap.js';
+import shippingRoutes from './routes/shipping.js';
+import pickupLocationRoutes from './routes/pickupLocations.js';
+import webhookRoutes from './routes/webhooks.js';
+import returnRoutes from './routes/returns.js';
+import settingsRoutes from './routes/settings.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 
@@ -27,22 +33,21 @@ const allowedOrigins = (process.env.CLIENT_URL || '')
 
 app.use(cors({
   origin(origin, callback) {
-    // No Origin header (curl, server-to-server, Razorpay webhook) — allow.
     if (!origin) return callback(null, true);
-    if (!allowedOrigins.length) return callback(null, true); // CLIENT_URL unset — allow all (dev convenience)
+    if (!allowedOrigins.length) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Log the exact origin that got rejected — without this, "Not allowed
-    // by CORS" in the logs gives no way to tell whether it's a legitimate
-    // domain that's missing from CLIENT_URL or just background bot/scanner
-    // noise (which every public API gets constantly and can be ignored).
     console.warn(`[cors] rejected origin: ${origin} — allowed: ${allowedOrigins.join(', ')}`);
     callback(new Error('Not allowed by CORS'));
   },
 }));
-// Raised from Express's 100kb default — the home-page CMS stores uploaded
-// hero photos/videos as base64 directly in the database, which inflates
-// file size by roughly a third, so this needs real headroom.
-app.use(express.json({ limit: '30mb' }));
+
+// Preserve rawBody for HMAC webhook verification (Razorpay, Shiprocket)
+app.use(express.json({
+  limit: '30mb',
+  verify: (req, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(attachUser);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
@@ -60,6 +65,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/cancellation-policy', cancellationPolicyRoutes);
+app.use('/api/shipping', shippingRoutes);
+app.use('/api/pickup-locations', pickupLocationRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

@@ -111,11 +111,16 @@ router.post('/google', async (req, res) => {
   }
 
   const token = signToken(user);
-  // Google only ever gives us name + email — mobile is required at
-  // checkout, so the frontend uses this flag to prompt for it right after
-  // a first-time Google sign-in instead of waiting until checkout to ask.
-  res.json({ token, user: publicUser(user), needsMobile: !user.mobile });
+  const profileStatus = await checkProfileComplete(user);
+  res.json({
+    token,
+    user: publicUser(user),
+    needsProfile: !profileStatus.isComplete,
+    needsMobile: !user.mobile,
+    defaultAddress: profileStatus.defaultAddress,
+  });
 });
+
 
 // Always responds the same way whether or not the email is registered —
 // otherwise the response itself would let someone check which emails have
@@ -180,17 +185,77 @@ router.post('/reset-password', async (req, res) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   const { rows } = await query('SELECT id, name, email, mobile, is_admin FROM users WHERE id = $1', [req.user.id]);
-  if (!rows[0]) return res.status(404).json({ error: 'User not found.' });
-  res.json({ user: publicUser(rows[0]) });
+  const user = rows[0];
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  const profileStatus = await checkProfileComplete(user);
+  res.json({
+    user: publicUser(user),
+    needsProfile: !profileStatus.isComplete,
+    defaultAddress: profileStatus.defaultAddress,
+  });
 });
 
 router.put('/me', requireAuth, async (req, res) => {
   const { name, mobile } = req.body || {};
   const { rows } = await query(
     'UPDATE users SET name = COALESCE($1, name), mobile = COALESCE($2, mobile) WHERE id = $3 RETURNING id, name, email, mobile, is_admin',
-    [name, mobile, req.user.id]
+    [name?.trim() || null, mobile?.trim() || null, req.user.id]
   );
-  res.json({ user: publicUser(rows[0]) });
+  const user = rows[0];
+  const profileStatus = await checkProfileComplete(user);
+  res.json({
+    user: publicUser(user),
+    needsProfile: !profileStatus.isComplete,
+    defaultAddress: profileStatus.defaultAddress,
+  });
+});
+
+// POST /api/auth/complete-profile — enforces mandatory details:
+// Full name, mobile/phone, address line1, city, state, pincode, country
+router.post('/complete-profile', requireAuth, async (req, res) => {
+  const { name, mobile, line1, line2, city, state, pincode, country } = req.body || {};
+  if (!name?.trim() || !mobile?.trim() || !line1?.trim() || !city?.trim() || !state?.trim() || !pincode?.trim()) {
+    return res.status(400).json({ error: 'Full name, mobile number, address, city, state and pincode are required.' });
+  }
+
+  // Update user name and mobile
+  const userResult = await query(
+    'UPDATE users SET name = $1, mobile = $2 WHERE id = $3 RETURNING id, name, email, mobile, is_admin',
+    [name.trim(), mobile.trim(), req.user.id]
+  );
+  const updatedUser = userResult.rows[0];
+
+  // Check if user already has an address; if yes, update default, otherwise insert
+  const { rows: existingAddrs } = await query(
+    'SELECT id FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC LIMIT 1',
+    [req.user.id]
+  );
+
+  let address;
+  if (existingAddrs.length) {
+    const updateAddr = await query(
+      `UPDATE addresses SET
+         name = $1, mobile = $2, line1 = $3, line2 = $4, city = $5, state = $6, pincode = $7,
+         country = $8, is_default = TRUE, updated_at = now()
+       WHERE id = $9 AND user_id = $10 RETURNING *`,
+      [name.trim(), mobile.trim(), line1.trim(), line2?.trim() || null, city.trim(), state.trim(), pincode.trim(), country?.trim() || 'India', existingAddrs[0].id, req.user.id]
+    );
+    address = updateAddr.rows[0];
+  } else {
+    const insertAddr = await query(
+      `INSERT INTO addresses (user_id, name, mobile, line1, line2, city, state, pincode, country, is_default)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE) RETURNING *`,
+      [req.user.id, name.trim(), mobile.trim(), line1.trim(), line2?.trim() || null, city.trim(), state.trim(), pincode.trim(), country?.trim() || 'India']
+    );
+    address = insertAddr.rows[0];
+  }
+
+  res.json({
+    ok: true,
+    user: publicUser(updatedUser),
+    needsProfile: false,
+    defaultAddress: address,
+  });
 });
 
 router.post('/change-password', requireAuth, async (req, res) => {
@@ -216,30 +281,136 @@ router.post('/change-password', requireAuth, async (req, res) => {
 
 // --- Addresses ---
 router.get('/addresses', requireAuth, async (req, res) => {
-  const { rows } = await query('SELECT * FROM addresses WHERE user_id = $1 ORDER BY id DESC', [req.user.id]);
+  const { rows } = await query(
+    'SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC',
+    [req.user.id]
+  );
   res.json({ addresses: rows });
 });
 
 router.post('/addresses', requireAuth, async (req, res) => {
-  const { name, mobile, line1, city, state, pincode } = req.body || {};
-  if (!name || !mobile || !line1 || !city || !pincode) {
+  const { name, mobile, line1, line2, city, state, pincode, country, isDefault } = req.body || {};
+  if (!name?.trim() || !mobile?.trim() || !line1?.trim() || !city?.trim() || !pincode?.trim()) {
     return res.status(400).json({ error: 'Name, mobile, address, city and pincode are required.' });
   }
+
+  const { rows: countRows } = await query('SELECT COUNT(*)::int as count FROM addresses WHERE user_id = $1', [req.user.id]);
+  const shouldBeDefault = Boolean(isDefault || countRows[0]?.count === 0);
+
+  if (shouldBeDefault) {
+    await query('UPDATE addresses SET is_default = FALSE WHERE user_id = $1', [req.user.id]);
+  }
+
   const { rows } = await query(
-    `INSERT INTO addresses (user_id, name, mobile, line1, city, state, pincode)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [req.user.id, name, mobile, line1, city, state || '', pincode]
+    `INSERT INTO addresses (user_id, name, mobile, line1, line2, city, state, pincode, country, is_default)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [
+      req.user.id,
+      name.trim(),
+      mobile.trim(),
+      line1.trim(),
+      line2?.trim() || null,
+      city.trim(),
+      state?.trim() || '',
+      pincode.trim(),
+      country?.trim() || 'India',
+      shouldBeDefault,
+    ]
   );
   res.status(201).json({ address: rows[0] });
 });
 
+router.put('/addresses/:id', requireAuth, async (req, res) => {
+  const { name, mobile, line1, line2, city, state, pincode, country, isDefault } = req.body || {};
+  const { rows: existing } = await query('SELECT * FROM addresses WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+  if (!existing[0]) return res.status(404).json({ error: 'Address not found.' });
+
+  if (isDefault) {
+    await query('UPDATE addresses SET is_default = FALSE WHERE user_id = $1', [req.user.id]);
+  }
+
+  const { rows } = await query(
+    `UPDATE addresses SET
+       name = COALESCE($1, name),
+       mobile = COALESCE($2, mobile),
+       line1 = COALESCE($3, line1),
+       line2 = COALESCE($4, line2),
+       city = COALESCE($5, city),
+       state = COALESCE($6, state),
+       pincode = COALESCE($7, pincode),
+       country = COALESCE($8, country),
+       is_default = COALESCE($9, is_default),
+       updated_at = now()
+     WHERE id = $10 AND user_id = $11 RETURNING *`,
+    [
+      name?.trim() || null,
+      mobile?.trim() || null,
+      line1?.trim() || null,
+      line2 !== undefined ? line2?.trim() || null : null,
+      city?.trim() || null,
+      state?.trim() || null,
+      pincode?.trim() || null,
+      country?.trim() || null,
+      isDefault !== undefined ? Boolean(isDefault) : null,
+      req.params.id,
+      req.user.id,
+    ]
+  );
+
+  res.json({ address: rows[0] });
+});
+
+router.put('/addresses/:id/default', requireAuth, async (req, res) => {
+  const { rows: existing } = await query('SELECT * FROM addresses WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+  if (!existing[0]) return res.status(404).json({ error: 'Address not found.' });
+
+  await query('UPDATE addresses SET is_default = FALSE WHERE user_id = $1', [req.user.id]);
+  const { rows } = await query('UPDATE addresses SET is_default = TRUE WHERE id = $1 AND user_id = $2 RETURNING *', [req.params.id, req.user.id]);
+  res.json({ address: rows[0] });
+});
+
 router.delete('/addresses/:id', requireAuth, async (req, res) => {
+  const { rows: existing } = await query('SELECT * FROM addresses WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+  if (!existing[0]) return res.status(404).json({ error: 'Address not found.' });
+
   await query('DELETE FROM addresses WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+
+  // If the deleted address was default, set the newest remaining address as default
+  if (existing[0].is_default) {
+    const { rows: remaining } = await query(
+      'SELECT id FROM addresses WHERE user_id = $1 ORDER BY id DESC LIMIT 1',
+      [req.user.id]
+    );
+    if (remaining.length) {
+      await query('UPDATE addresses SET is_default = TRUE WHERE id = $1', [remaining[0].id]);
+    }
+  }
+
   res.json({ ok: true });
 });
+
+async function checkProfileComplete(user) {
+  if (!user || !user.name || !user.mobile) {
+    return { isComplete: false, defaultAddress: null };
+  }
+  const { rows: addrs } = await query(
+    'SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC LIMIT 1',
+    [user.id]
+  );
+  const defaultAddress = addrs[0] || null;
+  const isComplete = Boolean(
+    defaultAddress &&
+    defaultAddress.line1 &&
+    defaultAddress.city &&
+    defaultAddress.state &&
+    defaultAddress.pincode
+  );
+  return { isComplete, defaultAddress };
+}
 
 function publicUser(u) {
   return { id: u.id, name: u.name, email: u.email, mobile: u.mobile, isAdmin: u.is_admin };
 }
 
 export default router;
+

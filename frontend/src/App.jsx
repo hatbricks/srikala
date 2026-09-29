@@ -32,6 +32,9 @@ import AdminCancellationPolicy from './pages/admin/AdminCancellationPolicy';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminReturns from './pages/admin/AdminReturns';
+import AdminPickupLocations from './pages/admin/AdminPickupLocations';
+import AdminSettings from './pages/admin/AdminSettings';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 
@@ -82,8 +85,11 @@ export default function App() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="returns" element={<AdminReturns />} />
+            <Route path="pickup-locations" element={<AdminPickupLocations />} />
             <Route path="coupons" element={<AdminCoupons />} />
             <Route path="cancellation-policy" element={<AdminCancellationPolicy />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
             <Route path="*" element={<AdminDashboard />} />

@@ -40,6 +40,8 @@ export default function ProductDetail() {
     return () => { active = false; };
   }, []);
 
+  const [selectedVariant, setSelectedVariant] = useState(null);
+
   useEffect(() => {
     let active = true;
     setAdded(false);
@@ -47,10 +49,21 @@ export default function ProductDetail() {
     setProduct(null);
     setNotFound(false);
     setActiveImage(null);
+    setSelectedVariant(null);
 
     api
       .getProduct(id)
-      .then(({ product }) => active && setProduct(product))
+      .then(({ product }) => {
+        if (!active) return;
+        setProduct(product);
+        if (product.variants?.length > 0) {
+          const firstInStock = product.variants.find((v) => v.stock > 0) || product.variants[0];
+          setSelectedVariant(firstInStock);
+          if (firstInStock.images?.length > 0) {
+            setActiveImage(firstInStock.images[0]);
+          }
+        }
+      })
       .catch(() => {
         // Backend not reachable — fall back to the local seed so the page
         // still works while the server isn't running.
@@ -73,29 +86,24 @@ export default function ProductDetail() {
     );
   }
 
-  // While the product (or the recommended-products data) is loading, keep
-  // a full-height placeholder here instead of rendering nothing. Returning
-  // null collapses <main> to zero height for a moment, which pulls the
-  // Footer directly up under the Navbar — visible as a flash of the
-  // footer right after tapping a product, before the real content pops
-  // in and pushes it back down.
   if (!product || allProducts === null) {
     return <div className="detail-page" style={{ minHeight: '100vh' }} />;
   }
 
-  const outOfStock = product.stock === 0;
-  // Cover image plus any gallery photos, de-duplicated, so admins can
-  // re-upload the same photo as both without it showing twice.
-  const gallery = [product.image, ...(product.images || [])].filter((src, i, arr) => src && arr.indexOf(src) === i);
+  const currentPrice = selectedVariant?.price != null ? Number(selectedVariant.price) : Number(product.price);
+  const currentMrp = selectedVariant?.mrp != null ? Number(selectedVariant.mrp) : Number(product.mrp || product.price);
+  const currentStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
+  const outOfStock = currentStock <= 0;
+
+  // Cover image plus any gallery photos, plus selected variant images if available
+  const variantImgs = selectedVariant?.images || [];
+  const baseGallery = [product.image, ...(product.images || [])];
+  const gallery = [...variantImgs, ...baseGallery].filter((src, i, arr) => src && arr.indexOf(src) === i);
   const mainImage = activeImage || gallery[0];
-  // Social/search crawlers need a fetchable http(s) image URL — a few
-  // gallery photos uploaded through the admin panel are stored as base64
-  // data URLs, which those crawlers can't use, so fall back to the site
-  // default image in that case rather than pointing at an unusable URL.
   const ogImage = mainImage?.startsWith('http') ? mainImage : undefined;
 
   function handleAdd() {
-    addItem(product, qty);
+    addItem(product, qty, selectedVariant);
     setAdded(true);
   }
 
@@ -153,12 +161,49 @@ export default function ProductDetail() {
           <Link to="/products" className="back-link">← All products</Link>
           <h1>{product.name}</h1>
           <div className="detail-price">
-            <span className="price">{formatINR(product.price)}</span>
-            {product.mrp > product.price && <span className="mrp">{formatINR(product.mrp)}</span>}
+            <span className="price">{formatINR(currentPrice)}</span>
+            {currentMrp > currentPrice && <span className="mrp">{formatINR(currentMrp)}</span>}
+            {currentMrp > currentPrice && (
+              <span className="discount-tag">
+                {Math.round(((currentMrp - currentPrice) / currentMrp) * 100)}% off
+              </span>
+            )}
           </div>
+
+          {product.variants?.length > 0 && (
+            <div className="variants-section">
+              <p className="variant-label">
+                Color: <strong>{selectedVariant?.color_name || 'Select a color'}</strong>
+              </p>
+              <div className="color-swatches-row">
+                {product.variants.map((v) => {
+                  const isSelected = selectedVariant?.id === v.id;
+                  const vOutOfStock = v.stock === 0;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      className={`color-swatch-btn ${isSelected ? 'selected' : ''} ${vOutOfStock ? 'is-out' : ''}`}
+                      onClick={() => {
+                        setSelectedVariant(v);
+                        if (v.images?.length > 0) setActiveImage(v.images[0]);
+                        setQty(1);
+                      }}
+                      title={`${v.color_name}${vOutOfStock ? ' (Out of stock)' : ''}`}
+                    >
+                      <span className="swatch-circle" style={{ backgroundColor: v.color_code || '#8B0000' }} />
+                      <span className="swatch-name">{v.color_name}</span>
+                      {vOutOfStock && <span className="out-tag">Sold Out</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <p className="desc">{product.description}</p>
           <p className={`stock ${outOfStock ? 'out' : ''}`}>
-            {outOfStock ? 'Currently out of stock' : `${product.stock} in stock`}
+            {outOfStock ? 'Currently out of stock' : `${currentStock} in stock`}
           </p>
 
           {!outOfStock && (
@@ -167,7 +212,7 @@ export default function ProductDetail() {
               <div className="qty-control">
                 <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
                 <span>{qty}</span>
-                <button type="button" onClick={() => setQty((q) => Math.min(product.stock, q + 1))} aria-label="Increase quantity">+</button>
+                <button type="button" onClick={() => setQty((q) => Math.min(currentStock, q + 1))} aria-label="Increase quantity">+</button>
               </div>
             </div>
           )}
@@ -179,13 +224,32 @@ export default function ProductDetail() {
             {!outOfStock && (
               <button
                 className="btn btn-outline"
-                onClick={() => { addItem(product, qty); navigate('/checkout'); }}
+                onClick={() => { addItem(product, qty, selectedVariant); navigate('/checkout'); }}
               >
                 Buy Now
               </button>
             )}
           </div>
           {added && <Link to="/cart" className="view-cart-link">View cart →</Link>}
+
+          <div className="product-spec-badges">
+            <div className="spec-badge">
+              <span className="badge-icon">{product.return_available !== false ? '✓' : 'ℹ'}</span>
+              <div>
+                <strong>{product.return_available !== false ? `${product.return_window_hours || 24}-Hour Return Window` : 'Non-Returnable'}</strong>
+                <p>{product.return_available !== false ? 'Eligible for return request after delivery via My Orders' : 'Handloom piece — final sale'}</p>
+              </div>
+            </div>
+            {product.weight_grams && (
+              <div className="spec-badge">
+                <span className="badge-icon">📦</span>
+                <div>
+                  <strong>{product.weight_grams}g Package Weight</strong>
+                  <p>Dimensions: {product.length_cm || 30} × {product.width_cm || 20} × {product.height_cm || 5} cm</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           <CancellationPolicyCard />
         </div>
@@ -246,9 +310,37 @@ export default function ProductDetail() {
         .detail-thumb.active { border-color: var(--maroon-900); opacity: 1; }
         .back-link { font-size: 13px; color: var(--ink-400); margin-bottom: 18px; display: inline-block; }
         .detail-info h1 { font-size: 30px; margin-bottom: 16px; }
-        .detail-price { display: flex; align-items: baseline; gap: 12px; margin-bottom: 22px; }
+        .detail-price { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
         .detail-price .price { font-size: 24px; font-weight: 600; color: var(--maroon-900); }
         .detail-price .mrp { font-size: 15px; color: var(--ink-400); text-decoration: line-through; }
+        .discount-tag { font-size: 12px; font-weight: 600; color: #3c7a3c; background: #e8f2e6; padding: 2px 8px; border-radius: 999px; }
+
+        .variants-section { margin-bottom: 20px; }
+        .variant-label { font-size: 13px; color: var(--ink-600); margin-bottom: 8px; }
+        .variant-label strong { color: var(--ink-900); }
+        .color-swatches-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .color-swatch-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 5px 12px;
+          border-radius: 999px;
+          border: 1px solid var(--stone-300);
+          background: var(--paper);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .color-swatch-btn:hover { border-color: var(--maroon-900); }
+        .color-swatch-btn.selected {
+          border-color: var(--maroon-900);
+          background: #fdf6f5;
+          box-shadow: 0 0 0 1px var(--maroon-900);
+        }
+        .color-swatch-btn.is-out { opacity: 0.55; }
+        .swatch-circle { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
+        .swatch-name { font-size: 12.5px; color: var(--ink-800); }
+        .out-tag { font-size: 10px; color: #a13a3a; font-weight: 600; }
+
         .desc { font-size: 14.5px; line-height: 1.8; color: var(--ink-600); max-width: 480px; margin-bottom: 20px; }
         .stock { font-size: 13px; color: var(--ink-600); margin-bottom: 22px; }
         .stock.out { color: #a13a3a; }
@@ -271,6 +363,20 @@ export default function ProductDetail() {
         .detail-actions { display: flex; gap: 12px; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .view-cart-link { display: inline-block; margin-top: 14px; font-size: 13px; color: var(--gold-600); border-bottom: 1px solid var(--gold-500); }
+
+        .product-spec-badges { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+        .spec-badge {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 10px 14px;
+        }
+        .badge-icon { font-size: 14px; color: var(--maroon-900); flex: 0 0 auto; margin-top: 1px; }
+        .spec-badge strong { font-size: 12.5px; color: var(--ink-900); display: block; }
+        .spec-badge p { font-size: 11.5px; color: var(--ink-500); margin: 2px 0 0; }
         @media (max-width: 860px) {
           .detail-grid { grid-template-columns: 1fr; gap: 28px; margin-bottom: 40px; }
         }

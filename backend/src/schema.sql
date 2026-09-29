@@ -214,3 +214,179 @@ CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions_user ON coupon_redemptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_testimonials_product ON testimonials(product_id);
+
+-- Address extensions
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS line2 TEXT;
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT 'India';
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Category extensions
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS banner_image TEXT;
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS slug TEXT;
+
+-- Product extensions (weight, dimensions, SKU, return & cancellation policies, tags, attributes, SEO)
+ALTER TABLE products ADD COLUMN IF NOT EXISTS weight_grams INTEGER NOT NULL DEFAULT 500;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS length_cm NUMERIC(6,2) DEFAULT 30;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS width_cm NUMERIC(6,2) DEFAULT 20;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS height_cm NUMERIC(6,2) DEFAULT 5;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS short_description TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS return_available BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS return_window_hours INTEGER NOT NULL DEFAULT 24;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS cancellation_available BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS attributes JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_title TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS seo_description TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Product color variants
+CREATE TABLE IF NOT EXISTS product_variants (
+  id           SERIAL PRIMARY KEY,
+  product_id   TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  color_name   TEXT NOT NULL,
+  color_code   TEXT,
+  sku          TEXT,
+  price        INTEGER,
+  mrp          INTEGER,
+  stock        INTEGER NOT NULL DEFAULT 0,
+  weight_grams INTEGER,
+  images       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(product_id);
+
+-- Shiprocket pickup locations
+CREATE TABLE IF NOT EXISTS pickup_locations (
+  id                   SERIAL PRIMARY KEY,
+  pickup_location_name TEXT NOT NULL UNIQUE,
+  name                 TEXT NOT NULL,
+  email                TEXT,
+  phone                TEXT NOT NULL,
+  address              TEXT NOT NULL,
+  address_2            TEXT,
+  city                 TEXT NOT NULL,
+  state                TEXT NOT NULL,
+  pincode              TEXT NOT NULL,
+  country              TEXT NOT NULL DEFAULT 'India',
+  is_default           BOOLEAN NOT NULL DEFAULT FALSE,
+  active               BOOLEAN NOT NULL DEFAULT TRUE,
+  shiprocket_id        TEXT,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Coupon extensions
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_discount INTEGER;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS start_date TIMESTAMPTZ;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS usage_limit INTEGER;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS per_user_limit INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS applicable_categories TEXT[] DEFAULT '{}';
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS applicable_products TEXT[] DEFAULT '{}';
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS first_order_only BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Order extensions for full lifecycle, Shiprocket tracking, and payment statuses
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number TEXT UNIQUE;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'PENDING';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipment_status TEXT NOT NULL DEFAULT 'PENDING';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_weight_grams INTEGER NOT NULL DEFAULT 500;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount INTEGER;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tax_amount INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS address_line2 TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS address_country TEXT NOT NULL DEFAULT 'India';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_location_id INTEGER REFERENCES pickup_locations(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS razorpay_signature TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_shipment_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS awb_code TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_name TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS courier_company_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS etd TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_url TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_history JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancelled_by TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipped_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- Order items extensions (variants and return policy snapshots)
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS variant_id INTEGER REFERENCES product_variants(id) ON DELETE SET NULL;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS variant_name TEXT;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku TEXT;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS mrp INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS weight_grams INTEGER NOT NULL DEFAULT 500;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS return_available BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS return_window_hours INTEGER NOT NULL DEFAULT 24;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS cancellation_available BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- Return requests
+CREATE TABLE IF NOT EXISTS return_requests (
+  id            SERIAL PRIMARY KEY,
+  order_id      INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_item_id INTEGER NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason        TEXT NOT NULL,
+  details       TEXT,
+  photos        JSONB NOT NULL DEFAULT '[]'::jsonb,
+  status        TEXT NOT NULL DEFAULT 'PENDING', -- PENDING | APPROVED | REJECTED | PICKED_UP | RECEIVED | REFUNDED
+  admin_notes   TEXT,
+  refund_amount INTEGER,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_return_requests_order ON return_requests(order_id);
+CREATE INDEX IF NOT EXISTS idx_return_requests_user ON return_requests(user_id);
+
+-- Refunds tracking
+CREATE TABLE IF NOT EXISTS refunds (
+  id                 SERIAL PRIMARY KEY,
+  order_id           INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  payment_id         TEXT,
+  razorpay_refund_id TEXT UNIQUE,
+  amount             INTEGER NOT NULL,
+  status             TEXT NOT NULL DEFAULT 'processed',
+  reason             TEXT,
+  initiated_by       TEXT,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at       TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_refunds_order ON refunds(order_id);
+
+-- Webhook events for idempotency
+CREATE TABLE IF NOT EXISTS webhook_events (
+  id          SERIAL PRIMARY KEY,
+  event_id    TEXT NOT NULL,
+  source      TEXT NOT NULL, -- 'razorpay' | 'shiprocket'
+  event_type  TEXT NOT NULL,
+  payload     JSONB NOT NULL,
+  processed   BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (source, event_id)
+);
+
+-- Audit logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id          SERIAL PRIMARY KEY,
+  admin_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  admin_email TEXT,
+  action      TEXT NOT NULL,
+  entity      TEXT NOT NULL,
+  entity_id   TEXT,
+  metadata    JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at DESC);
+
+-- Global CMS and store settings
+CREATE TABLE IF NOT EXISTS settings (
+  key        TEXT PRIMARY KEY,
+  value      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
