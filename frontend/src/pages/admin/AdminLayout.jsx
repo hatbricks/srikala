@@ -55,18 +55,39 @@ function AdminLoginGate() {
           Password
           <input type="password" required value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
         </label>
-        {error && <p className="gate-error">{error}</p>}
+        {error && (
+          <div className={`gate-alert ${error.includes('Security Alert') || error.includes('locked') ? 'gate-alert-security' : 'gate-alert-error'}`}>
+            {error}
+          </div>
+        )}
         <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : 'Log in'}</button>
+        <div className="security-notice">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>Anti-Brute-Force Protected</span>
+        </div>
       </form>
 
       <style>{`
         .admin-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--stone-100); }
-        .admin-gate-card { width: 100%; max-width: 340px; background: var(--paper); border-radius: var(--radius-md); padding: 32px; display: flex; flex-direction: column; gap: 14px; }
+        .admin-gate-card { width: 100%; max-width: 360px; background: var(--paper); border-radius: var(--radius-md); padding: 32px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
         .admin-gate-card h1 { font-size: 20px; margin: 0 0 6px; color: var(--maroon-900); }
         .admin-gate-card .admin-brand { color: var(--maroon-900); }
         .admin-gate-card label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); }
         .admin-gate-card input { padding: 11px 12px; border-radius: var(--radius-sm); border: 1px solid var(--stone-200); font-size: 13.5px; }
-        .gate-error { font-size: 12.5px; color: #a13a3a; margin: 0; }
+        .gate-alert { font-size: 12px; line-height: 1.5; padding: 10px 12px; border-radius: var(--radius-sm); margin: 0; }
+        .gate-alert-error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .gate-alert-security { background: #fff3e0; color: #d84315; border: 1px solid #ffcc80; font-weight: 500; }
+        .security-notice {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-size: 11.5px;
+          color: var(--ink-400);
+          margin-top: 2px;
+        }
       `}</style>
     </div>
   );

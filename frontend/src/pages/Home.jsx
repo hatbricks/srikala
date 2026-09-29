@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CategoryShowcase from '../components/CategoryShowcase';
+import GoogleReviewsSection from '../components/GoogleReviewsSection';
 import HeroSlider from '../components/HeroSlider';
 import NewArrivals from '../components/NewArrivals';
 import RecommendedProducts from '../components/RecommendedProducts';
@@ -24,7 +25,41 @@ const defaults = {
     ctaLink: '/products',
     secondaryCtaLabel: 'Discover Sri Kala',
     secondaryCtaLink: '/about',
-    slides: [],
+    slides: [
+      {
+        id: 'hero-video-1',
+        type: 'video',
+        url: '/videos/hero1.mp4',
+        alt: 'Sri Kala Traditional Saree Showcase - 4K Video',
+        eyebrow: 'PURE HANDLOOM SILKS',
+        heading: 'Crafted with Devotion',
+        subheading: 'Experience authentic heirloom weaves with pure zari threads.',
+        ctaLabel: 'Explore Collection',
+        ctaLink: '/products',
+      },
+      {
+        id: 'hero-image-2',
+        type: 'image',
+        url: '/images/styles/kanchivaram.jpg',
+        alt: 'Sri Kala Kanchivaram Silk Saree',
+        eyebrow: 'TEMPLE TRADITIONS',
+        heading: 'Kanchivaram Elegance',
+        subheading: 'Heirloom drape with temple-woven gold zari motifs.',
+        ctaLabel: 'Shop Kanchivaram',
+        ctaLink: '/products?category=kanjivaram',
+      },
+      {
+        id: 'hero-image-3',
+        type: 'image',
+        url: '/images/styles/banarasi.jpg',
+        alt: 'Sri Kala Banarasi Saree Showcase',
+        eyebrow: 'ROYAL WEAVES',
+        heading: 'Banarasi Splendor',
+        subheading: 'Brocade zari woven by master craftsmen from the sacred ghats.',
+        ctaLabel: 'Shop Banarasi',
+        ctaLink: '/products?category=banarasi',
+      },
+    ],
   },
   showcase: {
     note: 'Sri Kala celebrates the timeless art of Indian weaving, curating each saree to bring grace and authentic craftsmanship to every occasion.',
@@ -70,6 +105,8 @@ export default function Home() {
   const [recommended, setRecommended] = useState(defaults.recommended);
   const [story, setStory] = useState(defaults.story);
   const [promo, setPromo] = useState(null);
+  const [googleReviews, setGoogleReviews] = useState(null);
+  const [googleReviewsEnabled, setGoogleReviewsEnabled] = useState(true);
 
   useEffect(() => {
     // Categories & products — try the live backend first, fall back to the
@@ -107,6 +144,14 @@ export default function Home() {
             setShopByStyle({ ...defaults.shop_by_style, ...byKey.shop_by_style });
           }
         }
+
+        const grSection = sections.find((s) => s.section_key === 'google_reviews');
+        if (grSection) {
+          setGoogleReviews(grSection.content);
+          setGoogleReviewsEnabled(grSection.enabled !== false);
+        } else if (byKey.google_reviews) {
+          setGoogleReviews(byKey.google_reviews);
+        }
       })
       .catch(() => {})
       .finally(() => setHeroReady(true));
@@ -130,28 +175,6 @@ export default function Home() {
       <section className="hero">
         <div className="hero-visual" id="page-hero">
           <HeroSlider slides={heroReady ? hero.slides : null} mobileSlides={heroReady ? hero.mobileSlides : null} />
-        </div>
-        <div className="hero-card-wrap">
-          <div className="container hero-card">
-            <TextReveal as="p" direction="fade" className="eyebrow hero-eyebrow">
-              {hero.eyebrow || 'SRI KALA'}
-            </TextReveal>
-            <TextReveal as="h1" delay={0.1} direction="left" distance={40} className="hero-title">
-              {hero.heading || 'Timeless Elegance, Woven in'}
-              <span className="hero-title-script">{hero.heading2 || 'Tradition'}</span>
-            </TextReveal>
-            <TextReveal as="p" delay={0.2} direction="right" distance={30} className="hero-sub">
-              {hero.subheading || BRAND.subheading}
-            </TextReveal>
-            <TextReveal as="div" delay={0.3} direction="fade" className="hero-cta-group">
-              <Link to={hero.ctaLink || '/products'} className="btn btn-primary">
-                {hero.ctaLabel || 'Explore Collection'}
-              </Link>
-              <Link to={hero.secondaryCtaLink || '/about'} className="btn btn-outline hero-sec-cta">
-                {hero.secondaryCtaLabel || 'Discover Sri Kala'}
-              </Link>
-            </TextReveal>
-          </div>
         </div>
       </section>
 
@@ -230,11 +253,13 @@ export default function Home() {
 
       <TestimonialBand />
 
+      {googleReviewsEnabled && <GoogleReviewsSection cmsData={googleReviews} />}
+
       <style>{`
         .hero {
           position: relative;
-          background: var(--paper);
-          padding: 0 0 90px;
+          background: #0f0406;
+          padding: 0;
         }
         .hero-visual {
           position: relative;

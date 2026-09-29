@@ -5,6 +5,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { query } from '../db.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
 import { sendLoginEmail, sendPasswordResetEmail } from '../lib/email.js';
+import { authApiRateLimiter, checkLoginLockout, recordFailedLogin, recordSuccessfulLogin } from '../middleware/rateLimiter.js';
 
 const router = Router();
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
@@ -41,17 +42,43 @@ router.post('/signup', async (req, res) => {
   res.status(201).json({ token, user: publicUser(user) });
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authApiRateLimiter, checkLoginLockout, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
   const normalizedEmail = email.trim().toLowerCase();
   const { rows } = await query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
   const user = rows[0];
-  if (!user) return res.status(401).json({ error: 'Invalid email or password.' });
+
+  if (!user) {
+    const { isLocked, remainingAttempts } = await recordFailedLogin(req, normalizedEmail);
+    if (isLocked) {
+      return res.status(429).json({
+        error: 'Security Alert: Too many failed login attempts. Your account has been temporarily locked for 15 minutes to protect against brute-force attacks.',
+        locked: true,
+      });
+    }
+    return res.status(401).json({
+      error: `Invalid email or password.${remainingAttempts <= 3 ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining before temporary account lock)` : ''}`,
+    });
+  }
 
   const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(401).json({ error: 'Invalid email or password.' });
+  if (!ok) {
+    const { isLocked, remainingAttempts } = await recordFailedLogin(req, normalizedEmail);
+    if (isLocked) {
+      return res.status(429).json({
+        error: 'Security Alert: Too many failed login attempts. Your account has been temporarily locked for 15 minutes to protect against brute-force attacks.',
+        locked: true,
+      });
+    }
+    return res.status(401).json({
+      error: `Invalid email or password.${remainingAttempts <= 3 ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining before temporary account lock)` : ''}`,
+    });
+  }
+
+  // Reset failed login tracking on success
+  recordSuccessfulLogin(req, normalizedEmail);
 
   const token = signToken(user);
 

@@ -3,7 +3,7 @@ import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
 
 const sectionLabels = {
-  hero: 'Hero Banner',
+  hero: 'Hero Banner & 4K Video Carousel',
   showcase: 'Our Collections (rail)',
   featured_categories: 'Shop by Category',
   promo_banner: 'Promo Banner',
@@ -13,6 +13,7 @@ const sectionLabels = {
   recommended: 'Recommended Sarees',
   shipping_settings: 'Shipping',
   story: 'Our Craft',
+  google_reviews: 'Google Reviews (Before Footer)',
   testimonials: 'Testimonials Heading',
   social_links: 'Footer — Social & Contact Links',
 };
@@ -73,6 +74,13 @@ const sectionFields = {
     { key: 'ctaLabel', label: 'Button text', type: 'text' },
     { key: 'ctaLink', label: 'Button link', type: 'text' },
   ],
+  google_reviews: [
+    { key: 'heading', label: 'Section Heading', type: 'text' },
+    { key: 'subheading', label: 'Section Subheading', type: 'text' },
+    { key: 'googleBusinessUrl', label: 'Google Business Profile / Review Link URL', type: 'text' },
+    { key: 'averageRating', label: 'Average Google Rating (e.g. 4.9)', type: 'number' },
+    { key: 'totalReviews', label: 'Total Reviews Text (e.g. 150+ reviews)', type: 'text' },
+  ],
   testimonials: [
     { key: 'heading', label: 'Heading', type: 'text' },
   ],
@@ -95,80 +103,355 @@ function readFileAsDataUrl(file) {
   const photoInput = useRef(null);
   const videoInput = useRef(null);
   const [busy, setBusy] = useState(false);
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
   async function handleFiles(e, type) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setBusy(true);
     try {
-      // Images get resized/compressed like everywhere else. Video can't
-      // go through the same canvas-based resize, so it's still read raw
-      // — that's what the "keep clips short and compressed" hint below
-      // is warning about.
-      const added = await Promise.all(files.map(async (f) => ({
+      const added = await Promise.all(files.map(async (f, idx) => ({
+        id: `slide-${Date.now()}-${idx}`,
         type,
         url: type === 'video' ? await readFileAsDataUrl(f) : await compressImageFile(f, { maxDimension: 2000 }),
+        eyebrow: type === 'video' ? 'PURE HANDLOOM SILKS' : 'TEMPLE TRADITIONS',
+        heading: type === 'video' ? 'Crafted with Devotion' : 'Kanchivaram Elegance',
+        subheading: 'Heirloom drape with temple-woven gold zari motifs.',
+        ctaLabel: 'Explore Collection',
+        ctaLink: '/products',
       })));
       onChange([...slides, ...added]);
+      setExpandedIndex(slides.length);
     } finally {
       setBusy(false);
       e.target.value = '';
     }
   }
 
+  function addSlideManual(type) {
+    const isVid = type === 'video';
+    const newSlide = {
+      id: `slide-${Date.now()}`,
+      type,
+      url: isVid ? '/videos/hero1.mp4' : '/images/styles/kanchivaram.jpg',
+      eyebrow: isVid ? 'PURE HANDLOOM SILKS' : 'TEMPLE TRADITIONS',
+      heading: isVid ? 'Crafted with Devotion' : 'Kanchivaram Elegance',
+      subheading: isVid ? 'Experience authentic heirloom weaves with pure zari threads.' : 'Heirloom drape with temple-woven gold zari motifs.',
+      ctaLabel: isVid ? 'Explore Collection' : 'Shop Now',
+      ctaLink: isVid ? '/products' : '/products?category=kanjivaram',
+    };
+    onChange([...slides, newSlide]);
+    setExpandedIndex(slides.length);
+  }
+
+  function updateSlide(i, field, val) {
+    const next = [...slides];
+    next[i] = { ...next[i], [field]: val };
+    onChange(next);
+  }
+
+  function moveSlide(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= slides.length) return;
+    const next = [...slides];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+    if (expandedIndex === index) setExpandedIndex(target);
+    else if (expandedIndex === target) setExpandedIndex(index);
+  }
+
   function removeSlide(i) {
     onChange(slides.filter((_, idx) => idx !== i));
+    if (expandedIndex === i) setExpandedIndex(null);
   }
 
   return (
     <div className="slides-editor">
       {sizeHint && <p className="field-hint size-hint">📐 Recommended size: <strong>{sizeHint}</strong></p>}
       <p className="field-hint">
-        These play in order on the home page banner. Mix photos and short video clips (a few seconds, no sound needed — it plays muted).
-        Large videos make the page slow to load, so keep clips short and compressed.
+        Slides play horizontally in order. For buttery-smooth, zero-lag 4K video playback, you can directly use a fast video URL or local path (e.g. <code>/videos/hero1.mp4</code>) or upload a clip.
       </p>
-      {slides.length > 1 && (
-        <p className="field-hint slides-order-note">
-          There are <strong>{slides.length} slides</strong> below — they play one after another in this order.
-          Uploading <em>adds</em> a new slide rather than replacing an existing one, so remove any you no longer
-          want with the <strong>×</strong> button.
-        </p>
-      )}
 
       {slides.length > 0 && (
-        <div className="slides-grid">
-          {slides.map((s, i) => (
-            // Keyed by source, not index — a <video> whose src attribute
-            // changes doesn't reload, so index keys made the thumbnails
-            // show the wrong (previous) clip after removing a slide.
-            <div className="slide-thumb" key={`${i}-${s.url?.slice(-32)}`}>
-              {s.type === 'video' ? (
-                <video src={s.url} muted playsInline />
-              ) : (
-                <img src={s.url} alt="" />
-              )}
-              <span className="slide-order-badge">{i + 1}</span>
-              <span className="slide-type-badge">{s.type}</span>
-              <button type="button" className="slide-remove" onClick={() => removeSlide(i)} aria-label={`Remove slide ${i + 1}`}>×</button>
-            </div>
-          ))}
+        <div className="slides-cards-list">
+          {slides.map((s, i) => {
+            const isExpanded = expandedIndex === i;
+            return (
+              <div className="slide-card-item" key={s.id || `${i}-${s.url?.slice(-20)}`}>
+                <div className="slide-card-header" onClick={() => setExpandedIndex(isExpanded ? null : i)}>
+                  <div className="slide-thumb">
+                    {s.type === 'video' ? (
+                      <video src={s.url} muted playsInline />
+                    ) : (
+                      <img src={s.url} alt="" />
+                    )}
+                    <span className="slide-order-badge">{i + 1}</span>
+                    <span className="slide-type-badge">{s.type}</span>
+                  </div>
+                  <div className="slide-summary">
+                    <strong className="slide-heading-text">{s.heading || `Slide ${i + 1}`}</strong>
+                    <span className="slide-sub-text">{s.subheading || s.url}</span>
+                  </div>
+                  <div className="slide-header-actions" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveSlide(i, -1)} title="Move up">↑</button>
+                    <button type="button" className="btn-icon" disabled={i === slides.length - 1} onClick={() => moveSlide(i, 1)} title="Move down">↓</button>
+                    <button type="button" className="btn-icon btn-expand" onClick={() => setExpandedIndex(isExpanded ? null : i)}>
+                      {isExpanded ? '▲ Edit' : '▼ Edit'}
+                    </button>
+                    <button type="button" className="btn-icon btn-remove" onClick={() => removeSlide(i)} title="Remove slide">×</button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="slide-card-body">
+                    <div className="grid-2-col">
+                      <label className="field-label">
+                        Slide Type
+                        <select value={s.type || 'image'} onChange={(e) => updateSlide(i, 'type', e.target.value)}>
+                          <option value="image">Image Slide</option>
+                          <option value="video">4K Video Slide</option>
+                        </select>
+                      </label>
+                      <label className="field-label">
+                        Media URL / Path (4K Video or Image)
+                        <input
+                          type="text"
+                          value={s.url || ''}
+                          placeholder="/videos/hero1.mp4 or https://..."
+                          onChange={(e) => updateSlide(i, 'url', e.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid-2-col">
+                      <label className="field-label">
+                        Small Eyebrow Label
+                        <input
+                          type="text"
+                          value={s.eyebrow || ''}
+                          placeholder="e.g. TEMPLE TRADITIONS"
+                          onChange={(e) => updateSlide(i, 'eyebrow', e.target.value)}
+                        />
+                      </label>
+                      <label className="field-label">
+                        Slide Heading
+                        <input
+                          type="text"
+                          value={s.heading || ''}
+                          placeholder="e.g. Kanchivaram Elegance"
+                          onChange={(e) => updateSlide(i, 'heading', e.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <label className="field-label">
+                      Small Left Text / Subtitle
+                      <textarea
+                        rows={2}
+                        value={s.subheading || ''}
+                        placeholder="e.g. Heirloom drape with temple-woven gold zari motifs."
+                        onChange={(e) => updateSlide(i, 'subheading', e.target.value)}
+                      />
+                    </label>
+
+                    <div className="grid-2-col">
+                      <label className="field-label">
+                        CTA Button Text
+                        <input
+                          type="text"
+                          value={s.ctaLabel || ''}
+                          placeholder="e.g. Shop Kanchivaram"
+                          onChange={(e) => updateSlide(i, 'ctaLabel', e.target.value)}
+                        />
+                      </label>
+                      <label className="field-label">
+                        CTA Button Link
+                        <input
+                          type="text"
+                          value={s.ctaLink || ''}
+                          placeholder="e.g. /products?category=kanjivaram"
+                          onChange={(e) => updateSlide(i, 'ctaLink', e.target.value)}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
       <div className="slide-upload-actions">
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => addSlideManual('video')}>
+          + Add 4K Video Slide
+        </button>
+        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => addSlideManual('image')}>
+          + Add Image Slide
+        </button>
         <button type="button" className="btn btn-outline" disabled={busy} onClick={() => photoInput.current?.click()}>
-          {busy ? 'Uploading…' : '+ Add Photo'}
+          {busy ? 'Uploading…' : '📁 Upload Photo File'}
         </button>
         <button type="button" className="btn btn-outline" disabled={busy} onClick={() => videoInput.current?.click()}>
-          {busy ? 'Uploading…' : '+ Add Video'}
+          {busy ? 'Uploading…' : '📁 Upload Video File'}
         </button>
         <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => handleFiles(e, 'image')} />
         <input ref={videoInput} type="file" accept="video/*" multiple hidden onChange={(e) => handleFiles(e, 'video')} />
       </div>
 
       {slides.length === 0 && (
-        <p className="field-hint" style={{ marginTop: 8 }}>No banners uploaded yet{sizeHint ? ' for this view' : ''} — the home page will show the default built-in banner until you add at least one.</p>
+        <p className="field-hint" style={{ marginTop: 8 }}>No slides added yet — the default 4K video &amp; saree slides will be displayed.</p>
       )}
+    </div>
+  );
+}
+
+function GoogleReviewsEditor({ data = {}, onChange }) {
+  const reviews = Array.isArray(data.reviews) ? data.reviews : [];
+
+  function updateReview(i, field, val) {
+    const next = [...reviews];
+    next[i] = { ...next[i], [field]: val };
+    onChange({ ...data, reviews: next });
+  }
+
+  function addReview() {
+    const newRev = {
+      id: `gr-${Date.now()}`,
+      name: 'Pooja Gowda',
+      avatarInitial: 'P',
+      avatarColor: '#E65100',
+      userBadge: '1 review',
+      rating: 5,
+      timeAgo: '5 months ago',
+      text: 'They have amazing wedding collection at very reasonable price. You guys must visit for any occasion',
+      reviewUrl: data.googleBusinessUrl || 'https://share.google/rLeQl6DO3cPtU5rql',
+      likesCount: 1,
+    };
+    onChange({ ...data, reviews: [...reviews, newRev] });
+  }
+
+  function moveReview(i, dir) {
+    const target = i + dir;
+    if (target < 0 || target >= reviews.length) return;
+    const next = [...reviews];
+    [next[i], next[target]] = [next[target], next[i]];
+    onChange({ ...data, reviews: next });
+  }
+
+  function removeReview(i) {
+    onChange({ ...data, reviews: reviews.filter((_, idx) => idx !== i) });
+  }
+
+  return (
+    <div className="google-reviews-editor">
+      <p className="field-hint" style={{ marginBottom: 12 }}>
+        Manage Google Reviews displayed in the official Google Cards section before the footer.
+      </p>
+
+      <div className="reviews-cards-list">
+        {reviews.map((r, i) => (
+          <div className="review-edit-card" key={r.id || i}>
+            <div className="review-edit-head">
+              <div className="gr-edit-avatar" style={{ backgroundColor: r.avatarColor || '#E65100' }}>
+                {r.avatarInitial || r.name?.charAt(0) || 'U'}
+              </div>
+              <div className="gr-edit-title">
+                <strong>{r.name || `Review ${i + 1}`}</strong>
+                <span>{r.userBadge} · {'★'.repeat(r.rating || 5)} · {r.timeAgo}</span>
+              </div>
+              <div className="slide-header-actions">
+                <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveReview(i, -1)} title="Move up">↑</button>
+                <button type="button" className="btn-icon" disabled={i === reviews.length - 1} onClick={() => moveReview(i, 1)} title="Move down">↓</button>
+                <button type="button" className="btn-icon btn-remove" onClick={() => removeReview(i)} title="Remove review">×</button>
+              </div>
+            </div>
+
+            <div className="grid-2-col" style={{ marginTop: 10 }}>
+              <label className="field-label">
+                Reviewer Name
+                <input
+                  type="text"
+                  value={r.name || ''}
+                  onChange={(e) => updateReview(i, 'name', e.target.value)}
+                />
+              </label>
+              <label className="field-label">
+                User Badge / Meta
+                <input
+                  type="text"
+                  value={r.userBadge || ''}
+                  placeholder="e.g. 1 review or Local Guide"
+                  onChange={(e) => updateReview(i, 'userBadge', e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="grid-3-col">
+              <label className="field-label">
+                Star Rating (1-5)
+                <input
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={r.rating || 5}
+                  onChange={(e) => updateReview(i, 'rating', Number(e.target.value))}
+                />
+              </label>
+              <label className="field-label">
+                Time Ago
+                <input
+                  type="text"
+                  value={r.timeAgo || ''}
+                  placeholder="e.g. 5 months ago"
+                  onChange={(e) => updateReview(i, 'timeAgo', e.target.value)}
+                />
+              </label>
+              <label className="field-label">
+                Avatar Initial &amp; Color
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    type="text"
+                    maxLength="2"
+                    style={{ width: '48px', textAlign: 'center' }}
+                    value={r.avatarInitial || ''}
+                    onChange={(e) => updateReview(i, 'avatarInitial', e.target.value.toUpperCase())}
+                  />
+                  <input
+                    type="color"
+                    style={{ padding: 2, height: '38px', width: '50px' }}
+                    value={r.avatarColor || '#E65100'}
+                    onChange={(e) => updateReview(i, 'avatarColor', e.target.value)}
+                  />
+                </div>
+              </label>
+            </div>
+
+            <label className="field-label" style={{ marginTop: 6 }}>
+              Review Text
+              <textarea
+                rows={2}
+                value={r.text || ''}
+                onChange={(e) => updateReview(i, 'text', e.target.value)}
+              />
+            </label>
+
+            <label className="field-label">
+              Direct Google Review Link URL
+              <input
+                type="text"
+                value={r.reviewUrl || ''}
+                placeholder="https://share.google/..."
+                onChange={(e) => updateReview(i, 'reviewUrl', e.target.value)}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <button type="button" className="btn btn-outline" onClick={addReview} style={{ marginTop: 12 }}>
+        + Add Google Review
+      </button>
     </div>
   );
 }
@@ -449,6 +732,16 @@ export default function AdminHome() {
                 </label>
               )}
 
+              {s.section_key === 'google_reviews' && (
+                <label className="field-label">
+                  Google Customer Reviews (Matching Google Cards)
+                  <GoogleReviewsEditor
+                    data={draft}
+                    onChange={(nextData) => setDrafts((prev) => ({ ...prev, google_reviews: nextData }))}
+                  />
+                </label>
+              )}
+
               {(s.section_key === 'new_arrivals' || s.section_key === 'featured') && (
                 <label className="field-label">
                   Products shown as New Arrivals
@@ -666,6 +959,81 @@ export default function AdminHome() {
         .section-card-foot { display: flex; align-items: center; gap: 12px; }
         .section-card-foot .btn { padding: 10px 18px; font-size: 13px; }
         .saved-msg { font-size: 12.5px; color: #3c7a3c; }
+
+        .slides-cards-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .slide-card-item {
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          background: #fff;
+          overflow: hidden;
+        }
+        .slide-card-header {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          cursor: pointer;
+          user-select: none;
+        }
+        .slide-card-header:hover { background: var(--blush-300); }
+        .slide-summary { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .slide-heading-text { font-size: 13px; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .slide-sub-text { font-size: 11.5px; color: var(--ink-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .slide-header-actions { display: flex; align-items: center; gap: 4px; }
+        .btn-icon {
+          background: var(--paper);
+          border: 1px solid var(--stone-200);
+          border-radius: 4px;
+          padding: 4px 8px;
+          font-size: 11px;
+          color: var(--ink-700);
+          cursor: pointer;
+        }
+        .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-expand { font-size: 11px; font-weight: 500; }
+        .btn-remove { color: #b71c1c; font-weight: bold; }
+        .slide-card-body {
+          padding: 14px 16px;
+          border-top: 1px solid var(--stone-200);
+          background: #faf8f5;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+        .google-reviews-editor { display: flex; flex-direction: column; gap: 10px; }
+        .reviews-cards-list { display: flex; flex-direction: column; gap: 10px; }
+        .review-edit-card {
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .review-edit-head {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .gr-edit-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-weight: 600;
+          font-size: 14px;
+          flex: 0 0 auto;
+        }
+        .gr-edit-title { flex: 1; display: flex; flex-direction: column; }
+        .gr-edit-title strong { font-size: 13px; color: var(--ink-900); }
+        .gr-edit-title span { font-size: 11px; color: var(--ink-400); }
       `}</style>
     </div>
   );
