@@ -54,7 +54,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <Seo title={mode === 'login' ? 'Sign In | Sri Kala' : 'Create Account | Sri Kala'} path="/login" noindex />
+      <Seo title={mode === 'login' ? `Sign In | ${BRAND.name}` : `Create Account | ${BRAND.name}`} path="/login" noindex />
 
       {/* Atmospheric ambient lighting */}
       <div className="auth-ambient-glow" aria-hidden="true" />
@@ -74,7 +74,7 @@ export default function Login() {
                   width="44"
                   height="44"
                 />
-                <span className="auth-showcase-badge">Sri Kala Privileges</span>
+                <span className="auth-showcase-badge">Ravichandra Privileges</span>
               </div>
 
               <div className="auth-showcase-body">
@@ -120,17 +120,17 @@ export default function Login() {
           {/* Right Column: Interactive Authentication Experience */}
           <div className="auth-form-panel">
             <div className="auth-form-header">
-              <Link to="/" className="auth-logo-link" aria-label="Return to Sri Kala homepage">
+              <Link to="/" className="auth-logo-link" aria-label={`Return to ${BRAND.name} homepage`}>
                 <img
-                  src={BRAND.assets.logoLight || '/images/logo.png'}
+                  src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight || '/images/logo.png'}
                   alt={BRAND.name}
                   className="auth-brand-logo"
-                  width="136"
+                  width="160"
                   height="42"
                 />
               </Link>
               <p className="auth-header-sub">
-                {mode === 'login' ? 'Welcome back to your silk haven' : 'Begin your journey with Sri Kala'}
+                {mode === 'login' ? 'Welcome back to your silk haven' : `Begin your journey with ${BRAND.name}`}
               </p>
             </div>
 
@@ -284,7 +284,7 @@ export default function Login() {
                   </span>
                 ) : (
                   <>
-                    <span>{mode === 'login' ? 'Sign In to Sri Kala' : 'Create My Account'}</span>
+                    <span>{mode === 'login' ? `Sign In to ${BRAND.name}` : 'Create My Account'}</span>
                     <span className="btn-arrow" aria-hidden="true">→</span>
                   </>
                 )}

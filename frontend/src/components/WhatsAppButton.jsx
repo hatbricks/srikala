@@ -5,7 +5,7 @@ import BRAND from '../config/brand';
 function getWhatsAppUrl(number) {
   const digits = (number || '').replace(/[^\d]/g, '');
   if (!digits) return '';
-  const message = encodeURIComponent('Hello Sri Kala, I would like to inquire about your saree collection.');
+  const message = encodeURIComponent('Hello Ravichandra Textiles, I would like to inquire about your saree collection.');
   return `https://wa.me/${digits}?text=${message}`;
 }
 
@@ -33,7 +33,7 @@ export default function WhatsAppButton() {
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-btn"
-        aria-label="Chat with Sri Kala on WhatsApp"
+        aria-label="Chat with Ravichandra Textiles on WhatsApp"
       >
         <span className="whatsapp-tooltip">Chat with us</span>
         <svg

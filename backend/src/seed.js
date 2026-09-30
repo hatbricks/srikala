@@ -30,17 +30,17 @@ const products = [
 
 const homeSections = [
   { key: 'hero', title: 'Hero Banner', sort: 1, content: {
-    eyebrow: "SRI KALA",
-    heading: 'Timeless Elegance,',
-    heading2: 'Woven in Tradition',
-    subheading: "Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition.",
+    eyebrow: "RAVICHANDRA TEXTILES",
+    heading: 'Best Traditional Sarees in',
+    heading2: 'Dharmavaram',
+    subheading: "Discover the best traditional sarees in Dharmavaram, featuring pure silk handlooms, rich temple borders, and heirloom bridal pattu crafted to perfection.",
     ctaLabel: 'Explore Collection',
     ctaLink: '/products',
     slides: [
       {
         type: 'video',
         url: '/videos/hero1.mp4',
-        alt: 'Sri Kala Traditional Saree Showcase 4K Video',
+        alt: 'Ravichandra Textiles Traditional Saree Showcase 4K Video',
         eyebrow: 'PURE HANDLOOM SILKS',
         heading: 'Crafted with Devotion',
         subheading: 'Experience heirloom silk woven with pure zari threads.',
@@ -70,7 +70,7 @@ const homeSections = [
     ],
   } },
   { key: 'showcase', title: 'Our Collections (rail)', sort: 2, content: {
-    note: "Sri Kala's combination of heritage weave and modern drape helps create a look that's as timeless as you are.",
+    note: "Ravichandra Textiles brings together the best traditional sarees in Dharmavaram, honoring centuries of sacred weaving heritage.",
     heading: 'Our Collections',
   } },
   { key: 'featured_categories', title: 'Shop by Category', sort: 3, content: {
@@ -111,8 +111,8 @@ const homeSections = [
   { key: 'story', title: 'Our Craft', sort: 6, content: {
     eyebrow: 'Our story',
     heading: 'Where Tradition Meets Grace',
-    body: "Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe. Every weave is selected with reverent care for authenticity, drape, and enduring elegance.",
-    ctaLabel: 'Discover Sri Kala',
+    body: "Ravichandra Textiles celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected Dharmavaram silk sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe. Every weave is selected with reverent care for authenticity, drape, and enduring elegance.",
+    ctaLabel: 'Discover Ravichandra Textiles',
     ctaLink: '/about',
     image: img('photo-1692992193981-d3d92fabd9cb'),
   } },
@@ -120,20 +120,20 @@ const homeSections = [
     heading: 'Loved by our customers',
   } },
   { key: 'social_links', title: 'Footer — Social & Contact Links', sort: 20, content: {
-    whatsapp: '+919876543210',
-    facebook: 'https://www.facebook.com/srikalasilks',
-    twitter: 'https://twitter.com/srikalasilks',
-    instagram: 'https://www.instagram.com/srikalasilks',
+    whatsapp: '+918317551337',
+    facebook: 'https://www.facebook.com/ravichandrahandlooms',
+    twitter: 'https://twitter.com/ravichandratextiles',
+    instagram: 'https://www.instagram.com/ravichandra_handlooms',
   } },
   { key: 'about_hero', title: 'About Page — Header', sort: 8, content: {
     eyebrow: "Our Story",
-    heading: 'Where Tradition Meets Grace',
+    heading: 'Best Traditional Sarees in Dharmavaram',
   } },
   { key: 'about_story', title: 'About Page — Our Story', sort: 9, content: {
     heading: 'Our story',
     // Each string here becomes its own paragraph on the About page.
     paragraphs: [
-      'Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
+      'Ravichandra Textiles celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected Dharmavaram pure silk sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
       'From pure temple-woven silks and intricate brocades to breathable everyday handlooms, each piece is chosen for its character, richness of weave, and fine craftsmanship.',
       'Every saree that reaches you has been checked by hand for weave quality, zari luster and finish before it leaves our store.',
     ],
@@ -193,7 +193,7 @@ const testimonials = [
   { name: 'Meera K.', rating: 5, text: 'Beautiful drape, true to the photos, and the pallu sits perfectly without adjusting all evening.', productId: 'p1', sort: 2 },
   { name: 'Sowmya P.', rating: 5, text: 'This was my bridal saree and it exceeded every expectation. Worth every rupee.', productId: 'p4', sort: 1 },
   // General homepage band — productId left blank so these rotate site-wide.
-  { name: 'Divya N.', rating: 5, text: "Fast shipping, careful packaging, and the saree itself is even more beautiful in hand. Sri Kala is now my go-to.", productId: null, sort: 1 },
+  { name: 'Divya N.', rating: 5, text: "Fast shipping, careful packaging, and the saree itself is even more beautiful in hand. Ravichandra Textiles is now my go-to for authentic Dharmavaram silks.", productId: null, sort: 1 },
   { name: 'Priya S.', rating: 5, text: 'Genuinely handwoven quality at a fair price. I appreciate that they work directly with weaving families.', productId: null, sort: 2 },
   { name: 'Kavya M.', rating: 4, text: 'Lovely collection and easy ordering experience. Would love to see more everyday cotton options.', productId: null, sort: 3 },
 ];
@@ -254,14 +254,14 @@ async function main() {
        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,TRUE,TRUE)`,
       [
         'Primary Hub',
-        'Sri Kala Logistics',
-        'orders@srikala.com',
-        '9876543210',
-        '12 Gandhi Road, Heritage Quarter',
-        'Near Sannadhi Street',
-        'Kanchipuram',
-        'Tamil Nadu',
-        '631501',
+        'Ravichandra Textiles Logistics',
+        'ravichandratextiles39@gmail.com',
+        '8317551337',
+        '10-28, Kpt street',
+        'Near Punjab National Bank',
+        'Dharmavaram',
+        'Andhra Pradesh',
+        '515671',
         'India'
       ]
     );

@@ -7,7 +7,7 @@ const defaultSlides = [
     id: 'hero-video-1',
     type: 'video',
     src: '/videos/hero1.mp4',
-    alt: 'Sri Kala Traditional Saree Showcase - 4K Video',
+    alt: 'Ravichandra Textiles Traditional Saree Showcase - 4K Video',
     eyebrow: 'PURE HANDLOOM SILKS',
     heading: 'Crafted with Devotion',
     subheading: 'Experience authentic heirloom weaves with pure zari threads.',
@@ -18,7 +18,7 @@ const defaultSlides = [
     id: 'hero-image-2',
     type: 'image',
     src: '/images/styles/kanchivaram.jpg',
-    alt: 'Sri Kala Kanchivaram Silk Saree',
+    alt: 'Ravichandra Textiles Kanchivaram Silk Saree',
     eyebrow: 'TEMPLE TRADITIONS',
     heading: 'Kanchivaram Elegance',
     subheading: 'Heirloom drape with temple-woven gold zari motifs.',
@@ -29,7 +29,7 @@ const defaultSlides = [
     id: 'hero-image-3',
     type: 'image',
     src: '/images/styles/banarasi.jpg',
-    alt: 'Sri Kala Banarasi Saree Showcase',
+    alt: 'Ravichandra Textiles Banarasi Saree Showcase',
     eyebrow: 'ROYAL WEAVES',
     heading: 'Banarasi Splendor',
     subheading: 'Brocade zari woven by master craftsmen from the sacred ghats.',
@@ -67,7 +67,7 @@ export default function HeroSlider({ slides: cmsSlides, mobileSlides: cmsMobileS
           id: s.id || `${i}-${s.url}`,
           type: s.type || 'image',
           src: s.url || s.src,
-          alt: s.alt || s.heading || 'Sri Kala Sarees',
+          alt: s.alt || s.heading || 'Ravichandra Textiles Sarees',
           eyebrow: s.eyebrow,
           heading: s.heading,
           subheading: s.subheading,
@@ -130,16 +130,23 @@ function HorizontalHeroSlider({ slides, isMobile }) {
     if (slides.length <= 1 || isPaused) return undefined;
 
     const currentSlide = slides[active];
-    // If the active slide is a static image, auto-advance after 5.5s
+    const firstImageIndex = slides.findIndex((s) => s.type === 'image');
+    // First hero slide (index 0) or first image slide gets +20s
+    const isFirstHero = active === 0 || active === firstImageIndex;
+    const additionalTime = isFirstHero ? 20000 : 0;
+
+    // If the active slide is a static image, auto-advance after 5.5s (+20s for first hero image = 25.5s)
     if (currentSlide?.type === 'image') {
+      const duration = (currentSlide.duration || 5500) + additionalTime;
       timerRef.current = setInterval(() => {
         setActive((i) => (i + 1) % slides.length);
-      }, 5500);
+      }, duration);
     } else if (currentSlide?.type === 'video') {
-      // Safety auto-advance in case video is extra long or fails onEnded event
+      // Safety auto-advance in case video is extra long or fails onEnded event (+20s for slide 0 = 28.5s)
+      const duration = (currentSlide.duration || 8500) + additionalTime;
       timerRef.current = setInterval(() => {
         setActive((i) => (i + 1) % slides.length);
-      }, 8500);
+      }, duration);
     }
 
     return () => clearInterval(timerRef.current);

@@ -42,7 +42,7 @@ function AdminLoginGate() {
       <Seo title="Admin Login" path="/admin" noindex />
       <form className="admin-gate-card" onSubmit={handleSubmit}>
         <div className="admin-brand">
-          <img src="/images/monogram.png" alt="" className="brand-mark" /> Sri Kala <span className="cms-tag">CMS</span>
+          <img src="/images/monogram.png" alt="" className="brand-mark" /> Ravichandra <span className="cms-tag">CMS</span>
         </div>
         <h1>Admin Login</h1>
         <label>
@@ -102,7 +102,7 @@ export default function AdminLayout() {
       <Seo title="Admin" path="/admin" noindex />
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <img src="/images/monogram-white.png" alt="" className="brand-mark" /> Sri Kala <span className="cms-tag">CMS</span>
+          <img src="/images/monogram-white.png" alt="" className="brand-mark" /> Ravichandra <span className="cms-tag">CMS</span>
         </div>
         <nav>
           {links.map((l) => (

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { api } from '../data/api';
 import { formatINR } from '../data/store';
+import BRAND from '../config/brand';
 
 const emptyAddress = { name: '', mobile: '', line1: '', line2: '', city: '', state: '', pincode: '', country: 'India', isDefault: false };
 
@@ -176,8 +177,8 @@ export default function Checkout() {
         amount,
         currency,
         order_id: razorpayOrderId,
-        name: 'Sri Kala',
-        description: `Order #SK${localOrderId}`,
+        name: BRAND.name,
+        description: `Order #${orderNumber || localOrderId}`,
         prefill: { name: address.name, contact: address.mobile, email: user?.email },
         theme: { color: '#581e15' },
         handler: async (response) => {

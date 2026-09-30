@@ -195,7 +195,7 @@ export default function CategoryShowcase({ categories, note, heading }) {
     <div className="showcase">
       <div className="showcase-head">
         <TextReveal as="p" direction="left" distance={28} duration={revealDuration} className="showcase-note">
-          {note || "Sri Kala celebrates the timeless art of Indian weaving, curating each saree to bring grace and authentic craftsmanship to every occasion."}
+          {note || "Ravichandra Textiles celebrates the timeless art of Indian weaving, curating each saree to bring grace and authentic craftsmanship to every occasion."}
         </TextReveal>
         <TextReveal as="h2" delay={revealDelay} direction="right" distance={38} duration={revealDuration} className="showcase-title">
           {heading || 'Our Collections'}

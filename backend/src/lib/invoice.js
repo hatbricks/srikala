@@ -11,13 +11,14 @@ const INK_LIGHT = '#6E5D57';
 const RULE = '#E4DDD4';
 
 const STORE = {
-  name: 'Sri Kala',
+  name: 'Ravichandra Textiles',
   addressLines: [
-    'Sri Kala Silk Emporium',
-    'MG Road, Hyderabad, Telangana 500001',
+    'Ravichandra Textiles & Handlooms',
+    '10-28, Kpt street, near Punjab National Bank',
+    'Dharmavaram 515671, Andhra Pradesh',
   ],
-  phone: process.env.SRI_KALA_PHONE || '+91 98765 43210',
-  email: process.env.SRI_KALA_EMAIL || 'contact@srikala.com',
+  phone: process.env.STORE_PHONE || process.env.RAVICHANDRA_PHONE || '+91 83175 51337',
+  email: process.env.STORE_EMAIL || process.env.RAVICHANDRA_EMAIL || 'ravichandratextiles39@gmail.com',
 };
 
 function formatINR(amount) {

@@ -6,6 +6,7 @@ import Seo, { SITE_URL } from '../components/Seo';
 import { useCart } from '../context/CartContext';
 import { api } from '../data/api';
 import { formatINR, getProducts } from '../data/store';
+import BRAND from '../config/brand';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -106,9 +107,9 @@ export default function ProductDetail() {
   return (
     <div className="detail-page">
       <Seo
-        title={product.name}
+        title={`${product.name} | ${BRAND.name}`}
         path={`/products/${product.id}`}
-        description={(product.description || `${product.name} — handcrafted Indian saree from Sri Kala Silk Emporium.`).slice(0, 160)}
+        description={(product.description || `${product.name} — handcrafted traditional silk saree from ${BRAND.name}, Dharmavaram.`).slice(0, 160)}
         image={ogImage}
         type="product"
         jsonLd={{

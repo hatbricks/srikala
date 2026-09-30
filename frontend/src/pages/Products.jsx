@@ -5,6 +5,7 @@ import RecommendedProducts from '../components/RecommendedProducts';
 import Seo from '../components/Seo';
 import { api } from '../data/api';
 import { getCategories, getProducts } from '../data/store';
+import BRAND from '../config/brand';
 
 const sortOptions = [
   { id: 'popular', label: 'Popularity' },
@@ -77,7 +78,9 @@ export default function Products() {
   const activeCategoryName = activeCategory !== 'all'
     ? categories.find((c) => c.id === activeCategory)?.name
     : null;
-  const seoTitle = activeCategoryName ? `${activeCategoryName} Sarees` : 'Shop All Sarees';
+  const seoTitle = activeCategoryName
+    ? `${activeCategoryName} Sarees | Best Traditional Sarees in Dharmavaram`
+    : `Best Traditional Sarees in Dharmavaram | ${BRAND.name}`;
 
   return (
     <div className="products-page">
@@ -86,9 +89,10 @@ export default function Products() {
         path={activeCategory !== 'all' ? `/products?category=${activeCategory}` : '/products'}
         description={
           activeCategoryName
-            ? `Shop handwoven ${activeCategoryName} sarees at Sri Kala — curated directly from master weaving clusters.`
-            : "Browse Sri Kala's full collection of pure silk and handwoven sarees — Kanjivaram, Banarasi, bridal, organza and more."
+            ? `Shop authentic handwoven ${activeCategoryName} sarees at ${BRAND.name} — celebrated as the best traditional sarees in Dharmavaram, woven with pure silk and genuine zari.`
+            : `Explore the complete collection of the best traditional sarees in Dharmavaram at ${BRAND.name} — Dharmavaram silk, Kanchivaram, Banarasi, bridal pattu, and festive handlooms.`
         }
+        keywords="best traditional sarees in dharmavaram, dharmavaram silk sarees online, pure pattu sarees dharmavaram, bridal sarees dharmavaram, ravichandra textiles"
       />
       <div className="sparkle-bg" aria-hidden="true">
         <img src="/images/sparkle-bg.svg" alt="" />

@@ -152,7 +152,7 @@ export default function LogoIntro() {
           <div className="logo-img-wrapper">
             <img
               ref={logoImgRef}
-              src={BRAND.assets.logoIntro || '/images/given-logo-transparent.png'}
+              src={BRAND.assets.logoVertical || BRAND.assets.logoIntro || '/images/logo-vertical.png'}
               alt={BRAND.name}
               className="logo-intro-img"
               width="420"
@@ -186,7 +186,7 @@ export default function LogoIntro() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #ffffff;
+          background: #0f0705;
           pointer-events: auto;
           overflow: hidden;
           user-select: none;
@@ -257,23 +257,24 @@ export default function LogoIntro() {
           gap: 6px;
           padding: 7px 16px;
           border-radius: 999px;
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(197, 139, 56, 0.35);
-          color: #8c5a1e;
+          background: rgba(26, 12, 9, 0.75);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(197, 139, 56, 0.4);
+          color: #dfb15b;
           font-family: var(--font-body);
           font-size: 12px;
           font-weight: 500;
           letter-spacing: 0.08em;
           text-transform: uppercase;
           cursor: pointer;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
           transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
         .logo-intro-skip:hover {
-          background: #ffffff;
-          border-color: #b0732e;
-          color: #581e15;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+          background: rgba(44, 20, 15, 0.9);
+          border-color: #dfb15b;
+          color: #ffffff;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
         }
       `}</style>
     </aside>

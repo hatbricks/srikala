@@ -621,7 +621,7 @@ router.get('/:id/invoice', requireAuth, async (req, res) => {
   const { rows: userRows } = await query('SELECT name, email, mobile FROM users WHERE id = $1', [order.user_id]);
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="SriKala-Invoice-${order.order_number || order.id}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="RavichandraTextiles-Invoice-${order.order_number || order.id}.pdf"`);
   renderInvoice(res, { order, items, customer: userRows[0] });
 });
 

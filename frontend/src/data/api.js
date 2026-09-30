@@ -127,7 +127,7 @@ export const api = {
   trackOrder: (id) => request(`/api/orders/${id}/track`),
   updateOrderStatus: (id, payload) => request(`/api/orders/admin/${id}/status`, { method: 'PUT', body: payload }),
   assignOrderAWB: (id) => request(`/api/orders/admin/${id}/assign-awb`, { method: 'POST' }),
-  downloadInvoice: (id) => downloadFile(`/api/orders/${id}/invoice`, `SriKala-Invoice-${id}.pdf`),
+  downloadInvoice: (id) => downloadFile(`/api/orders/${id}/invoice`, `RavichandraTextiles-Invoice-${id}.pdf`),
 
   // shipping & logistics
   calculateShipping: (payload) => request('/api/shipping/calculate', { method: 'POST', body: payload, auth: false }),

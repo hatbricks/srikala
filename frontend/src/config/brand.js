@@ -8,12 +8,12 @@
 export const BRAND = {
   name: 'Ravichandra Textiles',
   legalName: 'Ravichandra Textiles & Handlooms',
-  tagline: 'Authentic Dharmavaram Handloom Silk Sarees',
+  tagline: 'Best Traditional Sarees in Dharmavaram — Authentic Pure Silk Handlooms',
   shortTitle: 'Ravichandra Textiles',
-  fullTitle: 'Ravichandra Textiles — Authentic Dharmavaram Pure Silk Handlooms',
+  fullTitle: 'Best Traditional Sarees in Dharmavaram | Ravichandra Textiles — Authentic Silk Handlooms',
   slogan: 'Tradition of Pure Weaves & Timeless Craft',
-  subheading: 'Discover exquisite Dharmavaram handloom silk sarees crafted with sacred precision and heirloom artistry directly from master weaving families.',
-  description: 'Ravichandra Textiles is renowned for authentic Dharmavaram pure silk handloom sarees, rich temple borders, pure zari brocades, and festive heirloom weaves.',
+  subheading: 'Discover the best traditional sarees in Dharmavaram crafted with sacred precision, pure zari, and heirloom artistry directly from master weaving families.',
+  description: 'Ravichandra Textiles is renowned for the best traditional sarees in Dharmavaram, featuring authentic pure silk handloom sarees, rich temple borders, pure gold zari brocades, and bridal heirloom weaves.',
 
   story: {
     eyebrow: 'Our Heritage',
@@ -57,9 +57,9 @@ export const BRAND = {
   seo: {
     siteName: 'Ravichandra Textiles',
     siteUrl: 'https://ravichandratextiles.com',
-    defaultTitle: 'Ravichandra Textiles — Authentic Dharmavaram Pure Silk Handlooms',
-    defaultDescription: 'Shop pure Dharmavaram silk handloom sarees, bridal silks, Kanchivaram, Banarasi, and festive pattu sarees directly from master artisans at Ravichandra Textiles.',
-    defaultKeywords: 'Ravichandra Textiles, Dharmavaram silk sarees, Dharmavaram handloom, pure pattu sarees, bridal silk sarees, Kanchivaram silk, Banarasi silk, wedding sarees Andhra Pradesh, handloom sarees Dharmavaram',
+    defaultTitle: 'Best Traditional Sarees in Dharmavaram | Ravichandra Textiles — Authentic Silk Handlooms',
+    defaultDescription: 'Discover the best traditional sarees in Dharmavaram at Ravichandra Textiles. Shop authentic Dharmavaram pure silk handloom sarees, bridal pattu, rich temple borders & pure zari brocades directly from master weavers with guaranteed purity.',
+    defaultKeywords: 'best traditional sarees in dharmavaram, best saree shop in dharmavaram, dharmavaram silk sarees, dharmavaram handloom sarees, pure pattu sarees dharmavaram, ravichandra textiles, bridal silk sarees dharmavaram, wedding pattu sarees andhra pradesh, dharmavaram pattu sarees online, authentic silk mark sarees, kanchivaram silk, banarasi silk',
   },
 
   assets: {

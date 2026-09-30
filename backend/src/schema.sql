@@ -1,4 +1,4 @@
--- Sri Kala — full schema. Works on Neon now, and on plain Postgres (VPS) later
+-- Ravichandra Textiles — full schema. Works on Neon now, and on plain Postgres (VPS) later
 -- with zero changes — just point DATABASE_URL at the new instance.
 
 CREATE TABLE IF NOT EXISTS users (

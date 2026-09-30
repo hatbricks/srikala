@@ -19,7 +19,7 @@ const defaults = {
     eyebrow: 'RAVICHANDRA TEXTILES',
     heading: 'Timeless Elegance, Woven in',
     heading2: 'Tradition',
-    subheading: 'Discover thoughtfully curated Dharmavaram & Indian handloom sarees crafted to celebrate timeless beauty, artistry and tradition.',
+    subheading: 'Discover the best traditional sarees in Dharmavaram, featuring pure silk handlooms, rich temple borders, and heirloom bridal pattu crafted to perfection.',
     ctaLabel: 'Explore Collection',
     ctaLink: '/products',
     secondaryCtaLabel: 'Discover Ravichandra Textiles',
@@ -160,15 +160,31 @@ export default function Home() {
   return (
     <div className="home">
       <Seo
+        title={BRAND.seo.defaultTitle}
         path="/"
         description={BRAND.seo.defaultDescription}
+        keywords={BRAND.seo.defaultKeywords}
         jsonLd={{
           '@context': 'https://schema.org',
-          '@type': 'Organization',
+          '@type': ['ClothingStore', 'LocalBusiness'],
           name: BRAND.name,
+          legalName: BRAND.legalName,
           url: BRAND.seo.siteUrl,
-          logo: `${BRAND.seo.siteUrl}${BRAND.assets.logoWhite}`,
-          sameAs: [],
+          logo: `${BRAND.seo.siteUrl}/images/logo-horizontal.png`,
+          image: `${BRAND.seo.siteUrl}/images/logo-vertical.png`,
+          description: BRAND.seo.defaultDescription,
+          telephone: BRAND.contact.phone,
+          email: BRAND.contact.email,
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: '10-28, Kpt street, near Punjab National Bank',
+            addressLocality: 'Dharmavaram',
+            addressRegion: 'Andhra Pradesh',
+            postalCode: '515671',
+            addressCountry: 'IN',
+          },
+          priceRange: '₹₹ - ₹₹₹',
+          sameAs: [BRAND.contact.instagram, BRAND.contact.facebook, BRAND.contact.twitter].filter(Boolean),
         }}
       />
       <section className="hero">

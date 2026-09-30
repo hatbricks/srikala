@@ -104,11 +104,11 @@ export default function Navbar() {
           <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
             <img
               id="navBrandLogo"
-              src={BRAND.assets.logoLight}
+              src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight}
               alt={BRAND.name}
               className="brand-logo"
-              width="180"
-              height="48"
+              width="210"
+              height="46"
             />
           </Link>
         </div>
@@ -314,10 +314,12 @@ export default function Navbar() {
           transform: scale(1.02);
         }
         .brand-logo {
-          height: 48px;
+          height: 46px;
+          max-width: 230px;
           width: auto;
           display: block;
           object-fit: contain;
+          filter: drop-shadow(0 1px 2px rgba(44, 24, 16, 0.16));
         }
 
         /* Desktop Navigation Links */

@@ -37,9 +37,10 @@ export default function About() {
   return (
     <div className="about-page">
       <Seo
-        title="About Us"
+        title={`Best Traditional Sarees in Dharmavaram — Our Heritage | ${BRAND.name}`}
         path="/about"
-        description={`${BRAND.name} celebrates the timeless beauty of Indian craftsmanship, bringing together thoughtfully selected Dharmavaram silk sarees that honour traditional artistry.`}
+        description="Learn about Ravichandra Textiles, weavers of the best traditional sarees in Dharmavaram. Discover generations of master artisan heritage, authentic pure silk pit looms, and bridal pattu excellence."
+        keywords="about ravichandra textiles, best traditional sarees in dharmavaram, dharmavaram silk heritage, master weavers dharmavaram, pure silk sarees andhra pradesh"
       />
       <section className="about-hero">
         <div className="container">

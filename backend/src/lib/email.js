@@ -36,7 +36,7 @@ async function send({ to, subject, html }) {
 
 // ---------------------------------------------------------------------
 // Shared layout — a table-based wrapper (safest across email clients,
-// including Outlook) with the Sri Kala header/footer. Every email below
+// including Outlook) with the Ravichandra Textiles header/footer. Every email below
 // just supplies the middle "content" block.
 // ---------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ function layout({ preheader = '', content, ctaLabel, ctaUrl }) {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Sri Kala</title>
+    <title>Ravichandra Textiles</title>
   </head>
   <body style="margin:0;padding:0;background:${COLORS.stone100};font-family:Georgia,'Times New Roman',serif;">
     <!-- preheader (hidden preview text) -->
@@ -74,10 +74,10 @@ function layout({ preheader = '', content, ctaLabel, ctaUrl }) {
             <tr>
               <td style="background:${COLORS.maroon950};padding:28px 32px;text-align:center;">
                 <span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:0.08em;color:${COLORS.ivory};">
-                  SRI KALA
+                  RAVICHANDRA TEXTILES
                 </span>
                 <div style="font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${COLORS.gold500};margin-top:6px;">
-                  Silk Emporium
+                  Authentic Dharmavaram Pure Silk Handlooms
                 </div>
               </td>
             </tr>
@@ -112,11 +112,11 @@ function layout({ preheader = '', content, ctaLabel, ctaUrl }) {
             <tr>
               <td style="padding:24px 36px 30px;border-top:1px solid ${COLORS.stone200};font-family:Helvetica,Arial,sans-serif;">
                 <p style="margin:0 0 4px;font-size:12px;color:${COLORS.ink400};">
-                  Sri Kala &middot; Sri Kala Silk Emporium, MG Road, Hyderabad, Telangana 500001
+                  Ravichandra Textiles &middot; 10-28, Kpt street, near Punjab National Bank, Dharmavaram 515671, Andhra Pradesh
                 </p>
                 <p style="margin:0;font-size:12px;color:${COLORS.ink400};">
                   Questions? Reply to this email or write to
-                  <a href="mailto:contact@srikala.com" style="color:${COLORS.ink400};">contact@srikala.com</a>
+                  <a href="mailto:ravichandratextiles39@gmail.com" style="color:${COLORS.ink400};">ravichandratextiles39@gmail.com</a>
                 </p>
               </td>
             </tr>
@@ -137,7 +137,7 @@ export function sendPasswordResetEmail(user, resetUrl) {
       Hi ${escapeHtml(user.name)},
     </h1>
     <p style="font-size:14px;line-height:1.7;color:${COLORS.ink600};margin:0 0 8px;">
-      We got a request to reset the password on your Sri Kala account. Click the button below to choose a new one — this link expires in 30 minutes.
+      We got a request to reset the password on your Ravichandra Textiles account. Click the button below to choose a new one — this link expires in 30 minutes.
     </p>
     <p style="font-size:13px;line-height:1.7;color:${COLORS.ink400};margin:16px 0 0;">
       If you didn&rsquo;t request this, you can safely ignore this email — your password won&rsquo;t change.
@@ -146,9 +146,9 @@ export function sendPasswordResetEmail(user, resetUrl) {
 
   return send({
     to: user.email,
-    subject: "Reset your Sri Kala password",
+    subject: "Reset your Ravichandra Textiles password",
     html: layout({
-      preheader: `Reset your Sri Kala password — this link expires in 30 minutes.`,
+      preheader: `Reset your Ravichandra Textiles password — this link expires in 30 minutes.`,
       content,
       ctaLabel: 'Reset password',
       ctaUrl: resetUrl,
@@ -162,7 +162,7 @@ export function sendLoginEmail(user) {
       Hi ${escapeHtml(user.name)},
     </h1>
     <p style="font-size:14px;line-height:1.7;color:${COLORS.ink600};margin:0 0 8px;">
-      We noticed a new login to your Sri Kala account just now.
+      We noticed a new login to your Ravichandra Textiles account just now.
     </p>
     <p style="font-size:13px;line-height:1.7;color:${COLORS.ink400};margin:16px 0 0;">
       If this wasn&rsquo;t you, please secure your account by resetting your password right away.
@@ -171,9 +171,9 @@ export function sendLoginEmail(user) {
 
   return send({
     to: user.email,
-    subject: "New login to your Sri Kala account",
+    subject: "New login to your Ravichandra Textiles account",
     html: layout({
-      preheader: `New login to your Sri Kala account`,
+      preheader: `New login to your Ravichandra Textiles account`,
       content,
       ctaLabel: 'View your account',
       ctaUrl: `${siteUrl}/profile`,
@@ -239,9 +239,9 @@ export function sendOrderConfirmationEmail(user, order, items) {
 
   return send({
     to: user.email,
-    subject: `Order confirmed — #SK${order.id} · Sri Kala`,
+    subject: `Order confirmed — #${order.order_number || order.id} · Ravichandra Textiles`,
     html: layout({
-      preheader: `Your order #SK${order.id} is confirmed — total ₹${order.subtotal.toLocaleString('en-IN')}`,
+      preheader: `Your order #${order.order_number || order.id} is confirmed — total ₹${order.subtotal.toLocaleString('en-IN')}`,
       content,
       ctaLabel: 'View your order',
       ctaUrl: `${siteUrl}/orders`,
@@ -256,7 +256,7 @@ export function sendCancellationEmail(user, order, { refundPercent, refundAmount
       Order cancelled
     </h1>
     <p style="font-size:14px;line-height:1.7;color:${COLORS.ink600};margin:0 0 22px;">
-      Hi ${escapeHtml(user.name)}, your order <strong style="color:${COLORS.ink900};">#SK${order.id}</strong> has been cancelled as requested.
+      Hi ${escapeHtml(user.name)}, your order <strong style="color:${COLORS.ink900};">#${order.order_number || order.id}</strong> has been cancelled as requested.
     </p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.stone100};border-radius:10px;margin-bottom:20px;">
@@ -277,9 +277,9 @@ export function sendCancellationEmail(user, order, { refundPercent, refundAmount
 
   return send({
     to: user.email,
-    subject: `Order cancelled — #SK${order.id} · Sri Kala`,
+    subject: `Order cancelled — #${order.order_number || order.id} · Ravichandra Textiles`,
     html: layout({
-      preheader: `Your order #SK${order.id} has been cancelled — ${refundPercent}% refund (₹${refundAmount.toLocaleString('en-IN')}) is on its way.`,
+      preheader: `Your order #${order.order_number || order.id} has been cancelled — ${refundPercent}% refund (₹${refundAmount.toLocaleString('en-IN')}) is on its way.`,
       content,
       ctaLabel: 'View your orders',
       ctaUrl: `${siteUrl}/orders`,

@@ -11,6 +11,7 @@ const router = Router();
 const ADMIN_EMAILS = [
   (process.env.ADMIN_EMAIL || '').toLowerCase(),
   'ravichandratextiles39@gmail.com',
+  'admin@ravichandratextiles.com',
   'admin@srikala.com',
 ].filter(Boolean);
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes

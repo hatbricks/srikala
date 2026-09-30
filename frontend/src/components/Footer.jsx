@@ -35,7 +35,7 @@ export default function Footer() {
         {/* Brand Column */}
         <div className="footer-brand">
           <Link to="/" className="footer-logo-link">
-            <img src={BRAND.assets.logoWhite} alt={BRAND.name} className="footer-logo" width="140" height="42" />
+            <img src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight} alt={BRAND.name} className="footer-logo" width="210" height="46" />
           </Link>
           <p className="footer-desc">
             {BRAND.description}
@@ -112,9 +112,21 @@ export default function Footer() {
       </div>
 
       <div className="container footer-bottom">
-        <span>&copy; {new Date().getFullYear()} {BRAND.legalName}. All rights reserved.</span>
+        <div className="footer-bottom-copy">
+          <span>&copy; {new Date().getFullYear()} {BRAND.legalName}. All rights reserved.</span>
+          <a
+            href="https://hatbricks.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-powered-by"
+            aria-label="Powered by Hatbricks"
+          >
+            <span>Powered by</span>
+            <img src="/images/hatbricks-logo.png" alt="Hatbricks" className="powered-by-brand-img" height="18" />
+          </a>
+        </div>
         <div className="footer-bottom-links">
-          <span>Handcrafted with devotion</span>
+          <span>Best Traditional Silk Sarees in Dharmavaram</span>
         </div>
       </div>
 
@@ -133,9 +145,11 @@ export default function Footer() {
           border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .footer-brand .footer-logo {
-          height: 38px;
+          height: 46px;
+          max-width: 230px;
           width: auto;
           display: block;
+          object-fit: contain;
         }
         .footer-brand .footer-desc {
           font-size: 13.5px;
@@ -192,14 +206,50 @@ export default function Footer() {
           justify-content: space-between;
           padding: 24px 32px;
           font-size: 12.5px;
-          opacity: 0.7;
+          color: var(--blush-300);
+          opacity: 0.9;
+        }
+        .footer-bottom-copy {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+        .footer-powered-by {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          color: #f5ecd7;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 12px;
+          padding: 5px 13px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(197, 139, 56, 0.28);
+          transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .footer-powered-by:hover {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(223, 177, 91, 0.6);
+          color: #ffffff;
+          transform: translateY(-1px);
+        }
+        .powered-by-brand-img {
+          height: 19px;
+          width: auto;
+          max-width: 105px;
+          object-fit: contain;
+          display: inline-block;
+          vertical-align: middle;
         }
         @media (max-width: 980px) {
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }
         }
         @media (max-width: 580px) {
           .footer-grid { grid-template-columns: 1fr; gap: 32px; }
-          .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+          .footer-bottom { flex-direction: column; gap: 10px; text-align: center; }
+          .footer-bottom-copy { justify-content: center; }
         }
       `}</style>
     </footer>
