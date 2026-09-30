@@ -61,19 +61,19 @@ export default function Contact() {
             </div>
             <div>
               <dt>Store Hours</dt>
-              <dd>{BRAND.contact.hoursWeekday} &middot; {BRAND.contact.hoursSunday}</dd>
+              <dd>{BRAND.contact.hours || 'Sun - Sat: 10am - 10pm'}</dd>
             </div>
             {BRAND.contact.instagram && (
               <div>
                 <dt>Instagram</dt>
-                <dd><a href={BRAND.contact.instagram} target="_blank" rel="noreferrer">@srikalasilks</a></dd>
+                <dd><a href={BRAND.contact.instagram} target="_blank" rel="noreferrer">@{BRAND.social?.instagramHandle || 'ravichandra_handlooms'}</a></dd>
               </div>
             )}
           </dl>
 
           <div className="map-embed">
             <iframe
-              title="Sri Kala store location"
+              title={`${BRAND.name} store location`}
               src={`https://maps.google.com/maps?q=${encodeURIComponent(BRAND.contact.address)}&output=embed`}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -85,7 +85,7 @@ export default function Contact() {
           {sent ? (
             <div className="form-sent">
               <h3>Message received</h3>
-              <p>Thank you — someone from Sri Kala will get back to you shortly.</p>
+              <p>Thank you — someone from {BRAND.name} will get back to you shortly.</p>
             </div>
           ) : (
             <>

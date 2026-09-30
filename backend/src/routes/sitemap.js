@@ -3,7 +3,7 @@ import { query } from '../db.js';
 
 const router = Router();
 
-const SITE_URL = process.env.SITE_URL || 'https://www.srikala.com';
+const SITE_URL = process.env.SITE_URL || 'https://www.ravichandratextiles.com';
 
 function escapeXml(str) {
   return String(str)

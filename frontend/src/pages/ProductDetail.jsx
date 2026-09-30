@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import RecommendedProducts from '../components/RecommendedProducts';
-import ReviewsCarousel from '../components/ReviewsCarousel';
-import Testimonials from '../components/Testimonials';
 import CancellationPolicyCard from '../components/CancellationPolicyCard';
 import Seo, { SITE_URL } from '../components/Seo';
 import { useCart } from '../context/CartContext';
@@ -15,7 +13,6 @@ export default function ProductDetail() {
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
-  const [testimonials, setTestimonials] = useState([]);
   const [activeImage, setActiveImage] = useState(null);
   const [allProducts, setAllProducts] = useState(null);
   const [recommended, setRecommended] = useState({ heading: 'Recommended For You', productIds: [] });
@@ -73,7 +70,6 @@ export default function ProductDetail() {
         else setNotFound(true);
       });
 
-    api.getTestimonials(id).then(({ testimonials }) => active && setTestimonials(testimonials)).catch(() => {});
     return () => { active = false; };
   }, [id]);
 
@@ -253,11 +249,6 @@ export default function ProductDetail() {
 
           <CancellationPolicyCard />
         </div>
-      </div>
-
-      <div className="container">
-        <Testimonials testimonials={testimonials} />
-        <ReviewsCarousel productId={product.id} />
       </div>
 
       <RecommendedProducts

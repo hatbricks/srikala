@@ -22,6 +22,17 @@ import settingsRoutes from './routes/settings.js';
 import adminRoutes from './routes/admin.js';
 
 const app = express();
+app.disable('x-powered-by');
+
+// Security Headers Layer
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 
 // CLIENT_URL can be a single origin or a comma-separated list — handy once
 // you're on Vercel, since preview deployments get their own throwaway URL
@@ -81,7 +92,7 @@ const PORT = process.env.PORT || 4000;
 
 ensureSchema()
   .then(() => {
-    app.listen(PORT, () => console.log(`Sri Kala API listening on http://localhost:${PORT}`));
+    app.listen(PORT, () => console.log(`Ravichandra Textiles API listening on http://localhost:${PORT}`));
   })
   .catch((err) => {
     console.error('Failed to connect to the database. Check DATABASE_URL in server/.env');

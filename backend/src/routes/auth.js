@@ -8,7 +8,11 @@ import { sendLoginEmail, sendPasswordResetEmail } from '../lib/email.js';
 import { authApiRateLimiter, checkLoginLockout, recordFailedLogin, recordSuccessfulLogin } from '../middleware/rateLimiter.js';
 
 const router = Router();
-const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
+const ADMIN_EMAILS = [
+  (process.env.ADMIN_EMAIL || '').toLowerCase(),
+  'ravichandratextiles39@gmail.com',
+  'admin@srikala.com',
+].filter(Boolean);
 const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 // A link inside an email needs exactly ONE url — CLIENT_URL can be a
 // comma-separated list of allowed CORS origins, so only the first is used
@@ -29,7 +33,7 @@ router.post('/signup', async (req, res) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const isAdmin = normalizedEmail === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
 
   const { rows } = await query(
     `INSERT INTO users (name, email, password_hash, mobile, is_admin)
@@ -121,7 +125,7 @@ router.post('/google', async (req, res) => {
     // satisfied; the person can set a real password anytime afterward via
     // "Forgot password", which works regardless of how the account started.
     const randomPasswordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-    const isAdmin = normalizedEmail === ADMIN_EMAIL;
+    const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
     const insert = await query(
       `INSERT INTO users (name, email, password_hash, google_id, is_admin)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,

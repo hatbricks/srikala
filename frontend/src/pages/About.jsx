@@ -7,8 +7,8 @@ import BRAND from '../config/brand';
 
 const defaults = {
   hero: {
-    eyebrow: 'About Sri Kala',
-    heading: 'Curating Indian Heritage, Honoring Timeless Artistry',
+    eyebrow: `About ${BRAND.name}`,
+    heading: 'Curating Dharmavaram & Indian Heritage, Honoring Timeless Artistry',
   },
   story: {
     heading: 'Our Story',
@@ -39,7 +39,7 @@ export default function About() {
       <Seo
         title="About Us"
         path="/about"
-        description="Sri Kala celebrates the timeless beauty of Indian craftsmanship, bringing together thoughtfully selected sarees that honour traditional artistry."
+        description={`${BRAND.name} celebrates the timeless beauty of Indian craftsmanship, bringing together thoughtfully selected Dharmavaram silk sarees that honour traditional artistry.`}
       />
       <section className="about-hero">
         <div className="container">

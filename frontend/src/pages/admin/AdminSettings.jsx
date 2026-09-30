@@ -143,7 +143,7 @@ export default function AdminSettings() {
                   type="email"
                   value={contact.email}
                   onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                  placeholder="care@srikalasilks.com"
+                  placeholder="ravichandratextiles39@gmail.com"
                 />
               </label>
               <label>
@@ -152,7 +152,7 @@ export default function AdminSettings() {
                   type="tel"
                   value={contact.phone}
                   onChange={(e) => setContact({ ...contact, phone: e.target.value })}
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 83175 51337"
                 />
               </label>
             </div>

@@ -104,11 +104,11 @@ export default function Navbar() {
           <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
             <img
               id="navBrandLogo"
-              src={BRAND.assets.logoWhite}
+              src={BRAND.assets.logoLight}
               alt={BRAND.name}
               className="brand-logo"
-              width="130"
-              height="38"
+              width="180"
+              height="48"
             />
           </Link>
         </div>
@@ -273,40 +273,23 @@ export default function Navbar() {
 
       <style>{`
         .navbar {
-          position: fixed;
+          position: sticky;
           top: 0;
           left: 0;
           right: 0;
+          width: 100%;
           z-index: 160;
-          margin: 0 16px 0;
-          background: rgba(32, 8, 11, 0.65);
-          backdrop-filter: blur(20px) saturate(170%);
-          -webkit-backdrop-filter: blur(20px) saturate(170%);
-          border: 1px solid rgba(197, 139, 56, 0.22);
-          border-radius: 999px;
-          box-shadow:
-            0 18px 36px rgba(18, 4, 6, 0.28),
-            inset 0 1px 0 rgba(251, 223, 162, 0.2),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-          transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+          margin: 0;
+          background: #FAF8F5;
+          border-bottom: 1px solid rgba(197, 139, 56, 0.28);
+          box-shadow: 0 4px 18px rgba(184, 134, 11, 0.07);
+          transition: background 0.25s ease, box-shadow 0.25s ease;
         }
-        .navbar.is-scrolled {
-          background: rgba(32, 8, 11, 0.92);
-          border-color: rgba(197, 139, 56, 0.35);
-          box-shadow:
-            0 20px 40px rgba(18, 4, 6, 0.38),
-            inset 0 1px 0 rgba(251, 223, 162, 0.25),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-        }
+        .navbar.is-scrolled,
         .navbar.is-transparent {
-          background: rgba(26, 6, 9, 0.35);
-          border-color: rgba(251, 223, 162, 0.28);
-          backdrop-filter: blur(16px) saturate(160%);
-          -webkit-backdrop-filter: blur(16px) saturate(160%);
-          box-shadow:
-            0 8px 24px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(251, 223, 162, 0.2),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+          background: #FAF8F5;
+          border-bottom: 1px solid rgba(197, 139, 56, 0.32);
+          box-shadow: 0 6px 24px rgba(184, 134, 11, 0.09);
         }
         .navbar-inner {
           position: relative;
@@ -314,12 +297,12 @@ export default function Navbar() {
           align-items: center;
           justify-content: space-between;
           height: 72px;
-          padding: 0 12px 0 18px;
+          padding: 0 24px;
         }
         .nav-left {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
         }
         .brand-link {
           display: flex;
@@ -327,28 +310,29 @@ export default function Navbar() {
           transition: opacity 0.2s ease, transform 0.2s ease;
         }
         .brand-link:hover {
-          opacity: 0.95;
+          opacity: 0.92;
           transform: scale(1.02);
         }
         .brand-logo {
-          height: 38px;
+          height: 48px;
           width: auto;
           display: block;
+          object-fit: contain;
         }
 
         /* Desktop Navigation Links */
         .desktop-nav {
           display: flex;
           align-items: center;
-          gap: 28px;
+          gap: 32px;
         }
         .desktop-nav-link {
           font-family: var(--font-body);
-          font-size: 13px;
+          font-size: 13.5px;
           font-weight: 500;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: var(--blush-300);
+          color: #2c1810;
           position: relative;
           padding: 6px 0;
           transition: color 0.2s ease;
@@ -359,21 +343,21 @@ export default function Navbar() {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 1.5px;
-          background: var(--brand-accent);
+          height: 2px;
+          background: #b87d2b;
           transform: scaleX(0);
           transform-origin: center;
           transition: transform 0.25s ease;
         }
         .desktop-nav-link:hover {
-          color: var(--brand-gold-light);
+          color: #b87d2b;
         }
         .desktop-nav-link:hover::after,
         .desktop-nav-link.active::after {
           transform: scaleX(1);
         }
         .desktop-nav-link.active {
-          color: var(--brand-gold-light);
+          color: #b87d2b;
         }
 
         .nav-toggle {
@@ -389,8 +373,8 @@ export default function Navbar() {
         }
         .nav-toggle span {
           width: 22px;
-          height: 1.5px;
-          background: var(--brand-gold-light);
+          height: 2px;
+          background: #2c1810;
           display: block;
           transition: transform 0.2s ease, background-color 0.2s ease;
         }
@@ -398,7 +382,7 @@ export default function Navbar() {
         .nav-actions {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           z-index: 2;
         }
         .icon-btn {
@@ -406,15 +390,16 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 38px;
-          height: 38px;
-          color: var(--blush-300);
+          width: 40px;
+          height: 40px;
+          color: #2c1810;
           background: none;
           border: none;
-          transition: color 0.2s ease;
+          border-radius: 50%;
+          transition: color 0.2s ease, background 0.2s ease;
         }
-        .icon-btn svg { width: 21px; height: 21px; }
-        .icon-btn:hover { color: var(--ivory); }
+        .icon-btn svg { width: 22px; height: 22px; }
+        .icon-btn:hover { color: #b87d2b; background: rgba(184, 125, 43, 0.08); }
 
         .account-menu-wrap { position: relative; }
         .account-menu-overlay {
@@ -475,8 +460,8 @@ export default function Navbar() {
           position: absolute;
           top: 3px;
           right: 3px;
-          background: var(--gold-500);
-          color: var(--maroon-950);
+          background: #b87d2b;
+          color: #ffffff;
           font-size: 10px;
           font-weight: 600;
           min-width: 15px;
@@ -492,9 +477,10 @@ export default function Navbar() {
           position: relative;
           z-index: 1;
           margin: 8px 16px 0;
-          border-radius: 22px;
-          background: var(--maroon-950);
-          box-shadow: 0 12px 26px rgba(20,4,7,0.24);
+          border-radius: 20px;
+          background: #FFFFFF;
+          border: 1px solid rgba(197, 139, 56, 0.35);
+          box-shadow: 0 12px 28px rgba(184, 134, 11, 0.12);
           animation: searchDrop 0.25s ease;
         }
         @keyframes searchDrop {
@@ -507,21 +493,22 @@ export default function Navbar() {
           gap: 10px;
           padding: 14px 24px;
         }
-        .search-form svg { width: 17px; height: 17px; color: var(--blush-300); flex: 0 0 auto; }
+        .search-form svg { width: 17px; height: 17px; color: #b87d2b; flex: 0 0 auto; }
         .search-form input {
           background: none;
           border: none;
           outline: none;
-          color: var(--ivory);
+          color: #2c1810;
           font-family: var(--font-body);
           font-size: 14px;
           width: 100%;
         }
-        .search-form input::placeholder { color: var(--blush-300); opacity: 0.7; }
+        .search-form input::placeholder { color: #8c7365; opacity: 0.8; }
 
         .search-suggestions {
-          background: var(--ivory);
-          border-radius: 0 0 22px 22px;
+          background: #FAF8F5;
+          border-top: 1px solid rgba(197, 139, 56, 0.15);
+          border-radius: 0 0 20px 20px;
           padding: 6px 10px 10px;
           display: flex;
           flex-direction: column;
@@ -532,22 +519,23 @@ export default function Navbar() {
           gap: 10px;
           padding: 8px 10px;
           border-radius: 12px;
-          color: var(--ink-700);
+          color: #2c1810;
         }
-        .search-suggestion-item:hover { background: var(--blush-400); }
+        .search-suggestion-item:hover { background: rgba(184, 125, 43, 0.08); }
         .search-suggestion-item img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; }
         .search-suggestion-name { flex: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .search-suggestion-price { font-size: 12px; color: var(--ink-400); flex: 0 0 auto; }
+        .search-suggestion-price { font-size: 12px; color: #8c7365; flex: 0 0 auto; }
         .search-see-all {
           background: none;
           border: none;
           text-align: left;
           padding: 10px;
           font-size: 12.5px;
-          color: var(--maroon-900);
+          color: #b87d2b;
           font-weight: 600;
+          cursor: pointer;
         }
-        .search-no-results { padding: 10px; font-size: 12.5px; color: var(--ink-400); margin: 0; }
+        .search-no-results { padding: 10px; font-size: 12.5px; color: #8c7365; margin: 0; }
 
         .nav-backdrop {
           position: fixed;
@@ -580,9 +568,10 @@ export default function Navbar() {
           left: 8px;
           z-index: 200;
           min-width: 210px;
-          background: var(--ivory);
+          background: #FAF8F5;
+          border: 1px solid rgba(197, 139, 56, 0.25);
           border-radius: 18px;
-          box-shadow: 0 18px 40px rgba(36,26,23,0.22);
+          box-shadow: 0 18px 40px rgba(36,26,23,0.18);
           padding: 14px;
           transform-origin: top left;
           transform: scale(0.92) translateY(-6px);
@@ -604,11 +593,11 @@ export default function Navbar() {
           border-radius: 12px;
           font-family: var(--font-body);
           font-size: 15px;
-          color: var(--ink-900);
+          color: #2c1810;
           transition: background 0.15s ease, color 0.15s ease;
         }
-        .popover-link:hover { background: var(--blush-400); }
-        .popover-link.active { color: var(--maroon-900); font-weight: 600; background: var(--stone-200); }
+        .popover-link:hover { background: rgba(184, 125, 43, 0.08); }
+        .popover-link.active { color: #b87d2b; font-weight: 600; background: rgba(184, 125, 43, 0.12); }
 
         /* Desktop only — same compact ivory box as mobile, just sized up:
            more padding, bigger text, more room per link. Mobile keeps the
@@ -627,9 +616,9 @@ export default function Navbar() {
         }
 
         @media (max-width: 860px) {
-          .navbar { margin: 0 12px 0; }
+          .navbar { margin: 0; }
           .navbar-inner { height: 62px; }
-          .brand-logo { height: 28px; }
+          .brand-logo { height: 38px; }
           .desktop-nav { display: none; }
           .nav-toggle { display: flex; }
           .icon-btn { width: 34px; height: 34px; }

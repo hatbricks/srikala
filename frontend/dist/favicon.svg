@@ -1,14 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="48" fill="#2A0C10" stroke="#C58B38" stroke-width="3"/>
-  <circle cx="50" cy="50" r="43" fill="none" stroke="#D4AF37" stroke-width="1" stroke-dasharray="2 2"/>
-  <!-- Lotus & Floral Motif -->
-  <path d="M50 24 C53 35 62 44 68 47 C60 50 54 48 50 56 C46 48 40 50 32 47 C38 44 47 35 50 24 Z" fill="#E5A93C"/>
-  <path d="M50 32 C51 38 56 43 60 45 C55 47 52 46 50 50 C48 46 45 47 40 45 C44 43 49 38 50 32 Z" fill="#FBDFB2"/>
-  <!-- Central Diamond -->
-  <polygon points="50,18 53,22 50,26 47,22" fill="#FBDFB2"/>
-  <!-- Sri Kala SK stylized mark -->
-  <text x="50" y="72" font-family="'Marcellus', 'Cinzel', Georgia, serif" font-size="22" font-weight="bold" fill="#FDFBF7" text-anchor="middle" letter-spacing="2">SK</text>
-  <text x="50" y="83" font-family="Helvetica, Arial, sans-serif" font-size="6.5" font-weight="600" fill="#D4AF37" text-anchor="middle" letter-spacing="2.5">SRI KALA</text>
-  <path d="M28 87 L72 87" stroke="#C58B38" stroke-width="0.8"/>
-  <circle cx="50" cy="87" r="1.5" fill="#FBDFB2"/>
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdfbf7"/>
+      <stop offset="35%" stop-color="#dfb15b"/>
+      <stop offset="70%" stop-color="#b87d2b"/>
+      <stop offset="100%" stop-color="#8a5712"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="#FAF8F5"/>
+  <!-- Temple Oval Border -->
+  <ellipse cx="50" cy="46" rx="34" ry="40" fill="none" stroke="url(#goldGrad)" stroke-width="2.5"/>
+  <ellipse cx="50" cy="46" rx="30" ry="36" fill="none" stroke="#c58b38" stroke-width="0.8" stroke-dasharray="2 2"/>
+  <!-- Gopuram Temple Motif -->
+  <path d="M42 20 L58 20 L56 24 L44 24 Z" fill="url(#goldGrad)"/>
+  <path d="M40 25 L60 25 L58 29 L42 29 Z" fill="url(#goldGrad)"/>
+  <path d="M38 30 L62 30 L60 34 L40 34 Z" fill="url(#goldGrad)"/>
+  <path d="M36 35 L64 35 L62 40 L38 40 Z" fill="url(#goldGrad)"/>
+  <path d="M34 41 L66 41 L64 47 L36 47 Z" fill="url(#goldGrad)"/>
+  <path d="M32 48 L68 48 L68 62 L32 62 Z" fill="url(#goldGrad)"/>
+  <!-- Temple Door -->
+  <rect x="46" y="52" width="8" height="10" rx="1" fill="#FAF8F5"/>
+  <!-- Text RT -->
+  <text x="50" y="78" font-family="'Playfair Display', Georgia, serif" font-size="13" font-weight="bold" fill="#8a5712" text-anchor="middle" letter-spacing="1.5">RT</text>
+  <text x="50" y="87" font-family="sans-serif" font-size="5" font-weight="bold" fill="#b87d2b" text-anchor="middle" letter-spacing="1">DHARMAVARAM</text>
 </svg>

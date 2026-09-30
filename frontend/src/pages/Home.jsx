@@ -8,7 +8,6 @@ import RecommendedProducts from '../components/RecommendedProducts';
 import ScrollReveal from '../components/ScrollReveal';
 import Seo from '../components/Seo';
 import ShopByStyle from '../components/ShopByStyle';
-import TestimonialBand from '../components/TestimonialBand';
 import TextReveal from '../components/TextReveal';
 import { api } from '../data/api';
 import { getCategories, getProducts } from '../data/store';
@@ -17,23 +16,23 @@ import BRAND from '../config/brand';
 
 const defaults = {
   hero: {
-    eyebrow: 'SRI KALA',
+    eyebrow: 'RAVICHANDRA TEXTILES',
     heading: 'Timeless Elegance, Woven in',
     heading2: 'Tradition',
-    subheading: 'Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition.',
+    subheading: 'Discover thoughtfully curated Dharmavaram & Indian handloom sarees crafted to celebrate timeless beauty, artistry and tradition.',
     ctaLabel: 'Explore Collection',
     ctaLink: '/products',
-    secondaryCtaLabel: 'Discover Sri Kala',
+    secondaryCtaLabel: 'Discover Ravichandra Textiles',
     secondaryCtaLink: '/about',
     slides: [
       {
         id: 'hero-video-1',
         type: 'video',
         url: '/videos/hero1.mp4',
-        alt: 'Sri Kala Traditional Saree Showcase - 4K Video',
+        alt: 'Ravichandra Textiles Traditional Saree Showcase - 4K Video',
         eyebrow: 'PURE HANDLOOM SILKS',
         heading: 'Crafted with Devotion',
-        subheading: 'Experience authentic heirloom weaves with pure zari threads.',
+        subheading: 'Experience authentic heirloom Dharmavaram weaves with pure zari threads.',
         ctaLabel: 'Explore Collection',
         ctaLink: '/products',
       },
@@ -41,28 +40,28 @@ const defaults = {
         id: 'hero-image-2',
         type: 'image',
         url: '/images/styles/kanchivaram.jpg',
-        alt: 'Sri Kala Kanchivaram Silk Saree',
+        alt: 'Ravichandra Textiles Dharmavaram Silk Saree',
         eyebrow: 'TEMPLE TRADITIONS',
-        heading: 'Kanchivaram Elegance',
+        heading: 'Dharmavaram & Kanchi Elegance',
         subheading: 'Heirloom drape with temple-woven gold zari motifs.',
-        ctaLabel: 'Shop Kanchivaram',
+        ctaLabel: 'Shop Dharmavaram',
         ctaLink: '/products?category=kanjivaram',
       },
       {
         id: 'hero-image-3',
         type: 'image',
         url: '/images/styles/banarasi.jpg',
-        alt: 'Sri Kala Banarasi Saree Showcase',
+        alt: 'Ravichandra Textiles Banarasi Saree Showcase',
         eyebrow: 'ROYAL WEAVES',
-        heading: 'Banarasi Splendor',
-        subheading: 'Brocade zari woven by master craftsmen from the sacred ghats.',
-        ctaLabel: 'Shop Banarasi',
+        heading: 'Banarasi & Pattu Splendor',
+        subheading: 'Brocade zari woven by master craftsmen with authentic silk mark.',
+        ctaLabel: 'Shop Collection',
         ctaLink: '/products?category=banarasi',
       },
     ],
   },
   showcase: {
-    note: 'Sri Kala celebrates the timeless art of Indian weaving, curating each saree to bring grace and authentic craftsmanship to every occasion.',
+    note: 'Ravichandra Textiles celebrates the timeless art of Indian weaving in Dharmavaram, curating each saree to bring grace and authentic craftsmanship to every occasion.',
     heading: 'Our Collections',
   },
   new_arrivals: {
@@ -85,8 +84,8 @@ const defaults = {
   story: {
     eyebrow: 'Our Heritage',
     heading: 'Woven with Grace, Cherished for Generations',
-    body: 'Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
-    ctaLabel: 'Discover Sri Kala',
+    body: 'Ravichandra Textiles is rooted in the legendary weaving hub of Dharmavaram, Andhra Pradesh. We bring together thoughtfully selected pure handloom silk sarees that honour traditional artistry while fitting effortlessly into modern celebrations.',
+    ctaLabel: 'Discover Ravichandra Textiles',
     ctaLink: '/about',
     image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
   },
@@ -250,8 +249,6 @@ export default function Home() {
       </section>
 
       <RecommendedProducts products={products} curatedIds={recommended.productIds} title={recommended.heading} />
-
-      <TestimonialBand />
 
       {googleReviewsEnabled && <GoogleReviewsSection cmsData={googleReviews} />}
 

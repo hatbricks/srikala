@@ -1,72 +1,72 @@
 /**
- * Central Sri Kala Brand Configuration
+ * Central Ravichandra Textiles Brand Configuration
  *
  * Single source of truth for all brand identity, copy, contact details,
  * URLs, colors, and asset references across the application.
  */
 
 export const BRAND = {
-  name: 'Sri Kala',
-  legalName: 'Sri Kala Silk Emporium',
-  tagline: 'Silk Emporium',
-  shortTitle: 'Sri Kala',
-  fullTitle: 'Sri Kala — Silk Emporium | Timeless Indian Sarees',
-  slogan: 'Timeless Elegance, Woven in Tradition',
-  subheading: 'Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition.',
+  name: 'Ravichandra Textiles',
+  legalName: 'Ravichandra Textiles & Handlooms',
+  tagline: 'Authentic Dharmavaram Handloom Silk Sarees',
+  shortTitle: 'Ravichandra Textiles',
+  fullTitle: 'Ravichandra Textiles — Authentic Dharmavaram Pure Silk Handlooms',
+  slogan: 'Tradition of Pure Weaves & Timeless Craft',
+  subheading: 'Discover exquisite Dharmavaram handloom silk sarees crafted with sacred precision and heirloom artistry directly from master weaving families.',
+  description: 'Ravichandra Textiles is renowned for authentic Dharmavaram pure silk handloom sarees, rich temple borders, pure zari brocades, and festive heirloom weaves.',
 
   story: {
-    eyebrow: 'Our Story',
-    heading: 'Where Tradition Meets Grace',
-    lead: 'Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
-    body: 'Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe. Every weave is selected with reverent care for authenticity, drape, and enduring elegance.',
+    eyebrow: 'Our Heritage',
+    heading: 'The Sacred Art of Dharmavaram Handloom Silk',
+    lead: 'Rooted in the historic weaving heartland of Dharmavaram, Ravichandra Textiles celebrates generations of master artisans dedicated to preserving pure Indian silk traditions.',
+    body: 'Ravichandra Textiles brings together the finest handloom weaves directly from master weaver looms in Dharmavaram, Andhra Pradesh. Renowned across the world for rich gold zari brocades, temple pallus, and enduring mulberry silk lustre, each saree is checked by hand for authentic silk mark quality and finish.',
     paragraphs: [
-      'Sri Kala celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
-      'From pure temple-woven silks and intricate brocades to breathable everyday handlooms, each piece is chosen for its character, richness of weave, and fine craftsmanship.',
-      'Every saree is hand-inspected for weave integrity, zari luster, and finish before it arrives at your doorstep.',
+      'Rooted in the historic weaving heartland of Dharmavaram, Andhra Pradesh, Ravichandra Textiles celebrates the sacred heritage of pure Indian silk craftsmanship.',
+      'From regal bridal silks with heavy gold zari borders to lightweight festive weaves, each piece is thoughtfully handwoven on traditional pit looms by master artisans.',
+      'Every saree is hand-inspected for weave integrity, zari luster, and flawless drape before reaching your hands with guaranteed authenticity.',
     ],
     values: [
       {
-        title: 'Authentic Weaves',
-        description: 'Honoring genuine Indian textile traditions and time-honored weaving artistry.',
+        title: 'Authentic Dharmavaram Weaves',
+        description: 'Directly sourced from master artisan looms in Dharmavaram, preserving sacred handloom heritage.',
       },
       {
-        title: 'Curated Elegance',
-        description: 'Every design is hand-selected to balance timeless heritage with effortless contemporary wear.',
+        title: 'Pure Silk & Genuine Zari',
+        description: 'Crafted with premium mulberry silk and certified zari threads for enduring heirloom elegance.',
       },
       {
-        title: 'Hand-Inspected Quality',
-        description: 'Each piece undergoes meticulous inspection for weave density, zari brilliance, and impeccable finish.',
+        title: 'Hand-Inspected Excellence',
+        description: 'Every single saree undergoes rigorous quality checks for weave density, borders, and pallu brilliance.',
       },
     ],
   },
 
   contact: {
-    // Configurable placeholders that can be overridden via environment variables
-    phone: import.meta.env.VITE_SRI_KALA_PHONE || '+91 98765 43210',
-    whatsapp: import.meta.env.VITE_SRI_KALA_WHATSAPP || '+919876543210',
-    email: import.meta.env.VITE_SRI_KALA_EMAIL || 'contact@srikala.com',
-    address: import.meta.env.VITE_SRI_KALA_ADDRESS || 'Sri Kala Silk Emporium, MG Road, Hyderabad, Telangana 500001',
-    hoursWeekday: 'Mon – Sat: 10:00 AM – 9:00 PM',
-    hoursSunday: 'Sunday: 10:00 AM – 7:00 PM',
-    instagram: import.meta.env.VITE_SRI_KALA_INSTAGRAM || 'https://www.instagram.com/srikalasilks',
-    facebook: import.meta.env.VITE_SRI_KALA_FACEBOOK || 'https://www.facebook.com/srikalasilks',
-    twitter: import.meta.env.VITE_SRI_KALA_TWITTER || 'https://twitter.com/srikalasilks',
-    mapQuery: 'Sri+Kala+Silk+Emporium+Hyderabad',
+    phone: import.meta.env.VITE_PHONE || '+91 83175 51337',
+    whatsapp: import.meta.env.VITE_WHATSAPP || '918317551337',
+    email: import.meta.env.VITE_EMAIL || 'ravichandratextiles39@gmail.com',
+    address: import.meta.env.VITE_ADDRESS || '10-28, Kpt street, near Punjab National Bank, Dharmavaram 515671, Andhra Pradesh',
+    hoursWeekday: 'Sun – Sat: 10:00 AM – 10:00 PM',
+    hoursSunday: 'Sun – Sat: 10:00 AM – 10:00 PM',
+    instagram: import.meta.env.VITE_INSTAGRAM || 'https://www.instagram.com/ravichandra_handlooms',
+    facebook: import.meta.env.VITE_FACEBOOK || 'https://www.facebook.com/ravichandrahandlooms',
+    twitter: import.meta.env.VITE_TWITTER || 'https://twitter.com/ravichandratextiles',
+    mapQuery: '10-28+Kpt+street+near+Punjab+National+Bank+Dharmavaram+515671+Andhra+Pradesh',
   },
 
   seo: {
-    siteName: 'Sri Kala',
-    siteUrl: 'https://www.srikala.com',
-    defaultTitle: 'Sri Kala — Silk Emporium | Timeless Indian Sarees',
-    defaultDescription: 'Discover thoughtfully curated Indian sarees crafted to celebrate timeless beauty, artistry and tradition. Shop Kanjivaram, Banarasi, pure silk, and festive sarees at Sri Kala.',
-    defaultKeywords: 'Sri Kala, Sri Kala Silk Emporium, pure silk sarees online, Kanjivaram silk saree, Banarasi silk saree, pattu sarees online, Indian bridal sarees, wedding sarees online India, handloom sarees, festive sarees',
+    siteName: 'Ravichandra Textiles',
+    siteUrl: 'https://ravichandratextiles.com',
+    defaultTitle: 'Ravichandra Textiles — Authentic Dharmavaram Pure Silk Handlooms',
+    defaultDescription: 'Shop pure Dharmavaram silk handloom sarees, bridal silks, Kanchivaram, Banarasi, and festive pattu sarees directly from master artisans at Ravichandra Textiles.',
+    defaultKeywords: 'Ravichandra Textiles, Dharmavaram silk sarees, Dharmavaram handloom, pure pattu sarees, bridal silk sarees, Kanchivaram silk, Banarasi silk, wedding sarees Andhra Pradesh, handloom sarees Dharmavaram',
   },
 
   assets: {
-    logoLight: '/images/logo.png', // Maroon & Gold for light/white backgrounds
-    logoWhite: '/images/logo-white.png', // Luminous Gold for dark header/footer
-    logoIntro: '/images/given-logo-transparent.png', // Provided master logo with transparency
-    logoDark: '/images/srikala-logo-dark.png', // Master given logo on royal dark
+    logoLight: '/images/logo.png',
+    logoWhite: '/images/logo.png',
+    logoIntro: '/images/given-logo-transparent.png',
+    logoDark: '/images/logo.png',
     monogram: '/images/monogram.png',
     monogramWhite: '/images/monogram-white.png',
     favicon: '/favicon.png',
@@ -75,12 +75,13 @@ export const BRAND = {
   },
 
   colors: {
-    primary: '#581e15',
-    primaryHover: '#6c241a',
-    primaryDark: '#260a0e',
-    secondary: '#b0732e',
-    accent: '#c58b38',
-    goldLight: '#fbdfa2',
+    primary: '#b87d2b',
+    primaryHover: '#9c661d',
+    primaryDark: '#2c1810',
+    secondary: '#c58b38',
+    accent: '#d4af37',
+    goldLight: '#fbf0d8',
+    navBackground: '#FAF8F5',
     background: '#FAF6F0',
     surface: '#FFFFFF',
     surfaceWarm: '#F8F3ED',

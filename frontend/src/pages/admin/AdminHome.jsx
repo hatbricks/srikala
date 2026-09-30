@@ -14,7 +14,6 @@ const sectionLabels = {
   shipping_settings: 'Shipping',
   story: 'Our Craft',
   google_reviews: 'Google Reviews (Before Footer)',
-  testimonials: 'Testimonials Heading',
   social_links: 'Footer — Social & Contact Links',
 };
 
@@ -80,9 +79,6 @@ const sectionFields = {
     { key: 'googleBusinessUrl', label: 'Google Business Profile / Review Link URL', type: 'text' },
     { key: 'averageRating', label: 'Average Google Rating (e.g. 4.9)', type: 'number' },
     { key: 'totalReviews', label: 'Total Reviews Text (e.g. 150+ reviews)', type: 'text' },
-  ],
-  testimonials: [
-    { key: 'heading', label: 'Heading', type: 'text' },
   ],
   social_links: [
     { key: 'whatsapp', label: 'WhatsApp number (with country code, digits only — e.g. 917842225444)', type: 'text' },

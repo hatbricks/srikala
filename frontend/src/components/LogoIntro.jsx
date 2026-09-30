@@ -16,7 +16,8 @@ export default function LogoIntro() {
     if (urlParams.has('intro') || urlParams.has('replay')) return false;
     try {
       sessionStorage.removeItem('miladysIntroPlayed');
-      return sessionStorage.getItem('srikalaIntroPlayed') === '1';
+      sessionStorage.removeItem('srikalaIntroPlayed');
+      return sessionStorage.getItem('ravichandraIntroPlayed') === '1';
     } catch {
       return false;
     }
@@ -28,7 +29,7 @@ export default function LogoIntro() {
     }
     document.body.style.overflow = '';
     try {
-      sessionStorage.setItem('srikalaIntroPlayed', '1');
+      sessionStorage.setItem('ravichandraIntroPlayed', '1');
     } catch {
       /* private-browsing storage may throw */
     }
@@ -143,7 +144,7 @@ export default function LogoIntro() {
     <aside
       className="logo-intro"
       ref={overlayRef}
-      aria-label="Welcome to Sri Kala Silk Emporium"
+      aria-label={`Welcome to ${BRAND.name}`}
       aria-live="polite"
     >
       <div className="logo-intro-stage">

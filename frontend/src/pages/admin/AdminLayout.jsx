@@ -15,8 +15,6 @@ const links = [
   { to: '/admin/coupons', label: 'Coupons' },
   { to: '/admin/cancellation-policy', label: 'Cancellation Policy' },
   { to: '/admin/settings', label: 'Store Settings' },
-  { to: '/admin/reviews', label: 'Reviews' },
-  { to: '/admin/testimonials', label: 'Testimonials' },
 ];
 
 function AdminLoginGate() {
