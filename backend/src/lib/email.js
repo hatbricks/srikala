@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
 const apiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.RESEND_FROM_EMAIL || "Sri Kala <onboarding@resend.dev>";
+const fromEmail = process.env.RESEND_FROM_EMAIL || "Ravichandra Textiles <onboarding@resend.dev>";
 // CLIENT_URL can be a comma-separated list (needed for CORS, so both the
 // bare domain and the www./".in" variants are all allowed origins) — but a
 // link inside an email needs exactly ONE url, so only the first entry is
