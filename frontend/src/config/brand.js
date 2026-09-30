@@ -64,8 +64,10 @@ export const BRAND = {
 
   assets: {
     logoLight: '/images/logo.png',
-    logoWhite: '/images/logo.png',
-    logoIntro: '/images/given-logo-transparent.png',
+    logoWhite: '/images/logo-white.png',
+    logoHorizontal: '/images/logo-horizontal.png',
+    logoVertical: '/images/logo-vertical.png',
+    logoIntro: '/images/logo-vertical.png',
     logoDark: '/images/logo.png',
     monogram: '/images/monogram.png',
     monogramWhite: '/images/monogram-white.png',
