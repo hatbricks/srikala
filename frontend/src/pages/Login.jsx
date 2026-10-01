@@ -70,7 +70,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      <Seo title={mode === 'login' ? `Sign In | ${BRAND.name}` : `Create Account | ${BRAND.name}`} path="/login" noindex />
+      <Seo title={`Sign In | ${BRAND.name}`} path="/login" noindex />
 
       {/* Atmospheric ambient lighting */}
       <div className="auth-ambient-glow" aria-hidden="true" />
