@@ -32,6 +32,22 @@ const shipmentLabel = {
   PENDING: 'Order Confirmed',
 };
 
+const statusTone = {
+  pending: 'tone-pending',
+  paid: 'tone-paid',
+  paid_oversold: 'tone-oversold',
+  cancellation_requested: 'tone-requested',
+  cancelled: 'tone-cancelled',
+};
+
+const statusLabel = {
+  pending: 'Payment Pending',
+  paid: 'Order Placed & Paid',
+  paid_oversold: 'Paid (Backorder)',
+  cancellation_requested: 'Cancellation Requested',
+  cancelled: 'Cancelled',
+};
+
 function daysSince(dateStr) {
   if (!dateStr) return 0;
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000);
@@ -105,8 +121,9 @@ export default function Orders() {
           o.id === cancellingOrder.id
             ? {
                 ...o,
-                status: 'cancelled',
-                shipment_status: 'CANCELLED',
+                status: 'cancellation_requested',
+                cancellation_reason: cancelReason,
+                cancellation_requested_at: new Date().toISOString(),
                 refund_percent: result.refundPercent,
                 refund_amount: result.refundAmount,
               }
@@ -277,6 +294,50 @@ export default function Orders() {
                     </div>
                   </div>
 
+                  {o.status === 'cancellation_requested' && (
+                    <div className="cancellation-pending-banner">
+                      <div className="pending-badge-row">
+                        <span className="pending-tag">⏳ PENDING ADMIN APPROVAL</span>
+                        <span className="pending-date">
+                          {o.cancellation_requested_at ? new Date(o.cancellation_requested_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Recently requested'}
+                        </span>
+                      </div>
+                      <p className="pending-title">Your cancellation request has been submitted to store administration.</p>
+                      <p className="pending-desc">
+                        Our team is reviewing your request. Once verified and approved, inventory will be released and your refund of{' '}
+                        <strong>{o.refund_percent || 100}% ({formatINR(o.refund_amount || 0)})</strong> will be initiated directly back to your payment account.
+                      </p>
+                      {o.cancellation_reason && (
+                        <p className="pending-reason"><strong>Reason:</strong> {o.cancellation_reason}</p>
+                      )}
+                      <div className="direct-admin-box">
+                        <span className="direct-label">Need urgent assistance or have questions? Contact us directly:</span>
+                        <div className="direct-links-row">
+                          <a
+                            href={`https://wa.me/918317551337?text=${encodeURIComponent(`Hi Ravichandra Handlooms, I submitted a cancellation request for order ${o.order_number || `#SK${o.id}`}. Please check and confirm.`)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn-admin-contact wa-btn"
+                          >
+                            💬 WhatsApp (+91 83175 51337)
+                          </a>
+                          <a href="tel:+918317551337" className="btn-admin-contact call-btn">
+                            📞 Call (8317551337)
+                          </a>
+                          <a href="mailto:ravichandratextiles39@gmail.com" className="btn-admin-contact email-btn">
+                            ✉️ Email Us
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {o.cancellation_reject_reason && o.status === 'paid' && (
+                    <div className="cancellation-rejected-banner">
+                      <span>ℹ️ <strong>Cancellation Note:</strong> {o.cancellation_reject_reason}</span>
+                    </div>
+                  )}
+
                   {o.status === 'cancelled' && o.refund_percent != null && (
                     <p className="refund-note">
                       ✓ Cancelled — {o.refund_percent}% refund ({formatINR(o.refund_amount || 0)}) credited to your payment method.
@@ -309,7 +370,7 @@ export default function Orders() {
                         className="btn btn-outline cancel-btn"
                         onClick={() => setCancellingOrder(o)}
                       >
-                        Cancel Order
+                        Request Cancellation
                       </button>
                     )}
                   </div>
@@ -320,7 +381,7 @@ export default function Orders() {
           </div>
         )}
 
-        {/* Live Shiprocket Tracking Modal */}
+        {/* Live Shipment Tracking Modal */}
         {trackingModalOrder && (
           <div className="modal-backdrop" onClick={() => setTrackingModalOrder(null)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -332,7 +393,7 @@ export default function Orders() {
                 <p>Order: <strong>{trackingModalOrder.order_number || `#SK${trackingModalOrder.id}`}</strong></p>
                 {trackingModalOrder.courier_name && <p>Courier: <strong>{trackingModalOrder.courier_name}</strong></p>}
                 {trackingModalOrder.awb_code && (
-                  <p>AWB Tracking Number: <strong>{trackingModalOrder.awb_code}</strong></p>
+                  <p>AWB / Tracking Number: <strong>{trackingModalOrder.awb_code}</strong></p>
                 )}
 
                 {trackingLoading ? (
@@ -341,7 +402,7 @@ export default function Orders() {
                   <div className="tracking-timeline">
                     <h4>Shipment Milestones</h4>
                     {(!trackingData?.trackingHistory || trackingData.trackingHistory.length === 0) ? (
-                      <p className="no-scans">Package packed &amp; ready for courier pickup.</p>
+                      <p className="no-scans">Order packed and awaiting courier dispatch.</p>
                     ) : (
                       <div className="scans-list">
                         {trackingData.trackingHistory.map((scan, i) => (
@@ -359,16 +420,20 @@ export default function Orders() {
                   </div>
                 )}
 
-                {trackingModalOrder.awb_code && (
+                {trackingModalOrder.tracking_url ? (
                   <a
-                    href={`https://shiprocket.co/tracking/${trackingModalOrder.awb_code}`}
+                    href={trackingModalOrder.tracking_url}
                     target="_blank"
                     rel="noreferrer"
                     className="btn btn-primary track-external-link"
                   >
-                    Open Live Courier Page ↗
+                    Open Live Courier Tracking Page ↗
                   </a>
-                )}
+                ) : trackingModalOrder.awb_code ? (
+                  <div className="track-note-box">
+                    <span>Use Tracking Number <strong>{trackingModalOrder.awb_code}</strong> on <strong>{trackingModalOrder.courier_name || 'the courier portal'}</strong> to check real-time road dispatch updates.</span>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -379,29 +444,53 @@ export default function Orders() {
           <div className="modal-backdrop" onClick={() => setCancellingOrder(null)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-head">
-                <h3>Cancel Order {cancellingOrder.order_number || `#SK${cancellingOrder.id}`}</h3>
+                <h3>Request Order Cancellation</h3>
                 <button type="button" className="close-btn" onClick={() => setCancellingOrder(null)}>✕</button>
               </div>
               <div className="cancel-modal-body">
-                <p>
-                  Based on our store policy, you are eligible for a{' '}
-                  <strong>{tierFor(cancellingOrder)?.refund_percent || 100}% refund</strong> (
-                  {formatINR(Math.round(((cancellingOrder.subtotal - (cancellingOrder.discount || 0)) * (tierFor(cancellingOrder)?.refund_percent || 100)) / 100))}).
-                </p>
+                <div className="admin-approval-notice">
+                  <div className="notice-icon">🛡️</div>
+                  <div>
+                    <strong>Admin Approval Flow</strong>
+                    <p>
+                      Your cancellation request will be submitted to our administrative team for verification and approval.
+                      Upon approval, your refund of <strong>{tierFor(cancellingOrder)?.refund_percent || 100}%</strong> ({formatINR(Math.round(((cancellingOrder.subtotal - (cancellingOrder.discount || 0)) * (tierFor(cancellingOrder)?.refund_percent || 100)) / 100))}) will be initiated back to your original payment method.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="contact-admin-strip">
+                  <span>Want to speak with us before cancelling?</span>
+                  <div className="contact-strip-actions">
+                    <a
+                      href={`https://wa.me/918317551337?text=${encodeURIComponent(`Hi Ravichandra Textiles, I am requesting cancellation for order ${cancellingOrder.order_number || `#SK${cancellingOrder.id}`}.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="strip-link wa"
+                    >
+                      💬 WhatsApp Store (8317551337)
+                    </a>
+                    <a href="tel:+918317551337" className="strip-link call">
+                      📞 Call Store
+                    </a>
+                  </div>
+                </div>
+
                 <label>
-                  Reason for cancellation:
+                  Reason for cancellation *
                   <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}>
                     <option value="Ordered by mistake">Ordered by mistake</option>
                     <option value="Delivery time too long">Delivery time too long</option>
                     <option value="Found better alternative">Found better alternative</option>
                     <option value="Incorrect shipping address">Incorrect shipping address</option>
+                    <option value="Need to change saree color/design">Need to change saree color/design</option>
                     <option value="Other reason">Other reason</option>
                   </select>
                 </label>
                 <div className="modal-actions">
                   <button type="button" className="btn btn-outline" onClick={() => setCancellingOrder(null)}>Keep Order</button>
                   <button type="button" className="btn btn-primary danger-btn" disabled={cancellingBusy} onClick={confirmCancel}>
-                    {cancellingBusy ? 'Processing…' : 'Confirm Cancellation'}
+                    {cancellingBusy ? 'Submitting…' : 'Submit Cancellation Request'}
                   </button>
                 </div>
               </div>
@@ -424,6 +513,34 @@ export default function Orders() {
                     <strong>{returnModalItem.item.product_name}</strong>
                     {returnModalItem.item.variant_name && <span>Color: {returnModalItem.item.variant_name}</span>}
                     <p>Refund Amount: {formatINR(returnModalItem.item.price * returnModalItem.item.qty)}</p>
+                  </div>
+                </div>
+
+                <div className="return-store-card">
+                  <div className="store-card-header">
+                    <strong>Ravichandra Handlooms — Returns &amp; Support</strong>
+                  </div>
+                  <p className="store-address-text">
+                    📍 <strong>Return Address:</strong> 10-28, Kpt street, near Punjab National Bank, Dharmavaram 515671, Andhra Pradesh
+                  </p>
+                  <div className="store-contact-row">
+                    <a href="tel:+918317551337" className="store-touchpoint">
+                      📞 <strong>+91 83175 51337</strong>
+                    </a>
+                    <a
+                      href={`https://wa.me/918317551337?text=${encodeURIComponent(`Hi Ravichandra Handlooms, I would like to inquire about returning item "${returnModalItem.item.product_name}" from order ${returnModalItem.order.order_number || `#SK${returnModalItem.order.id}`}.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="store-touchpoint"
+                    >
+                      💬 <strong>WhatsApp Us</strong>
+                    </a>
+                    <a href="mailto:ravichandratextiles39@gmail.com" className="store-touchpoint">
+                      ✉️ <strong>ravichandratextiles39@gmail.com</strong>
+                    </a>
+                  </div>
+                  <div className="store-hours-note">
+                    🕒 Store Hours: Mon – Sun 10:00 AM – 10:00 PM | Direct Owner Contact
                   </div>
                 </div>
 
@@ -515,6 +632,136 @@ export default function Orders() {
         .tone-failed { background: #f6e3e3; color: #a13a3a; }
         .tone-cancelled { background: var(--stone-200); color: var(--ink-600); }
         .tone-pending { background: #fdf0d5; color: #8a5a10; }
+        .tone-requested { background: #fff3cd; color: #856404; font-weight: 500; }
+
+        /* Cancellation Pending & Store Contacts */
+        .cancellation-pending-banner {
+          background: #fff8e6;
+          border: 1px solid #ffeeba;
+          border-radius: var(--radius-sm);
+          padding: 14px 16px;
+          margin-top: 14px;
+        }
+        .pending-badge-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+        .pending-tag {
+          font-size: 11px;
+          font-weight: 700;
+          color: #856404;
+          background: #ffe8a1;
+          padding: 3px 8px;
+          border-radius: 4px;
+          letter-spacing: 0.04em;
+        }
+        .pending-date { font-size: 11px; color: #856404; opacity: 0.8; }
+        .pending-title { font-size: 13.5px; font-weight: 600; color: #856404; margin: 4px 0 4px; }
+        .pending-desc { font-size: 12.5px; color: #664d03; line-height: 1.5; margin: 0 0 6px; }
+        .pending-reason { font-size: 12px; color: #856404; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 4px 0 10px; }
+        
+        .direct-admin-box {
+          border-top: 1px dashed #eed89b;
+          padding-top: 10px;
+          margin-top: 8px;
+        }
+        .direct-label { display: block; font-size: 11.5px; font-weight: 500; color: #856404; margin-bottom: 8px; }
+        .direct-links-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-admin-contact {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 11.5px;
+          font-weight: 600;
+          padding: 5px 11px;
+          border-radius: 4px;
+          text-decoration: none;
+          transition: all 0.15s ease;
+        }
+        .wa-btn { background: #25d366; color: #fff; }
+        .wa-btn:hover { background: #1ebc59; color: #fff; }
+        .call-btn { background: var(--maroon-900); color: #fff; }
+        .call-btn:hover { background: var(--maroon-800); color: #fff; }
+        .email-btn { background: #fff; color: var(--maroon-900); border: 1px solid var(--stone-300); }
+        .email-btn:hover { background: var(--stone-100); }
+
+        .cancellation-rejected-banner {
+          background: #fdf2e9;
+          border-left: 3px solid #e67e22;
+          padding: 8px 12px;
+          font-size: 12px;
+          color: #a04000;
+          margin-top: 12px;
+          border-radius: 3px;
+        }
+
+        /* Modal Contact & Approval Styles */
+        .admin-approval-notice {
+          display: flex;
+          gap: 12px;
+          background: #fdf8eb;
+          border: 1px solid #fae6b9;
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          font-size: 12.5px;
+          color: #7d5a0b;
+          line-height: 1.5;
+          margin-bottom: 14px;
+        }
+        .admin-approval-notice p { margin: 4px 0 0; }
+        .notice-icon { font-size: 20px; line-height: 1; }
+
+        .contact-admin-strip {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 10px 12px;
+          margin-bottom: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          font-size: 12px;
+          color: var(--ink-700);
+        }
+        .contact-strip-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .strip-link {
+          font-size: 11.5px;
+          font-weight: 500;
+          padding: 4px 10px;
+          border-radius: 4px;
+          text-decoration: none;
+        }
+        .strip-link.wa { background: #e7f8ee; color: #157338; border: 1px solid #c2ebd0; }
+        .strip-link.call { background: #fdf5f5; color: var(--maroon-900); border: 1px solid #f4d0d0; }
+
+        /* Return Store Card */
+        .return-store-card {
+          background: #faf7f2;
+          border: 1px solid #e8dec8;
+          border-radius: var(--radius-sm);
+          padding: 12px 14px;
+          margin: 8px 0;
+          font-size: 12px;
+          color: var(--ink-800);
+        }
+        .store-card-header { font-size: 13px; color: var(--maroon-900); margin-bottom: 6px; }
+        .store-address-text { line-height: 1.4; margin: 0 0 8px; color: var(--ink-600); }
+        .store-contact-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+        .store-touchpoint { color: var(--maroon-900); text-decoration: none; font-size: 12px; }
+        .store-touchpoint:hover { text-decoration: underline; }
+        .store-hours-note { font-size: 11px; color: var(--ink-400); }
+
+        .track-note-box {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 10px 14px;
+          margin-top: 14px;
+          font-size: 12px;
+          color: var(--ink-700);
+        }
 
         .order-items { display: flex; flex-direction: column; gap: 10px; }
         .order-item-row {

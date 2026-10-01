@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { query, pool } from '../db.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { razorpay, razorpayEnabled, verifyPaymentSignature, createRazorpayRefund } from '../lib/razorpay.js';
-import { createShiprocketOrder, assignShiprocketAWB, trackShiprocketAWB, cancelShiprocketOrder } from '../lib/shiprocket.js';
 import { sendOrderConfirmationEmail, sendCancellationEmail } from '../lib/email.js';
 import { renderInvoice } from '../lib/invoice.js';
 import { findUsableCoupon, computeDiscount } from './coupons.js';
@@ -302,72 +301,6 @@ router.post('/verify', requireAuth, async (req, res) => {
     client.release();
   }
 
-  // Trigger Shiprocket Order Creation
-  try {
-    const { rows: userRows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
-    const user = userRows[0] || {};
-
-    const { rows: pickupRows } = await query('SELECT nickname FROM pickup_locations WHERE id = $1', [order.pickup_location_id]);
-    const pickupNickname = pickupRows[0]?.nickname || 'Primary Warehouse';
-
-    const srResult = await createShiprocketOrder({
-      orderId: order.id,
-      orderNumber: order.order_number,
-      orderDate: order.created_at,
-      pickupLocation: pickupNickname,
-      customer: user,
-      address: {
-        name: order.address_name,
-        mobile: order.address_mobile,
-        line1: order.address_line1,
-        line2: order.address_line2,
-        city: order.address_city,
-        state: order.address_state,
-        pincode: order.address_pincode,
-        country: order.address_country,
-      },
-      items,
-      totalAmount: order.total_amount || (order.subtotal - order.discount + order.shipping_fee),
-      totalWeightGrams: order.total_weight_grams,
-    });
-
-    if (srResult?.shiprocketOrderId) {
-      let awb = srResult.awbCode;
-      let courier = srResult.courierName;
-
-      // Try assigning AWB immediately if shipmentId was returned
-      if (!awb && srResult.shipmentId) {
-        const awbRes = await assignShiprocketAWB(srResult.shipmentId);
-        if (awbRes?.awbCode) {
-          awb = awbRes.awbCode;
-          courier = awbRes.courierName;
-        }
-      }
-
-      await query(
-        `UPDATE orders SET
-           shiprocket_order_id = $1,
-           shiprocket_shipment_id = $2,
-           awb_code = COALESCE($3, awb_code),
-           courier_name = COALESCE($4, courier_name),
-           tracking_url = $5,
-           shipment_status = 'ORDER_CREATED',
-           updated_at = now()
-         WHERE id = $6`,
-        [
-          srResult.shiprocketOrderId,
-          srResult.shipmentId,
-          awb,
-          courier,
-          awb ? `https://shiprocket.co/tracking/${awb}` : null,
-          order.id,
-        ]
-      );
-    }
-  } catch (srErr) {
-    console.error('[orders/verify] background Shiprocket dispatch error:', srErr.message);
-  }
-
   // Send confirmation email
   const { rows: userRows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
   sendOrderConfirmationEmail(userRows[0], order, items).catch(() => {});
@@ -375,12 +308,29 @@ router.post('/verify', requireAuth, async (req, res) => {
   res.json({ ok: true, order, items });
 });
 
-// POST /api/orders/:id/cancel — Order cancellation with policy checks and Razorpay refund
+// POST /api/orders/:id/cancel — Customer requests cancellation (Pending Admin Approval)
 router.post('/:id/cancel', requireAuth, async (req, res) => {
   const { reason } = req.body || {};
   const { rows } = await query('SELECT * FROM orders WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
   const order = rows[0];
   if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+  if (order.status === 'cancelled') {
+    return res.status(400).json({ error: 'This order is already cancelled.' });
+  }
+
+  if (order.status === 'cancellation_requested') {
+    return res.json({
+      ok: true,
+      message: 'Cancellation request is already pending admin review.',
+      status: 'cancellation_requested',
+      contact: {
+        phone: '+91 83175 51337',
+        whatsapp: '918317551337',
+        email: 'ravichandratextiles39@gmail.com',
+      },
+    });
+  }
 
   if (order.status !== 'paid' && order.status !== 'paid_oversold') {
     return res.status(400).json({ error: 'Only confirmed paid orders can be cancelled.' });
@@ -390,7 +340,7 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
   const nonCancellableStatuses = ['shipped', 'in_transit', 'out_for_delivery', 'delivered'];
   if (nonCancellableStatuses.includes(String(order.shipment_status).toLowerCase())) {
     return res.status(400).json({
-      error: `Order has already been dispatched (${order.shipment_status}) and cannot be cancelled. You can initiate a return after delivery if eligible.`,
+      error: `Order has already been dispatched (${order.shipment_status}) and cannot be cancelled directly. You can request a return after delivery.`,
     });
   }
 
@@ -405,88 +355,36 @@ router.post('/:id/cancel', requireAuth, async (req, res) => {
 
   const daysSincePaid = order.paid_at ? Math.floor((Date.now() - new Date(order.paid_at).getTime()) / 86400000) : 0;
   const tier = await findApplicableTier(daysSincePaid);
-  if (!tier) {
-    return res.status(400).json({ error: 'This order is past the allowable cancellation window.' });
-  }
-
+  const refundPercent = tier ? tier.refund_percent : 100;
   const payable = order.subtotal - (order.discount || 0);
-  const refundAmount = Math.round((payable * tier.refund_percent) / 100);
+  const refundAmount = Math.round((payable * refundPercent) / 100);
 
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+  // Set order status to 'cancellation_requested' for Admin Approval
+  const { rows: updated } = await query(
+    `UPDATE orders SET
+       status = 'cancellation_requested',
+       cancellation_reason = $1,
+       cancellation_requested_at = now(),
+       cancelled_by = 'customer_pending_admin',
+       refund_percent = $2,
+       refund_amount = $3,
+       updated_at = now()
+     WHERE id = $4 RETURNING *`,
+    [reason || 'Requested by customer', refundPercent, refundAmount, order.id]
+  );
 
-    // Restore inventory
-    for (const item of items) {
-      if (item.variant_id) {
-        await client.query('UPDATE product_variants SET stock = stock + $1 WHERE id = $2', [item.qty, item.variant_id]);
-      }
-      await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [item.qty, item.product_id]);
-    }
-
-    await client.query(
-      `UPDATE orders SET
-         status = 'cancelled',
-         payment_status = 'REFUND_PENDING',
-         shipment_status = 'CANCELLED',
-         cancelled_at = now(),
-         cancelled_by = 'customer',
-         cancellation_reason = $1,
-         refund_percent = $2,
-         refund_amount = $3,
-         updated_at = now()
-       WHERE id = $4`,
-      [reason || 'Cancelled by customer', tier.refund_percent, refundAmount, order.id]
-    );
-
-    await client.query('COMMIT');
-  } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('[orders/cancel] error:', err);
-    return res.status(500).json({ error: 'Could not cancel order.' });
-  } finally {
-    client.release();
-  }
-
-  // Cancel Shiprocket Order if already sent
-  if (order.shiprocket_order_id) {
-    cancelShiprocketOrder([order.shiprocket_order_id]).catch((e) =>
-      console.warn('[orders/cancel] shiprocket cancel error:', e.message)
-    );
-  }
-
-  // Issue Razorpay Refund
-  if (refundAmount > 0 && order.razorpay_payment_id) {
-    try {
-      const rf = await createRazorpayRefund({
-        paymentId: order.razorpay_payment_id,
-        amountInRupees: refundAmount,
-        notes: { orderId: String(order.id), reason: reason || 'Customer cancellation' },
-      });
-
-      await query(
-        `INSERT INTO refunds (order_id, payment_id, amount, status, razorpay_refund_id, reason)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [order.id, order.razorpay_payment_id, refundAmount, rf.status || 'processed', rf.id, reason || 'Customer cancellation']
-      );
-
-      await query("UPDATE orders SET payment_status = 'REFUNDED', updated_at = now() WHERE id = $1", [order.id]);
-    } catch (err) {
-      console.error('[orders/cancel] Razorpay refund error:', err.message);
-    }
-  }
-
-  // Send cancellation email
-  const { rows: userRows } = await query('SELECT * FROM users WHERE id = $1', [req.user.id]);
-  if (userRows[0]) {
-    sendCancellationEmail(userRows[0], order, {
-      refundPercent: tier.refund_percent,
-      refundAmount,
-      tierLabel: tier.label,
-    }).catch(() => {});
-  }
-
-  res.json({ ok: true, refundPercent: tier.refund_percent, refundAmount, tierLabel: tier.label });
+  res.json({
+    ok: true,
+    message: 'Cancellation request submitted successfully. Our admin team will review and approve it.',
+    order: updated[0],
+    refundPercent,
+    refundAmount,
+    contact: {
+      phone: '+91 83175 51337',
+      whatsapp: '918317551337',
+      email: 'ravichandratextiles39@gmail.com',
+    },
+  });
 });
 
 // GET /api/orders — Customer order list with tracking info
@@ -508,7 +406,7 @@ router.get('/', requireAuth, async (req, res) => {
   });
 });
 
-// GET /api/orders/:id/track — Live Shiprocket tracking
+// GET /api/orders/:id/track — Live shipment tracking details
 router.get('/:id/track', requireAuth, async (req, res) => {
   const { rows } = await query('SELECT * FROM orders WHERE id = $1 AND (user_id = $2 OR $3 = true)', [
     req.params.id,
@@ -518,19 +416,14 @@ router.get('/:id/track', requireAuth, async (req, res) => {
   const order = rows[0];
   if (!order) return res.status(404).json({ error: 'Order not found.' });
 
-  let liveTracking = null;
-  if (order.awb_code) {
-    liveTracking = await trackShiprocketAWB(order.awb_code);
-  }
-
   res.json({
     orderId: order.id,
     orderNumber: order.order_number,
     awbCode: order.awb_code,
     courierName: order.courier_name,
-    trackingUrl: order.tracking_url || (order.awb_code ? `https://shiprocket.co/tracking/${order.awb_code}` : null),
-    shipmentStatus: liveTracking?.shipmentStatus || order.shipment_status,
-    trackingHistory: liveTracking?.scans || order.tracking_history || [],
+    trackingUrl: order.tracking_url,
+    shipmentStatus: order.shipment_status || 'PENDING',
+    trackingHistory: order.tracking_history || [],
   });
 });
 
@@ -557,52 +450,131 @@ router.get('/admin/all', requireAdmin, async (_req, res) => {
   });
 });
 
-// PUT /api/orders/admin/:id/status — Admin status & courier update
-router.put('/admin/:id/status', requireAdmin, async (req, res) => {
-  const { shipmentStatus, awbCode, courierName, trackingUrl } = req.body || {};
-
-  const { rows } = await query(
-    `UPDATE orders SET
-       shipment_status = COALESCE($1, shipment_status),
-       awb_code = COALESCE($2, awb_code),
-       courier_name = COALESCE($3, courier_name),
-       tracking_url = COALESCE($4, tracking_url),
-       updated_at = now()
-     WHERE id = $5 RETURNING *`,
-    [shipmentStatus, awbCode, courierName, trackingUrl, req.params.id]
-  );
-
-  if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
-  res.json({ order: rows[0] });
-});
-
-// POST /api/orders/admin/:id/assign-awb — Trigger Shiprocket AWB assignment
-router.post('/admin/:id/assign-awb', requireAdmin, async (req, res) => {
+// PUT /api/orders/admin/:id/cancellation/approve — Admin approves cancellation and triggers Razorpay refund
+router.put('/admin/:id/cancellation/approve', requireAdmin, async (req, res) => {
   const { rows } = await query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
   const order = rows[0];
   if (!order) return res.status(404).json({ error: 'Order not found.' });
 
-  if (!order.shiprocket_shipment_id) {
-    return res.status(400).json({ error: 'No Shiprocket shipment ID associated with this order.' });
+  if (order.status !== 'cancellation_requested') {
+    return res.status(400).json({ error: `Cannot approve cancellation for order in '${order.status}' status.` });
   }
 
-  const awbRes = await assignShiprocketAWB(order.shiprocket_shipment_id);
-  if (!awbRes?.awbCode) {
-    return res.status(400).json({ error: 'Failed to assign AWB via Shiprocket. Please check Shiprocket wallet balance or courier availability.' });
+  const { rows: items } = await query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+  const refundAmount = order.refund_amount != null ? order.refund_amount : (order.subtotal - (order.discount || 0));
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Restore product inventory
+    for (const item of items) {
+      if (item.variant_id) {
+        await client.query('UPDATE product_variants SET stock = stock + $1 WHERE id = $2', [item.qty, item.variant_id]);
+      }
+      await client.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [item.qty, item.product_id]);
+    }
+
+    // 2. Mark order as cancelled
+    await client.query(
+      `UPDATE orders SET
+         status = 'cancelled',
+         shipment_status = 'CANCELLED',
+         payment_status = 'REFUND_PENDING',
+         cancelled_at = now(),
+         cancelled_by = 'admin_approved',
+         updated_at = now()
+       WHERE id = $1`,
+      [order.id]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('[orders/admin/cancellation/approve] inventory restore error:', err);
+    return res.status(500).json({ error: 'Could not restore inventory.' });
+  } finally {
+    client.release();
+  }
+
+  // 3. Trigger Razorpay Refund if paid via Razorpay
+  if (refundAmount > 0 && order.razorpay_payment_id) {
+    try {
+      const rf = await createRazorpayRefund({
+        paymentId: order.razorpay_payment_id,
+        amountInRupees: refundAmount,
+        notes: { orderId: String(order.id), reason: order.cancellation_reason || 'Admin approved cancellation' },
+      });
+
+      await query(
+        `INSERT INTO refunds (order_id, payment_id, amount, status, razorpay_refund_id, reason)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [order.id, order.razorpay_payment_id, refundAmount, rf.status || 'processed', rf.id, order.cancellation_reason || 'Admin approved cancellation']
+      );
+
+      await query("UPDATE orders SET payment_status = 'REFUNDED', updated_at = now() WHERE id = $1", [order.id]);
+    } catch (err) {
+      console.error('[orders/admin/cancellation/approve] Razorpay refund error:', err.message);
+    }
+  }
+
+  // 4. Send cancellation notification email
+  const { rows: userRows } = await query('SELECT * FROM users WHERE id = $1', [order.user_id]);
+  if (userRows[0]) {
+    sendCancellationEmail(userRows[0], order, {
+      refundPercent: order.refund_percent || 100,
+      refundAmount,
+      tierLabel: 'Admin approved',
+    }).catch(() => {});
+  }
+
+  const { rows: finalOrder } = await query('SELECT * FROM orders WHERE id = $1', [order.id]);
+  res.json({ ok: true, message: 'Cancellation approved and refund processed.', order: finalOrder[0] });
+});
+
+// PUT /api/orders/admin/:id/cancellation/reject — Admin rejects cancellation request
+router.put('/admin/:id/cancellation/reject', requireAdmin, async (req, res) => {
+  const { reason } = req.body || {};
+  const { rows } = await query('SELECT * FROM orders WHERE id = $1', [req.params.id]);
+  const order = rows[0];
+  if (!order) return res.status(404).json({ error: 'Order not found.' });
+
+  if (order.status !== 'cancellation_requested') {
+    return res.status(400).json({ error: `Order is not in 'cancellation_requested' status.` });
   }
 
   const { rows: updated } = await query(
     `UPDATE orders SET
-       awb_code = $1,
-       courier_name = COALESCE($2, courier_name),
-       tracking_url = $3,
-       shipment_status = 'AWB_ASSIGNED',
+       status = 'paid',
+       cancellation_reject_reason = $1,
        updated_at = now()
-     WHERE id = $4 RETURNING *`,
-    [awbRes.awbCode, awbRes.courierName, `https://shiprocket.co/tracking/${awbRes.awbCode}`, order.id]
+     WHERE id = $2 RETURNING *`,
+    [reason || 'Admin declined cancellation request. Order will be fulfilled.', order.id]
   );
 
-  res.json({ ok: true, order: updated[0] });
+  res.json({ ok: true, message: 'Cancellation request rejected. Order remains active.', order: updated[0] });
+});
+
+// PUT /api/orders/admin/:id/status — Admin status, fulfillment & courier tracking update
+router.put('/admin/:id/status', requireAdmin, async (req, res) => {
+  const { status, shipmentStatus, awbCode, courierName, trackingUrl } = req.body || {};
+
+  const { rows } = await query(
+    `UPDATE orders SET
+       status = COALESCE($1, status),
+       shipment_status = COALESCE($2, shipment_status),
+       awb_code = COALESCE($3, awb_code),
+       courier_name = COALESCE($4, courier_name),
+       tracking_url = COALESCE($5, tracking_url),
+       shipped_at = CASE WHEN $2 = 'SHIPPED' AND shipped_at IS NULL THEN now() ELSE shipped_at END,
+       delivered_at = CASE WHEN $2 = 'DELIVERED' AND delivered_at IS NULL THEN now() ELSE delivered_at END,
+       updated_at = now()
+     WHERE id = $6 RETURNING *`,
+    [status, shipmentStatus, awbCode, courierName, trackingUrl, req.params.id]
+  );
+
+  if (!rows[0]) return res.status(404).json({ error: 'Order not found.' });
+  res.json({ order: rows[0] });
 });
 
 // GET /api/orders/:id/invoice — PDF Invoice

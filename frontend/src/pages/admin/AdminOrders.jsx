@@ -8,6 +8,7 @@ const statusLabels = {
   paid_oversold: 'Needs attention',
   created: 'Payment pending',
   failed: 'Failed',
+  cancellation_requested: 'Cancellation Requested',
   cancelled: 'Cancelled',
 };
 
@@ -31,6 +32,16 @@ export default function AdminOrders() {
   const [invoiceId, setInvoiceId] = useState(null);
   const [invoiceError, setInvoiceError] = useState(null);
   const [actionBusy, setActionBusy] = useState({});
+
+  // Courier & Tracking Modal State
+  const [editingShippingOrder, setEditingShippingOrder] = useState(null);
+  const [shippingForm, setShippingForm] = useState({
+    courierName: '',
+    awbCode: '',
+    trackingUrl: '',
+    shipmentStatus: 'PENDING',
+  });
+  const [savingShipping, setSavingShipping] = useState(false);
 
   useEffect(() => {
     loadOrders();
@@ -68,10 +79,13 @@ export default function AdminOrders() {
     }
   }
 
-  async function handleAssignAWB(orderId) {
+  async function handleApproveCancellation(orderId) {
+    if (!window.confirm('Approve this cancellation request? This will restore inventory stock and process a refund to the customer via Razorpay.')) {
+      return;
+    }
     setActionBusy((prev) => ({ ...prev, [orderId]: true }));
     try {
-      await api.assignOrderAWB(orderId);
+      await api.approveCancellation(orderId);
       loadOrders();
     } catch (err) {
       setError(err.message);
@@ -80,8 +94,58 @@ export default function AdminOrders() {
     }
   }
 
+  async function handleRejectCancellation(orderId) {
+    const reason = window.prompt(
+      'Enter reason for declining cancellation (this will be visible to customer):',
+      'Your order has already been processed/packed for courier dispatch.'
+    );
+    if (reason === null) return;
+    setActionBusy((prev) => ({ ...prev, [orderId]: true }));
+    try {
+      await api.rejectCancellation(orderId, { reason });
+      loadOrders();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionBusy((prev) => ({ ...prev, [orderId]: false }));
+    }
+  }
+
+  function openShippingEditor(order) {
+    setEditingShippingOrder(order);
+    setShippingForm({
+      courierName: order.courier_name || '',
+      awbCode: order.awb_code || '',
+      trackingUrl: order.tracking_url || '',
+      shipmentStatus: order.shipment_status || 'PENDING',
+    });
+  }
+
+  async function handleSaveShipping(e) {
+    e.preventDefault();
+    if (!editingShippingOrder) return;
+    setSavingShipping(true);
+    try {
+      await api.updateOrderStatus(editingShippingOrder.id, {
+        courierName: shippingForm.courierName.trim(),
+        awbCode: shippingForm.awbCode.trim(),
+        trackingUrl: shippingForm.trackingUrl.trim(),
+        shipmentStatus: shippingForm.shipmentStatus,
+      });
+      setEditingShippingOrder(null);
+      loadOrders();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingShipping(false);
+    }
+  }
+
+  const cancellationCount = orders.filter((o) => o.status === 'cancellation_requested').length;
+
   const filteredOrders = orders.filter((o) => {
     if (filter === 'ALL') return true;
+    if (filter === 'CANCELLATION_REQUESTS') return o.status === 'cancellation_requested';
     if (filter === 'PAID') return o.payment_status === 'PAID' || o.status === 'paid';
     if (filter === 'PENDING_SHIP') return (o.payment_status === 'PAID' || o.status === 'paid') && !['delivered', 'cancelled'].includes(String(o.shipment_status).toLowerCase());
     if (filter === 'SHIPPED') return ['shipped', 'in_transit', 'out_for_delivery'].includes(String(o.shipment_status).toLowerCase());
@@ -96,17 +160,25 @@ export default function AdminOrders() {
         <div className="head-row">
           <div>
             <h1>Orders &amp; Shipments</h1>
-            <p>Every transaction across the store with Shiprocket dispatch tracking, AWB generation, Razorpay IDs, and item variants.</p>
+            <p>Every prepaid transaction across the store with manual courier dispatch tracking, Razorpay payment verification, and customer cancellation approvals.</p>
           </div>
           <div className="filter-tabs">
-            {['ALL', 'PAID', 'PENDING_SHIP', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((tab) => (
+            {[
+              { id: 'ALL', label: 'All Orders' },
+              { id: 'CANCELLATION_REQUESTS', label: `Cancel Requests${cancellationCount > 0 ? ` (${cancellationCount})` : ''}`, highlight: cancellationCount > 0 },
+              { id: 'PAID', label: 'Paid' },
+              { id: 'PENDING_SHIP', label: 'Pending Ship' },
+              { id: 'SHIPPED', label: 'Shipped' },
+              { id: 'DELIVERED', label: 'Delivered' },
+              { id: 'CANCELLED', label: 'Cancelled' },
+            ].map((tab) => (
               <button
-                key={tab}
+                key={tab.id}
                 type="button"
-                className={`tab-btn ${filter === tab ? 'active' : ''}`}
-                onClick={() => setFilter(tab)}
+                className={`tab-btn ${filter === tab.id ? 'active' : ''} ${tab.highlight ? 'tab-highlight' : ''}`}
+                onClick={() => setFilter(tab.id)}
               >
-                {tab.replace('_', ' ')}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -121,6 +193,57 @@ export default function AdminOrders() {
           {filteredOrders.length === 0 && <p className="empty">No orders matching this filter.</p>}
           {filteredOrders.map((o) => (
             <div className="order-row" key={o.id}>
+              {o.status === 'cancellation_requested' && (
+                <div className="admin-cancel-req-box">
+                  <div className="acrb-top">
+                    <span className="acrb-alert-badge">⚠️ Action Required</span>
+                    <span className="acrb-time">
+                      Requested {o.cancellation_requested_at ? new Date(o.cancellation_requested_at).toLocaleString('en-IN') : 'recently'}
+                    </span>
+                  </div>
+                  <h3 className="acrb-heading">Customer Requested Order Cancellation</h3>
+                  <p className="acrb-desc">
+                    Customer <strong>{o.customer_name}</strong> requested order cancellation.
+                    Refund amount: <strong>{formatINR(o.refund_amount || (o.subtotal - (o.discount || 0)))} ({o.refund_percent || 100}%)</strong>.
+                  </p>
+                  {o.cancellation_reason && (
+                    <p className="acrb-reason"><strong>Reason:</strong> &ldquo;{o.cancellation_reason}&rdquo;</p>
+                  )}
+                  <div className="acrb-btn-row">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-approve"
+                      disabled={actionBusy[o.id]}
+                      onClick={() => handleApproveCancellation(o.id)}
+                    >
+                      {actionBusy[o.id] ? 'Processing…' : '✓ Approve & Process Refund'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-reject"
+                      disabled={actionBusy[o.id]}
+                      onClick={() => handleRejectCancellation(o.id)}
+                    >
+                      ✕ Reject Request
+                    </button>
+                    <a
+                      href={`https://wa.me/${(o.address_mobile || o.customer_mobile || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${o.customer_name || 'Customer'}, this is Ravichandra Handlooms regarding your cancellation request for order #${o.order_number || o.id}.`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-sm btn-wa-chat"
+                    >
+                      💬 WhatsApp Customer
+                    </a>
+                    <a
+                      href={`tel:${o.address_mobile || o.customer_mobile || ''}`}
+                      className="btn btn-sm btn-call-cust"
+                    >
+                      📞 Call Customer
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {o.status === 'paid_oversold' && (
                 <div className="oversold-banner">
                   ⚠ Paid after stock ran out for one or more items — check inventory and contact the customer if needed.
@@ -162,22 +285,28 @@ export default function AdminOrders() {
                 </div>
 
                 <div className="detail-block">
-                  <p className="detail-label">Shiprocket Fulfillment</p>
-                  <p className="detail-value">Courier: <strong>{o.courier_name || 'Standard Courier'}</strong></p>
-                  <p className="detail-value mono">AWB: {o.awb_code || 'Not Assigned'}</p>
-                  {o.awb_code && (
+                  <p className="detail-label">Courier &amp; Tracking</p>
+                  <p className="detail-value">Courier: <strong>{o.courier_name || 'Not Assigned'}</strong></p>
+                  <p className="detail-value mono">AWB: {o.awb_code || 'Pending'}</p>
+                  {o.tracking_url ? (
                     <a
-                      href={`https://shiprocket.co/tracking/${o.awb_code}`}
+                      href={o.tracking_url}
                       target="_blank"
                       rel="noreferrer"
                       className="tracking-link"
                     >
-                      Track with courier ↗
+                      Live Tracking Link ↗
                     </a>
-                  )}
-                  {o.shiprocket_order_id && (
-                    <p className="detail-value mono text-muted">SR Order: {o.shiprocket_order_id}</p>
-                  )}
+                  ) : o.awb_code ? (
+                    <span className="tracking-hint">Tracking active via {o.courier_name || 'courier'}</span>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="btn-edit-shipping"
+                    onClick={() => openShippingEditor(o)}
+                  >
+                    ✏️ {o.awb_code || o.courier_name ? 'Edit Courier / AWB' : '+ Add Courier / AWB'}
+                  </button>
                 </div>
 
                 <div className="detail-block">
@@ -211,7 +340,7 @@ export default function AdminOrders() {
               {/* Fulfillment Actions & Status Controls */}
               <div className="fulfillment-bar">
                 <div className="status-updater">
-                  <span>Update Shipment Status:</span>
+                  <span>Shipment Status:</span>
                   <select
                     value={o.shipment_status || 'PENDING'}
                     disabled={actionBusy[o.id]}
@@ -224,16 +353,13 @@ export default function AdminOrders() {
                 </div>
 
                 <div className="order-actions-right">
-                  {!o.awb_code && o.shiprocket_shipment_id && (
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      disabled={actionBusy[o.id]}
-                      onClick={() => handleAssignAWB(o.id)}
-                    >
-                      {actionBusy[o.id] ? 'Assigning…' : 'Generate Shiprocket AWB'}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => openShippingEditor(o)}
+                  >
+                    🚚 Courier &amp; AWB
+                  </button>
 
                   {o.paid_at && (
                     <button
@@ -242,7 +368,7 @@ export default function AdminOrders() {
                       disabled={invoiceId === o.id}
                       onClick={() => handleDownloadInvoice(o)}
                     >
-                      {invoiceId === o.id ? 'Preparing…' : 'Download Invoice'}
+                      {invoiceId === o.id ? 'Preparing…' : '📄 Invoice'}
                     </button>
                   )}
                 </div>
@@ -257,6 +383,85 @@ export default function AdminOrders() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Courier & Tracking Modal */}
+      {editingShippingOrder && (
+        <div className="modal-backdrop" onClick={() => setEditingShippingOrder(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3>Courier &amp; Tracking Details</h3>
+              <button type="button" className="close-btn" onClick={() => setEditingShippingOrder(null)}>✕</button>
+            </div>
+            <form className="shipping-edit-form" onSubmit={handleSaveShipping}>
+              <p className="modal-order-tag">
+                Order <strong>{editingShippingOrder.order_number || `#SK${editingShippingOrder.id}`}</strong> · {editingShippingOrder.address_name}
+              </p>
+
+              <label>
+                Courier Name
+                <input
+                  type="text"
+                  placeholder="e.g. DTDC, Delhivery, Blue Dart, Speed Post, Professional"
+                  value={shippingForm.courierName}
+                  onChange={(e) => setShippingForm((f) => ({ ...f, courierName: e.target.value }))}
+                />
+              </label>
+              <div className="courier-quick-picks">
+                <span>Quick select:</span>
+                {['DTDC', 'Delhivery', 'Blue Dart', 'Speed Post', 'Professional'].map((c) => (
+                  <button
+                    type="button"
+                    key={c}
+                    className="quick-pick-btn"
+                    onClick={() => setShippingForm((f) => ({ ...f, courierName: c }))}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+
+              <label>
+                AWB / Tracking Number
+                <input
+                  type="text"
+                  placeholder="e.g. D12345678, DEL987654321"
+                  value={shippingForm.awbCode}
+                  onChange={(e) => setShippingForm((f) => ({ ...f, awbCode: e.target.value }))}
+                />
+              </label>
+
+              <label>
+                Live Tracking URL (Optional)
+                <input
+                  type="url"
+                  placeholder="https://track.dtdc.com/... or courier tracking URL"
+                  value={shippingForm.trackingUrl}
+                  onChange={(e) => setShippingForm((f) => ({ ...f, trackingUrl: e.target.value }))}
+                />
+              </label>
+
+              <label>
+                Shipment Status
+                <select
+                  value={shippingForm.shipmentStatus}
+                  onChange={(e) => setShippingForm((f) => ({ ...f, shipmentStatus: e.target.value }))}
+                >
+                  {shipmentStatuses.map((st) => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setEditingShippingOrder(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={savingShipping}>
+                  {savingShipping ? 'Saving…' : 'Save Courier Details'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -377,6 +582,117 @@ export default function AdminOrders() {
         .oversold-banner { background: #fbeacb; color: #8a5a10; }
         .cancelled-banner { background: #f6e3e3; color: #a13a3a; }
         .cancel-reason { display: block; font-weight: 500; margin-top: 2px; }
+
+        .tab-highlight {
+          background: #fff3cd !important;
+          color: #856404 !important;
+          border-color: #ffeeba !important;
+          font-weight: 600;
+        }
+        .tab-btn.active.tab-highlight {
+          background: #856404 !important;
+          color: #fff !important;
+          border-color: #856404 !important;
+        }
+
+        /* Admin Cancellation Request Box */
+        .admin-cancel-req-box {
+          background: #fff8e6;
+          border: 1.5px solid #f6c23e;
+          border-radius: var(--radius-sm);
+          padding: 14px 16px;
+          margin-bottom: 14px;
+        }
+        .acrb-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 6px;
+        }
+        .acrb-alert-badge {
+          background: #e74a3b;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 4px;
+          letter-spacing: 0.04em;
+        }
+        .acrb-time { font-size: 11.5px; color: #856404; }
+        .acrb-heading { font-size: 15px; font-weight: 600; color: #5a3c02; margin: 0 0 4px; }
+        .acrb-desc { font-size: 13px; color: #664d03; margin: 0 0 6px; }
+        .acrb-reason { font-size: 12.5px; color: #78350f; background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 0 0 12px; }
+        .acrb-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        .btn-approve { background: #1cc88a; color: #fff; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-approve:hover { background: #17a673; }
+        .btn-reject { background: #e74a3b; color: #fff; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-reject:hover { background: #be2617; }
+        .btn-wa-chat { background: #25d366; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; }
+        .btn-wa-chat:hover { background: #1ebc59; color: #fff; }
+        .btn-call-cust { background: var(--maroon-900); color: #fff; text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; }
+        .btn-call-cust:hover { background: var(--maroon-800); color: #fff; }
+
+        .btn-edit-shipping {
+          background: #fff;
+          border: 1px solid var(--stone-300);
+          color: var(--maroon-900);
+          font-size: 11.5px;
+          font-weight: 500;
+          padding: 3px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-top: 6px;
+          display: inline-block;
+        }
+        .btn-edit-shipping:hover { background: var(--stone-100); }
+        .tracking-hint { display: block; font-size: 11.5px; color: var(--ink-500); margin-top: 2px; }
+
+        /* Modal Styles */
+        .modal-backdrop {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0, 0, 0, 0.55);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 999;
+          padding: 20px;
+        }
+        .modal-content {
+          background: #fff;
+          border-radius: var(--radius-md);
+          max-width: 480px;
+          width: 100%;
+          padding: 24px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-head h3 { font-size: 18px; color: var(--maroon-900); margin: 0; }
+        .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-400); }
+        
+        .modal-order-tag { font-size: 12.5px; color: var(--ink-600); margin: 0 0 14px; background: var(--stone-50); padding: 6px 10px; border-radius: 4px; }
+        .shipping-edit-form { display: flex; flex-direction: column; gap: 12px; font-size: 12.5px; }
+        .shipping-edit-form label { display: flex; flex-direction: column; gap: 5px; color: var(--ink-700); font-weight: 500; }
+        .shipping-edit-form input, .shipping-edit-form select {
+          font-size: 13px;
+          padding: 8px 10px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--stone-300);
+        }
+        .courier-quick-picks { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: -4px; margin-bottom: 4px; }
+        .courier-quick-picks span { font-size: 11px; color: var(--ink-400); }
+        .quick-pick-btn {
+          font-size: 10.5px;
+          background: var(--stone-100);
+          border: 1px solid var(--stone-300);
+          padding: 2px 7px;
+          border-radius: 3px;
+          cursor: pointer;
+          color: var(--ink-700);
+        }
+        .quick-pick-btn:hover { background: var(--maroon-900); color: #fff; border-color: var(--maroon-900); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
       `}</style>
     </div>
   );

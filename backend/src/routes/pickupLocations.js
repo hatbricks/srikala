@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
-import { getShiprocketPickupLocations } from '../lib/shiprocket.js';
 
 const router = Router();
 
@@ -55,35 +54,10 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/pickup-locations/sync (pull from Shiprocket)
+// POST /api/pickup-locations/sync
 router.post('/sync', requireAdmin, async (_req, res) => {
-  const remote = await getShiprocketPickupLocations();
-  if (!remote || !remote.length) {
-    return res.status(400).json({ error: 'No pickup locations found in your Shiprocket account or credentials not set.' });
-  }
-
-  let importedCount = 0;
-  for (const loc of remote) {
-    const nickname = loc.pickup_location || loc.name;
-    const address = loc.address || loc.address_2 || '';
-    const city = loc.city;
-    const state = loc.state;
-    const pincode = String(loc.pin_code || loc.pincode);
-    const phone = String(loc.phone || '');
-
-    const { rows: existing } = await query('SELECT id FROM pickup_locations WHERE nickname = $1', [nickname]);
-    if (!existing.length) {
-      await query(
-        `INSERT INTO pickup_locations (nickname, address, city, state, pincode, phone, is_default)
-         VALUES ($1, $2, $3, $4, $5, $6, FALSE)`,
-        [nickname, address, city, state, pincode, phone]
-      );
-      importedCount++;
-    }
-  }
-
   const { rows: all } = await query('SELECT * FROM pickup_locations ORDER BY is_default DESC, created_at ASC');
-  res.json({ message: `Synced ${importedCount} new locations from Shiprocket.`, pickupLocations: all });
+  res.json({ message: 'Pickup locations up to date.', pickupLocations: all });
 });
 
 export default router;
