@@ -99,17 +99,20 @@ router.post('/login', authApiRateLimiter, checkLoginLockout, async (req, res) =>
 // anything in it, so a forged/tampered token is rejected before it ever
 // reaches a database query.
 router.post('/google', async (req, res) => {
-  if (!googleClient) {
-    return res.status(503).json({ error: 'Google sign-in is not configured yet.' });
+  const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  if (!clientId) {
+    return res.status(503).json({ error: 'Google sign-in is not configured yet. Server is missing GOOGLE_CLIENT_ID.' });
   }
   const { credential } = req.body || {};
   if (!credential) return res.status(400).json({ error: 'Missing Google credential.' });
 
   let payload;
   try {
-    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
     payload = ticket.getPayload();
-  } catch {
+  } catch (err) {
+    console.error('[auth/google] verification failed:', err?.message || err);
     return res.status(401).json({ error: 'Could not verify Google sign-in. Please try again.' });
   }
   if (!payload?.email || !payload.email_verified) {
@@ -120,25 +123,22 @@ router.post('/google', async (req, res) => {
   const { rows } = await query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
   let user = rows[0];
 
+  const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+
   if (!user) {
-    // New account via Google. There's no password to check yet — a
-    // random, never-shown hash keeps password_hash's NOT NULL constraint
-    // satisfied; the person can set a real password anytime afterward via
-    // "Forgot password", which works regardless of how the account started.
     const randomPasswordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
-    const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
     const insert = await query(
       `INSERT INTO users (name, email, password_hash, google_id, is_admin)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,
       [payload.name?.trim() || normalizedEmail.split('@')[0], normalizedEmail, randomPasswordHash, payload.sub, isAdmin]
     );
     user = insert.rows[0];
-  } else if (!user.google_id) {
-    // Existing email/password account signing in with Google for the
-    // first time — link it rather than creating a second account with
-    // the same email (email is already UNIQUE, so this is also the only
-    // safe option, not just the friendlier one).
-    const update = await query('UPDATE users SET google_id = $1 WHERE id = $2 RETURNING *', [payload.sub, user.id]);
+  } else {
+    const promoteAdmin = Boolean(user.is_admin || isAdmin);
+    const update = await query(
+      'UPDATE users SET google_id = COALESCE(google_id, $1), is_admin = $2 WHERE id = $3 RETURNING *',
+      [payload.sub, promoteAdmin, user.id]
+    );
     user = update.rows[0];
   }
 

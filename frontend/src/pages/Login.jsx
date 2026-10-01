@@ -6,42 +6,58 @@ import Seo from '../components/Seo';
 import BRAND from '../config/brand';
 
 export default function Login() {
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
-  const [form, setForm] = useState({ name: '', email: '', password: '', mobile: '' });
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const { login, signup, googleLogin } = useAuth();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const redirectTo = location.state?.from || '/';
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
-    setBusy(true);
-    try {
-      if (mode === 'login') {
-        await login(form.email, form.password);
-      } else {
-        await signup(form);
-      }
-      navigate(redirectTo, { replace: true });
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const fromPath = location.state?.from;
+  const redirectTo = (fromPath && fromPath !== '/login' && fromPath !== '/complete-profile') ? fromPath : '/';
 
   async function handleGoogleCredential(credential) {
     setError('');
     setBusy(true);
     try {
       const res = await googleLogin(credential);
+      // Admin redirect logic
+      if (res?.user?.isAdmin) {
+        if (redirectTo.startsWith('/admin')) {
+          navigate(redirectTo, { replace: true });
+        } else if (redirectTo !== '/') {
+          navigate(redirectTo, { replace: true });
+        } else {
+          navigate('/admin', { replace: true });
+        }
+        return;
+      }
+
+      // New user needing profile / mobile number
       if (res?.needsProfile || res?.needsMobile) {
         navigate('/complete-profile', { replace: true, state: { from: redirectTo } });
+      } else {
+        // Returning user - instant direct redirect to home or destination
+        navigate(redirectTo, { replace: true });
+      }
+    } catch (err) {
+      console.error('[Login] Google auth error:', err);
+      setError(err.message || 'Google sign-in could not be completed. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Developer fallback for password login if ever needed
+  async function handleLegacySubmit(e) {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const u = await login(form.email, form.password);
+      if (u?.isAdmin && redirectTo === '/') {
+        navigate('/admin', { replace: true });
       } else {
         navigate(redirectTo, { replace: true });
       }
@@ -117,7 +133,7 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Right Column: Interactive Authentication Experience */}
+          {/* Right Column: 1-Click Passwordless Authentication */}
           <div className="auth-form-panel">
             <div className="auth-form-header">
               <Link to="/" className="auth-logo-link" aria-label={`Return to ${BRAND.name} homepage`}>
@@ -125,41 +141,14 @@ export default function Login() {
                   src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight || '/images/logo.png'}
                   alt={BRAND.name}
                   className="auth-brand-logo"
-                  width="160"
-                  height="42"
+                  width="170"
+                  height="44"
                 />
               </Link>
+              <h1 className="auth-welcome-title">Sign In or Register</h1>
               <p className="auth-header-sub">
-                {mode === 'login' ? 'Welcome back to your silk haven' : `Begin your journey with ${BRAND.name}`}
+                Instant 1-click access with your Google account. Fast, secure, and 100% password-free.
               </p>
-            </div>
-
-            {/* Segmented Mode Switcher Tabs */}
-            <div className="auth-tabs" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'login'}
-                className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => {
-                  setMode('login');
-                  setError('');
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'signup'}
-                className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
-                onClick={() => {
-                  setMode('signup');
-                  setError('');
-                }}
-              >
-                Create Account
-              </button>
             </div>
 
             {error && (
@@ -171,132 +160,36 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="auth-form" noValidate>
-              {mode === 'signup' && (
-                <div className="form-group">
-                  <label htmlFor="auth-name">Full Name</label>
-                  <div className="input-wrapper">
-                    <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <input
-                      id="auth-name"
-                      type="text"
-                      required
-                      placeholder="e.g. Radhika Sharma"
-                      value={form.name}
-                      onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      autoComplete="name"
-                    />
-                  </div>
+            <div className="auth-google-box">
+              <div className="auth-google-cta">
+                <GoogleSignInButton
+                  text="continue_with"
+                  onCredential={handleGoogleCredential}
+                  onError={setError}
+                />
+              </div>
+
+              {busy && (
+                <div className="auth-busy-notice">
+                  <span className="spinner-dot" />
+                  <span>Signing in with Google, please wait…</span>
                 </div>
               )}
 
-              <div className="form-group">
-                <label htmlFor="auth-email">Email Address</label>
-                <div className="input-wrapper">
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                  </svg>
-                  <input
-                    id="auth-email"
-                    type="email"
-                    required
-                    placeholder="name@example.com"
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    autoComplete="email"
-                  />
+              <div className="auth-flow-hints">
+                <div className="auth-flow-hint">
+                  <span className="hint-bullet">✓</span>
+                  <span><strong>Returning Customers:</strong> Instantly logged in &amp; redirected to home or bag.</span>
+                </div>
+                <div className="auth-flow-hint">
+                  <span className="hint-bullet">✓</span>
+                  <span><strong>First-Time Visitors:</strong> Account created instantly; you&apos;ll be guided to enter delivery address next.</span>
+                </div>
+                <div className="auth-flow-hint">
+                  <span className="hint-bullet">✓</span>
+                  <span><strong>No Passwords:</strong> Safe, effortless authentication protected by Google.</span>
                 </div>
               </div>
-
-              {mode === 'signup' && (
-                <div className="form-group">
-                  <label htmlFor="auth-mobile">Phone Number (Optional)</label>
-                  <div className="input-wrapper">
-                    <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    <input
-                      id="auth-mobile"
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={form.mobile}
-                      onChange={(e) => setForm((f) => ({ ...f, mobile: e.target.value }))}
-                      autoComplete="tel"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <div className="label-row">
-                  <label htmlFor="auth-password">Password</label>
-                  {mode === 'login' && (
-                    <Link to="/forgot-password" className="forgot-password-link">
-                      Forgot password?
-                    </Link>
-                  )}
-                </div>
-                <div className="input-wrapper">
-                  <svg className="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  <input
-                    id="auth-password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    placeholder="Enter your password"
-                    value={form.password}
-                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle-btn"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
-                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" aria-hidden="true">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-auth-submit" disabled={busy}>
-                {busy ? (
-                  <span className="btn-spinner-wrap">
-                    <span className="spinner-dot" />
-                    <span>Please wait…</span>
-                  </span>
-                ) : (
-                  <>
-                    <span>{mode === 'login' ? `Sign In to ${BRAND.name}` : 'Create My Account'}</span>
-                    <span className="btn-arrow" aria-hidden="true">→</span>
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="auth-divider">
-              <span>or continue with</span>
-            </div>
-
-            <div className="google-auth-container">
-              <GoogleSignInButton onCredential={handleGoogleCredential} onError={setError} />
             </div>
 
             <div className="auth-security-guarantee">
@@ -304,8 +197,49 @@ export default function Login() {
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              <span>256-Bit SSL Encrypted &amp; Secure Experience</span>
+              <span>256-Bit SSL Encrypted &amp; Google OAuth 2.0 Protection</span>
             </div>
+
+            {/* Collapsible legacy / developer password fallback */}
+            <details className="auth-dev-details">
+              <summary>Developer / Password Sign-in</summary>
+              <form onSubmit={handleLegacySubmit} className="auth-legacy-form">
+                <div className="legacy-group">
+                  <label htmlFor="legacy-email">Email</label>
+                  <input
+                    id="legacy-email"
+                    type="email"
+                    required
+                    placeholder="email@example.com"
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  />
+                </div>
+                <div className="legacy-group">
+                  <label htmlFor="legacy-password">Password</label>
+                  <div className="legacy-input-wrapper">
+                    <input
+                      id="legacy-password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Password"
+                      value={form.password}
+                      onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    />
+                    <button
+                      type="button"
+                      className="legacy-pwd-toggle"
+                      onClick={() => setShowPassword((p) => !p)}
+                    >
+                      {showPassword ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" className="btn btn-outline btn-sm" disabled={busy}>
+                  {busy ? 'Verifying…' : 'Sign in with Password'}
+                </button>
+              </form>
+            </details>
 
             <div className="auth-footer-nav">
               <Link to="/" className="back-storefront-link">
@@ -516,44 +450,22 @@ export default function Login() {
           height: 38px;
           width: auto;
           display: inline-block;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
+        }
+
+        .auth-welcome-title {
+          font-family: var(--font-heading, 'Marcellus', Georgia, serif);
+          font-size: 26px;
+          color: var(--maroon-900, #581e15);
+          margin: 0 0 8px;
+          font-weight: 400;
         }
 
         .auth-header-sub {
           margin: 0;
-          font-size: 13px;
+          font-size: 13.5px;
           color: var(--ink-600, #735e59);
-        }
-
-        /* Segmented Tabs */
-        .auth-tabs {
-          display: flex;
-          background: #f5ede2;
-          padding: 4px;
-          border-radius: 999px;
-          margin-bottom: 24px;
-          border: 1px solid rgba(197, 139, 56, 0.2);
-        }
-
-        .auth-tab {
-          flex: 1;
-          padding: 10px 16px;
-          font-family: var(--font-body);
-          font-size: 13px;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-          border-radius: 999px;
-          border: none;
-          background: transparent;
-          color: var(--ink-600, #735e59);
-          cursor: pointer;
-          transition: all 0.25s ease;
-        }
-
-        .auth-tab.active {
-          background: #ffffff;
-          color: var(--brand-primary, #581e15);
-          box-shadow: 0 3px 10px rgba(45, 12, 17, 0.1);
+          line-height: 1.5;
         }
 
         /* Error Alert */
@@ -575,157 +487,39 @@ export default function Login() {
           flex-shrink: 0;
         }
 
-        /* Inputs & Form */
-        .auth-form {
+        /* Google Box */
+        .auth-google-box {
+          background: #fcf9f5;
+          border: 1px solid rgba(197, 139, 56, 0.28);
+          border-radius: 16px;
+          padding: 28px 24px 22px;
           display: flex;
           flex-direction: column;
+          align-items: center;
           gap: 18px;
+          box-shadow: 0 4px 16px rgba(197, 139, 56, 0.06);
         }
 
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .label-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .form-group label {
-          font-size: 12.5px;
-          font-weight: 500;
-          color: var(--brand-text, #220d0a);
-          letter-spacing: 0.01em;
-        }
-
-        .forgot-password-link {
-          font-size: 12px;
-          color: var(--brand-secondary, #b0732e);
-          text-decoration: none;
-          font-weight: 500;
-          transition: color 0.2s ease;
-        }
-
-        .forgot-password-link:hover {
-          color: var(--brand-primary, #581e15);
-          text-decoration: underline;
-        }
-
-        .input-wrapper {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .field-icon {
-          position: absolute;
-          left: 14px;
-          width: 17px;
-          height: 17px;
-          color: #9c8983;
-          pointer-events: none;
-          transition: color 0.2s ease;
-        }
-
-        .input-wrapper input {
+        .auth-google-cta {
           width: 100%;
-          padding: 12px 14px 12px 42px;
-          font-family: var(--font-body);
-          font-size: 13.5px;
-          color: var(--brand-text, #220d0a);
-          background: #fbf9f6;
-          border: 1px solid #e2d7c9;
-          border-radius: 10px;
-          outline: none;
-          transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .input-wrapper input:focus {
-          background: #ffffff;
-          border-color: var(--brand-accent, #c58b38);
-          box-shadow: 0 0 0 3px rgba(197, 139, 56, 0.16);
-        }
-
-        .input-wrapper input:focus + .field-icon,
-        .input-wrapper:focus-within .field-icon {
-          color: var(--brand-secondary, #b0732e);
-        }
-
-        .password-toggle-btn {
-          position: absolute;
-          right: 12px;
-          background: transparent;
-          border: none;
-          padding: 6px;
-          color: #9c8983;
-          cursor: pointer;
           display: flex;
-          align-items: center;
           justify-content: center;
-          border-radius: 6px;
-          transition: color 0.2s ease;
         }
 
-        .password-toggle-btn:hover {
-          color: var(--brand-primary, #581e15);
-        }
-
-        /* Submit Button */
-        .btn-auth-submit {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          width: 100%;
-          padding: 14px 24px;
-          margin-top: 6px;
-          border-radius: 999px;
-          background: linear-gradient(135deg, var(--brand-primary, #581e15) 0%, #3e120c 100%);
-          color: #ffffff;
-          border: 1px solid rgba(251, 223, 162, 0.35);
-          font-size: 14px;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          box-shadow: 0 8px 24px rgba(88, 30, 21, 0.22);
-          cursor: pointer;
-          transition: all 0.25s ease;
-        }
-
-        .btn-auth-submit:hover:not(:disabled) {
-          background: linear-gradient(135deg, var(--brand-hover, #6c241a) 0%, #4a150e 100%);
-          box-shadow: 0 12px 28px rgba(88, 30, 21, 0.32);
-          transform: translateY(-2px);
-        }
-
-        .btn-auth-submit:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn-arrow {
-          font-size: 16px;
-          transition: transform 0.25s ease;
-        }
-
-        .btn-auth-submit:hover:not(:disabled) .btn-arrow {
-          transform: translateX(4px);
-        }
-
-        .btn-spinner-wrap {
+        .auth-busy-notice {
           display: flex;
           align-items: center;
           gap: 8px;
+          font-size: 12.5px;
+          color: var(--brand-secondary, #b0732e);
+          font-weight: 500;
         }
 
         .spinner-dot {
           width: 12px;
           height: 12px;
-          border: 2px solid rgba(255, 255, 255, 0.4);
-          border-top-color: #ffffff;
+          border: 2px solid rgba(176, 115, 46, 0.3);
+          border-top-color: #b0732e;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
         }
@@ -734,30 +528,29 @@ export default function Login() {
           to { transform: rotate(360deg); }
         }
 
-        /* Social Divider */
-        .auth-divider {
+        .auth-flow-hints {
+          width: 100%;
           display: flex;
-          align-items: center;
-          gap: 14px;
-          margin: 22px 0 16px;
+          flex-direction: column;
+          gap: 8px;
+          border-top: 1px solid rgba(197, 139, 56, 0.16);
+          padding-top: 16px;
+        }
+
+        .auth-flow-hint {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          font-size: 12px;
+          line-height: 1.45;
+          color: var(--ink-700, #5c4742);
+        }
+
+        .hint-bullet {
+          color: #2e7d32;
+          font-weight: 700;
           font-size: 11px;
-          color: #9c8983;
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-        }
-
-        .auth-divider::before,
-        .auth-divider::after {
-          content: '';
-          flex: 1;
-          height: 1px;
-          background: #e6dcce;
-        }
-
-        .google-auth-container {
-          display: flex;
-          justify-content: center;
-          min-height: 44px;
+          margin-top: 1px;
         }
 
         .auth-security-guarantee {
@@ -766,7 +559,7 @@ export default function Login() {
           justify-content: center;
           gap: 6px;
           margin-top: 20px;
-          font-size: 11px;
+          font-size: 11.5px;
           color: #8c7670;
         }
 
@@ -774,9 +567,72 @@ export default function Login() {
           color: var(--brand-secondary, #b0732e);
         }
 
+        /* Collapsible Legacy Details */
+        .auth-dev-details {
+          margin-top: 16px;
+          font-size: 12px;
+          color: var(--ink-400, #a89a95);
+        }
+
+        .auth-dev-details summary {
+          cursor: pointer;
+          user-select: none;
+          text-align: center;
+        }
+
+        .auth-legacy-form {
+          margin-top: 12px;
+          padding: 16px;
+          background: #faf6f0;
+          border-radius: 8px;
+          border: 1px solid #e8dec8;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .legacy-group {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .legacy-group label {
+          font-size: 11.5px;
+          color: var(--ink-600, #735e59);
+        }
+
+        .legacy-group input {
+          padding: 8px 10px;
+          border-radius: 4px;
+          border: 1px solid #d5c8b5;
+          font-size: 12.5px;
+        }
+
+        .legacy-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .legacy-input-wrapper input {
+          width: 100%;
+          padding-right: 50px;
+        }
+
+        .legacy-pwd-toggle {
+          position: absolute;
+          right: 8px;
+          background: none;
+          border: none;
+          font-size: 11px;
+          color: var(--ink-500, #8c7670);
+          cursor: pointer;
+        }
+
         .auth-footer-nav {
           text-align: center;
-          margin-top: 14px;
+          margin-top: 20px;
         }
 
         .back-storefront-link {
@@ -819,13 +675,11 @@ export default function Login() {
           .auth-brand-logo {
             height: 32px;
           }
-          .auth-tab {
-            padding: 8px 12px;
-            font-size: 12px;
+          .auth-welcome-title {
+            font-size: 22px;
           }
-          .input-wrapper input {
-            padding: 11px 12px 11px 38px;
-            font-size: 13px;
+          .auth-google-box {
+            padding: 20px 16px;
           }
         }
       `}</style>

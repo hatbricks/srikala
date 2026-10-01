@@ -18,8 +18,8 @@ export default function CompleteProfile() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = location.state?.from || '/checkout';
+  const fromPath = location.state?.from;
+  const redirectTo = (fromPath && fromPath !== '/login' && fromPath !== '/complete-profile') ? fromPath : '/';
 
   useEffect(() => {
     if (user) {

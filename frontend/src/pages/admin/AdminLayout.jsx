@@ -16,11 +16,28 @@ const links = [
   { to: '/admin/settings', label: 'Store Settings' },
 ];
 
+import GoogleSignInButton from '../../components/GoogleSignInButton';
+
 function AdminLoginGate() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  async function handleGoogleCredential(credential) {
+    setError('');
+    setBusy(true);
+    try {
+      const res = await googleLogin(credential);
+      if (!res?.user?.isAdmin) {
+        setError(`Access Denied: The Google account (${res?.user?.email || 'used'}) is not configured as an administrator. Please sign in with your authorized admin account (ravichandratextiles39@gmail.com).`);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -39,43 +56,70 @@ function AdminLoginGate() {
   return (
     <div className="admin-gate">
       <Seo title="Admin Login" path="/admin" noindex />
-      <form className="admin-gate-card" onSubmit={handleSubmit}>
+      <div className="admin-gate-card">
         <div className="admin-brand">
           <img src="/images/monogram.png" alt="" className="brand-mark" /> Ravichandra <span className="cms-tag">CMS</span>
         </div>
-        <h1>Admin Login</h1>
-        <label>
-          Email
-          <input type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
-        </label>
-        <label>
-          Password
-          <input type="password" required value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
-        </label>
+        <h1>Admin Portal</h1>
+        <p className="admin-gate-sub">1-Click passwordless sign in for store managers &amp; administrators.</p>
+
         {error && (
-          <div className={`gate-alert ${error.includes('Security Alert') || error.includes('locked') ? 'gate-alert-security' : 'gate-alert-error'}`}>
+          <div className="gate-alert gate-alert-error">
             {error}
           </div>
         )}
-        <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : 'Log in'}</button>
+
+        <div className="admin-google-wrap">
+          <GoogleSignInButton
+            adminMode={true}
+            text="continue_with"
+            onCredential={handleGoogleCredential}
+            onError={setError}
+          />
+        </div>
+
+        <div className="admin-access-note">
+          <span>Authorized Admin: <strong>ravichandratextiles39@gmail.com</strong></span>
+        </div>
+
+        <details className="admin-legacy-toggle">
+          <summary>Developer / Password fallback</summary>
+          <form className="admin-legacy-form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+            </label>
+            <label>
+              Password
+              <input type="password" required value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
+            </label>
+            <button type="submit" className="btn btn-outline btn-sm" disabled={busy}>{busy ? 'Verifying…' : 'Sign in with Password'}</button>
+          </form>
+        </details>
+
         <div className="security-notice">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <span>Anti-Brute-Force Protected</span>
+          <span>Google OAuth 2.0 &amp; SSL Protected</span>
         </div>
-      </form>
+      </div>
 
       <style>{`
-        .admin-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--stone-100); }
-        .admin-gate-card { width: 100%; max-width: 360px; background: var(--paper); border-radius: var(--radius-md); padding: 32px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
-        .admin-gate-card h1 { font-size: 20px; margin: 0 0 6px; color: var(--maroon-900); }
+        .admin-gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--stone-100); padding: 20px; }
+        .admin-gate-card { width: 100%; max-width: 380px; background: var(--paper); border-radius: var(--radius-md); padding: 34px 30px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+        .admin-gate-card h1 { font-size: 22px; margin: 0; color: var(--maroon-900); }
+        .admin-gate-sub { font-size: 13px; color: var(--ink-500); margin: 0 0 4px; line-height: 1.4; }
         .admin-gate-card .admin-brand { color: var(--maroon-900); }
-        .admin-gate-card label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); }
-        .admin-gate-card input { padding: 11px 12px; border-radius: var(--radius-sm); border: 1px solid var(--stone-200); font-size: 13.5px; }
+        .admin-google-wrap { width: 100%; display: flex; justify-content: center; margin: 8px 0; }
+        .admin-access-note { font-size: 11.5px; color: var(--ink-500); text-align: center; background: #faf6f0; padding: 6px 10px; border-radius: 4px; border: 1px dashed #e8dec8; }
+        .admin-legacy-toggle { margin-top: 6px; font-size: 11.5px; color: var(--ink-400); }
+        .admin-legacy-toggle summary { cursor: pointer; user-select: none; }
+        .admin-legacy-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--stone-200); }
+        .admin-legacy-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-600); }
+        .admin-legacy-form input { padding: 9px 10px; border-radius: 4px; border: 1px solid var(--stone-300); font-size: 13px; }
         .gate-alert { font-size: 12px; line-height: 1.5; padding: 10px 12px; border-radius: var(--radius-sm); margin: 0; }
         .gate-alert-error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .gate-alert-security { background: #fff3e0; color: #d84315; border: 1px solid #ffcc80; font-weight: 500; }
         .security-notice {
           display: flex;
           align-items: center;
@@ -83,7 +127,7 @@ function AdminLoginGate() {
           gap: 6px;
           font-size: 11.5px;
           color: var(--ink-400);
-          margin-top: 2px;
+          margin-top: 6px;
         }
       `}</style>
     </div>
