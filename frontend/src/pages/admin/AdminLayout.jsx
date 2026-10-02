@@ -15,6 +15,7 @@ import {
   ReviewsIcon,
   PolicyIcon,
   SettingsIcon,
+  UsersIcon,
   LogoutIcon,
   CloseIcon,
   BackIcon,
@@ -23,6 +24,7 @@ import {
 const links = [
   { to: '/admin', label: 'Dashboard', end: true, icon: DashboardIcon },
   { to: '/admin/orders', label: 'Orders', icon: OrdersIcon },
+  { to: '/admin/users', label: 'Customers', icon: UsersIcon },
   { to: '/admin/products', label: 'Products', icon: ProductsIcon },
   { to: '/admin/categories', label: 'Categories', icon: CategoriesIcon },
   { to: '/admin/returns', label: 'Returns & Refunds', icon: ReturnsIcon },

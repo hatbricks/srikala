@@ -18,6 +18,9 @@ export default function AdminSettings() {
   const [gst, setGst] = useState(defaultGstSettings);
   const [contact, setContact] = useState({ email: '', phone: '', whatsapp: '', address: '' });
   const [banner, setBanner] = useState({ text: 'Handcrafted Heirlooms • Free shipping on orders above ₹5,000', active: true });
+  const [testEmail, setTestEmail] = useState('');
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState('');
   const [error, setError] = useState('');
@@ -49,6 +52,24 @@ export default function AdminSettings() {
       setTimeout(() => setSaved(''), 3000);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleTestEmail(e) {
+    e.preventDefault();
+    setTestBusy(true);
+    setTestResult(null);
+    try {
+      const res = await api.testAdminEmail(testEmail || undefined);
+      setTestResult({
+        ok: true,
+        message: res.message || 'Test email dispatched successfully! Please check your inbox or spam folder.',
+        provider: res.provider,
+      });
+    } catch (err) {
+      setTestResult({ ok: false, message: err.message || 'Failed to send test email.' });
+    } finally {
+      setTestBusy(false);
     }
   }
 
@@ -357,6 +378,59 @@ export default function AdminSettings() {
             </div>
 
             <button type="submit" className="btn btn-primary btn-sm">Save Contact Details</button>
+          </form>
+        </div>
+
+        {/* Email & Notifications Service */}
+        <div className="settings-card">
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '18px' }}>✉️</span>
+            Email Delivery &amp; Notifications Service
+          </h3>
+          <p className="card-sub">
+            Sends automated order confirmations, PDF tax invoices, and account security notices via SMTP or Resend.
+          </p>
+
+          <form onSubmit={handleTestEmail} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="form-row">
+              <label>
+                Send Test Verification Email To:
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="ravichandratextiles39@gmail.com"
+                />
+                <span className="field-hint">Leave blank to use default admin address</span>
+              </label>
+            </div>
+
+            {testResult && (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  background: testResult.ok ? '#e8f5e9' : '#ffebee',
+                  color: testResult.ok ? '#2e7d32' : '#c62828',
+                  border: `1px solid ${testResult.ok ? '#c8e6c9' : '#ffcdd2'}`,
+                }}
+              >
+                <strong>{testResult.ok ? '✓ Success: ' : '✕ Delivery Issue: '}</strong>
+                {testResult.message}
+                {testResult.provider && (
+                  <div style={{ marginTop: '4px', fontSize: '11.5px', opacity: 0.85 }}>
+                    Sent via: <strong>{testResult.provider.toUpperCase()}</strong>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div>
+              <button type="submit" className="btn btn-secondary btn-sm" disabled={testBusy}>
+                {testBusy ? 'Sending Test Email…' : 'Send Test Email Now'}
+              </button>
+            </div>
           </form>
         </div>
       </div>

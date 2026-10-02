@@ -151,6 +151,12 @@ export const api = {
   updateSetting: (key, value) => request(`/api/settings/${key}`, { method: 'PUT', body: { value } }),
   getAdminMetrics: () => request('/api/admin/metrics'),
   getAuditLogs: () => request('/api/admin/audit-logs'),
+  getAdminUsers: (params) => {
+    const q = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/api/admin/users${q}`);
+  },
+  getAdminUserDetail: (id) => request(`/api/admin/users/${id}`),
+  testAdminEmail: (email) => request('/api/admin/test-email', { method: 'POST', body: { email } }),
 
   // coupons
   validateCoupon: (payload) => request('/api/coupons/validate', { method: 'POST', body: payload }),

@@ -37,6 +37,7 @@ import AdminPickupLocations from './pages/admin/AdminPickupLocations';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
+import AdminUsers from './pages/admin/AdminUsers';
 
 function PublicSite() {
   return (
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="returns" element={<AdminReturns />} />
             <Route path="pickup-locations" element={<AdminPickupLocations />} />
             <Route path="coupons" element={<AdminCoupons />} />

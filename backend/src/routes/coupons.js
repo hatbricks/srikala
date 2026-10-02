@@ -106,6 +106,20 @@ router.get('/', requireAdmin, async (_req, res) => {
   res.json({ coupons: rows });
 });
 
+function toPgArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map(String).filter(Boolean);
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+    } catch {
+      return val.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
 router.post('/', requireAdmin, async (req, res) => {
   const {
     code,
@@ -148,8 +162,8 @@ router.post('/', requireAdmin, async (req, res) => {
         expiresAt || null,
         usageLimit ? Number(usageLimit) : null,
         perUserLimit ? Number(perUserLimit) : 1,
-        JSON.stringify(applicableCategories || []),
-        JSON.stringify(applicableProducts || []),
+        toPgArray(applicableCategories),
+        toPgArray(applicableProducts),
         Boolean(firstOrderOnly),
         active !== false,
       ]
@@ -204,8 +218,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       expiresAt !== undefined ? (expiresAt || null) : null,
       usageLimit !== undefined ? (usageLimit ? Number(usageLimit) : null) : null,
       perUserLimit !== undefined ? Number(perUserLimit) : null,
-      applicableCategories !== undefined ? JSON.stringify(applicableCategories) : null,
-      applicableProducts !== undefined ? JSON.stringify(applicableProducts) : null,
+      applicableCategories !== undefined ? toPgArray(applicableCategories) : null,
+      applicableProducts !== undefined ? toPgArray(applicableProducts) : null,
       firstOrderOnly !== undefined ? Boolean(firstOrderOnly) : null,
       active !== undefined ? active : null,
       req.params.id,

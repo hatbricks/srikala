@@ -115,4 +115,124 @@ router.get('/audit-logs', requireAdmin, async (_req, res) => {
   res.json({ auditLogs: rows });
 });
 
+// POST /api/admin/test-email — Test store email delivery
+router.post('/test-email', requireAdmin, async (req, res) => {
+  const email = (req.body?.email || req.user?.email || 'ravichandratextiles39@gmail.com').trim();
+  try {
+    const { sendTestEmail } = await import('../lib/email.js');
+    const result = await sendTestEmail(email);
+    if (result?.error) {
+      return res.status(400).json({ error: result.error, provider: result.provider });
+    }
+    res.json({ ok: true, message: `Test email sent successfully to ${email}`, provider: result.provider });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/users — All registered patrons & store members
+router.get('/users', requireAdmin, async (req, res) => {
+  try {
+    const { q = '', sort = 'newest' } = req.query;
+    let whereClause = '';
+    const params = [];
+    if (q.trim()) {
+      params.push(`%${q.trim().toLowerCase()}%`);
+      whereClause = `WHERE LOWER(u.name) LIKE $1 OR LOWER(u.email) LIKE $1 OR (u.mobile IS NOT NULL AND u.mobile LIKE $1)`;
+    }
+
+    let orderBy = 'u.created_at DESC';
+    if (sort === 'oldest') orderBy = 'u.created_at ASC';
+    if (sort === 'orders_desc') orderBy = 'orders_count DESC, u.created_at DESC';
+    if (sort === 'spent_desc') orderBy = 'total_spent DESC, u.created_at DESC';
+
+    const { rows } = await query(`
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        u.mobile,
+        u.is_admin,
+        u.google_id,
+        u.created_at,
+        COALESCE(o.orders_count, 0)::INTEGER AS orders_count,
+        COALESCE(o.total_spent, 0)::INTEGER AS total_spent,
+        o.last_order_date,
+        da.line1 AS default_address_line1,
+        da.line2 AS default_address_line2,
+        da.city AS default_address_city,
+        da.state AS default_address_state,
+        da.pincode AS default_address_pincode
+      FROM users u
+      LEFT JOIN (
+        SELECT
+          user_id,
+          COUNT(id) AS orders_count,
+          COALESCE(SUM(CASE WHEN payment_status = 'PAID' THEN total_amount ELSE 0 END), 0) AS total_spent,
+          MAX(created_at) AS last_order_date
+        FROM orders
+        GROUP BY user_id
+      ) o ON o.user_id = u.id
+      LEFT JOIN (
+        SELECT DISTINCT ON (user_id)
+          user_id, line1, line2, city, state, pincode
+        FROM addresses
+        ORDER BY user_id, is_default DESC, id DESC
+      ) da ON da.user_id = u.id
+      ${whereClause}
+      ORDER BY ${orderBy}
+    `, params);
+
+    const totalUsers = rows.length;
+    const googleUsers = rows.filter((u) => Boolean(u.google_id)).length;
+    const customersWithOrders = rows.filter((u) => u.orders_count > 0).length;
+    const totalLTV = rows.reduce((sum, u) => sum + (Number(u.total_spent) || 0), 0);
+
+    res.json({
+      users: rows,
+      summary: {
+        totalUsers,
+        googleUsers,
+        customersWithOrders,
+        totalLTV,
+      },
+    });
+  } catch (err) {
+    console.error('[admin/users] error:', err);
+    res.status(500).json({ error: 'Failed to fetch users list.' });
+  }
+});
+
+// GET /api/admin/users/:id — Detailed customer profile
+router.get('/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows: userRows } = await query(
+      'SELECT id, name, email, mobile, is_admin, google_id, created_at FROM users WHERE id = $1',
+      [id]
+    );
+    if (!userRows[0]) return res.status(404).json({ error: 'User not found.' });
+
+    const { rows: addresses } = await query(
+      'SELECT * FROM addresses WHERE user_id = $1 ORDER BY is_default DESC, id DESC',
+      [id]
+    );
+
+    const { rows: orders } = await query(
+      `SELECT id, order_number, status, payment_status, shipment_status, total_amount, subtotal, created_at
+       FROM orders WHERE user_id = $1 ORDER BY created_at DESC`,
+      [id]
+    );
+
+    res.json({
+      user: userRows[0],
+      addresses,
+      orders,
+    });
+  } catch (err) {
+    console.error('[admin/users/:id] error:', err);
+    res.status(500).json({ error: 'Failed to fetch user details.' });
+  }
+});
+
 export default router;

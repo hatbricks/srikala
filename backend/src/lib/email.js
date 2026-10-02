@@ -1,37 +1,84 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const apiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.RESEND_FROM_EMAIL || "Ravichandra Textiles <onboarding@resend.dev>";
 // CLIENT_URL can be a comma-separated list (needed for CORS, so both the
 // bare domain and the www./".in" variants are all allowed origins) — but a
 // link inside an email needs exactly ONE url, so only the first entry is
-// used here. Without this, an email link ended up literally embedding
-// every comma-separated domain into one broken URL, sending customers to
-// an invalid link when they clicked "View Orders".
+// used here.
 const siteUrl = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim();
 
-export const emailEnabled = Boolean(apiKey && !apiKey.includes('xxxx'));
+function getTransporter() {
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (smtpUser && smtpPass) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port,
+      secure: port === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+  }
+  return null;
+}
 
-const resend = emailEnabled ? new Resend(apiKey) : null;
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (apiKey && !apiKey.includes('xxxx') && apiKey.startsWith('re_')) {
+    return new Resend(apiKey);
+  }
+  return null;
+}
+
+export function isEmailConfigured() {
+  return Boolean(
+    (process.env.SMTP_USER && process.env.SMTP_PASS) ||
+    (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes('xxxx'))
+  );
+}
+
+export const emailEnabled = isEmailConfigured();
 
 if (!emailEnabled) {
   console.warn(
-    '[email] RESEND_API_KEY not set — emails will be skipped (logged to console instead) until you add a real key to .env'
+    '[email] Neither SMTP (SMTP_USER/SMTP_PASS) nor RESEND_API_KEY is configured — emails will be skipped (logged to console instead)'
   );
 }
 
 async function send({ to, subject, html }) {
-  if (!emailEnabled) {
-    console.log(`[email:skipped] To: ${to} | Subject: ${subject}`);
-    return { skipped: true };
+  const smtp = getTransporter();
+  if (smtp) {
+    const rawFrom = process.env.FROM_EMAIL || process.env.SMTP_USER;
+    const from = rawFrom.includes('<') ? rawFrom : `Ravichandra Textiles <${rawFrom}>`;
+    try {
+      const info = await smtp.sendMail({ from, to, subject, html });
+      console.log(`[email:smtp-sent] To: ${to} | ID: ${info.messageId}`);
+      return { success: true, messageId: info.messageId, provider: 'smtp' };
+    } catch (err) {
+      console.error(`[email:smtp-error] To: ${to} | Error:`, err.message);
+      return { error: err.message, provider: 'smtp' };
+    }
   }
-  try {
-    return await resend.emails.send({ from: fromEmail, to, subject, html });
-  } catch (err) {
-    // Email failures should never break the order/login flow — log and move on.
-    console.error('[email:error]', err.message);
-    return { error: err.message };
+
+  const resend = getResendClient();
+  if (resend) {
+    const from = process.env.RESEND_FROM_EMAIL || process.env.FROM_EMAIL || "Ravichandra Textiles <onboarding@resend.dev>";
+    try {
+      const res = await resend.emails.send({ from, to, subject, html });
+      if (res?.error) {
+        console.error(`[email:resend-error] To: ${to} | Error:`, res.error.message || res.error);
+        return { error: res.error.message || 'Resend delivery failed', provider: 'resend' };
+      }
+      console.log(`[email:resend-sent] To: ${to} | ID: ${res?.data?.id}`);
+      return { success: true, id: res?.data?.id, provider: 'resend' };
+    } catch (err) {
+      console.error(`[email:resend-exception] To: ${to} | Error:`, err.message);
+      return { error: err.message, provider: 'resend' };
+    }
   }
+
+  console.warn(`[email:skipped] No email credentials configured. To: ${to} | Subject: ${subject}`);
+  return { skipped: true, error: 'No email credentials configured' };
 }
 
 // ---------------------------------------------------------------------
@@ -290,3 +337,29 @@ export function sendCancellationEmail(user, order, { refundPercent, refundAmount
 function escapeHtml(str = '') {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+export async function sendTestEmail(targetEmail) {
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:22px;color:${COLORS.maroon900};margin:0 0 16px;">
+      Ravichandra Textiles Email Test
+    </h1>
+    <p style="font-size:14px;line-height:1.7;color:${COLORS.ink600};margin:0 0 12px;">
+      This email confirms that your store's automated mailing service is configured properly and delivering messages successfully!
+    </p>
+    <div style="background:${COLORS.stone100};padding:14px;border-radius:8px;font-family:monospace;font-size:12px;color:${COLORS.ink900};">
+      Dispatched at: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} (IST)
+    </div>
+  `;
+
+  return send({
+    to: targetEmail,
+    subject: `Test Email from Ravichandra Textiles Storefront`,
+    html: layout({
+      preheader: `Email delivery test for Ravichandra Textiles`,
+      content,
+      ctaLabel: 'Visit Storefront',
+      ctaUrl: siteUrl,
+    }),
+  });
+}
+
