@@ -368,6 +368,21 @@ async function main() {
     console.log(`Admin user ${adminEmail} already exists`);
   }
 
+  const defaultCoupons = [
+    { code: 'WELCOME10', type: 'percent', value: 10, minOrder: 0, perUserLimit: 1 },
+    { code: 'FESTIVE10', type: 'percent', value: 10, minOrder: 0, perUserLimit: 2 },
+    { code: 'SILK15', type: 'percent', value: 15, minOrder: 5000, perUserLimit: 2 },
+  ];
+  for (const c of defaultCoupons) {
+    await pool.query(
+      `INSERT INTO coupons (code, type, value, min_order, active, per_user_limit)
+       VALUES ($1, $2, $3, $4, TRUE, $5)
+       ON CONFLICT (code) DO NOTHING`,
+      [c.code, c.type, c.value, c.minOrder, c.perUserLimit]
+    );
+  }
+  console.log('Seeded default coupons');
+
   await pool.end();
   console.log('Seed complete.');
 }

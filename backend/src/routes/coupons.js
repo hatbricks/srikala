@@ -13,7 +13,8 @@ function computeDiscount(coupon, subtotal) {
 }
 
 async function findUsableCoupon(code, userId, items = []) {
-  const { rows } = await query('SELECT * FROM coupons WHERE code = $1', [String(code || '').trim().toUpperCase()]);
+  const cleanCode = String(code || '').trim().toUpperCase();
+  const { rows } = await query('SELECT * FROM coupons WHERE UPPER(code) = $1', [cleanCode]);
   const coupon = rows[0];
   if (!coupon) return { error: 'Invalid coupon code.' };
   if (!coupon.active) return { error: 'This coupon is no longer active.' };
@@ -37,24 +38,26 @@ async function findUsableCoupon(code, userId, items = []) {
     }
   }
 
-  // Per user limit
-  const perUserLimit = coupon.per_user_limit || 1;
-  const { rows: userUsed } = await query(
-    'SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_id = $1 AND user_id = $2',
-    [coupon.id, userId]
-  );
-  if (parseInt(userUsed[0]?.count || 0, 10) >= perUserLimit) {
-    return { error: perUserLimit === 1 ? "You've already used this coupon." : `You have reached the limit of ${perUserLimit} uses for this coupon.` };
-  }
-
-  // First order only
-  if (coupon.first_order_only) {
-    const { rows: userOrders } = await query(
-      "SELECT 1 FROM orders WHERE user_id = $1 AND payment_status = 'paid' LIMIT 1",
-      [userId]
+  // Per user limit (only if user is logged in)
+  if (userId) {
+    const perUserLimit = coupon.per_user_limit || 1;
+    const { rows: userUsed } = await query(
+      'SELECT COUNT(*) as count FROM coupon_redemptions WHERE coupon_id = $1 AND user_id = $2',
+      [coupon.id, userId]
     );
-    if (userOrders.length > 0) {
-      return { error: 'This coupon is only valid on your first order.' };
+    if (parseInt(userUsed[0]?.count || 0, 10) >= perUserLimit) {
+      return { error: perUserLimit === 1 ? "You've already used this coupon." : `You have reached the limit of ${perUserLimit} uses for this coupon.` };
+    }
+
+    // First order only
+    if (coupon.first_order_only) {
+      const { rows: userOrders } = await query(
+        "SELECT 1 FROM orders WHERE user_id = $1 AND payment_status = 'paid' LIMIT 1",
+        [userId]
+      );
+      if (userOrders.length > 0) {
+        return { error: 'This coupon is only valid on your first order.' };
+      }
     }
   }
 
@@ -62,9 +65,26 @@ async function findUsableCoupon(code, userId, items = []) {
   const appProds = Array.isArray(coupon.applicable_products) ? coupon.applicable_products : [];
   const appCats = Array.isArray(coupon.applicable_categories) ? coupon.applicable_categories : [];
   if (items && items.length > 0 && (appProds.length > 0 || appCats.length > 0)) {
+    // If category restriction exists, look up missing categories from DB
+    const prodIds = items.map((i) => i.productId || i.id).filter(Boolean);
+    let prodCategories = {};
+    if (prodIds.length > 0 && appCats.length > 0) {
+      try {
+        const { rows: prods } = await query(
+          'SELECT id, category_id FROM products WHERE id = ANY($1)',
+          [prodIds]
+        );
+        prods.forEach((p) => { prodCategories[p.id] = p.category_id; });
+      } catch (err) {
+        console.warn('[coupon:category-lookup-warning]', err.message);
+      }
+    }
+
     const hasMatch = items.some((item) => {
-      const matchProd = appProds.length === 0 || appProds.includes(item.productId || item.id);
-      const matchCat = appCats.length === 0 || appCats.includes(item.category || item.categoryId);
+      const prodId = item.productId || item.id;
+      const catId = item.category || item.categoryId || prodCategories[prodId];
+      const matchProd = appProds.length === 0 || appProds.includes(prodId);
+      const matchCat = appCats.length === 0 || (catId && appCats.includes(catId));
       return matchProd && matchCat;
     });
     if (!hasMatch) {
@@ -75,20 +95,27 @@ async function findUsableCoupon(code, userId, items = []) {
   return { coupon };
 }
 
-// POST /api/coupons/validate
-router.post('/validate', requireAuth, async (req, res) => {
+// POST /api/coupons/validate — Publicly accessible (validates for both logged in users and guests)
+router.post('/validate', async (req, res) => {
   const { code, subtotal, items } = req.body || {};
   if (!code) return res.status(400).json({ error: 'Enter a coupon code.' });
 
-  const { coupon, error } = await findUsableCoupon(code, req.user.id, items);
-  if (error) return res.status(400).json({ error });
+  const userId = req.user?.id || null;
+  const { coupon, error } = await findUsableCoupon(code, userId, items);
+  if (error) {
+    console.log(`[coupons:validate] Code: "${code}" | Rejected: ${error} | User: ${userId || 'guest'}`);
+    return res.status(400).json({ error });
+  }
 
   const sub = Number(subtotal) || 0;
   if (coupon.min_order && sub < coupon.min_order) {
-    return res.status(400).json({ error: `This coupon needs a minimum order of ₹${coupon.min_order}.` });
+    const minErr = `This coupon needs a minimum order of ₹${coupon.min_order}.`;
+    console.log(`[coupons:validate] Code: "${code}" | Min Order Failed: ₹${sub} < ₹${coupon.min_order}`);
+    return res.status(400).json({ error: minErr });
   }
 
   const discount = computeDiscount(coupon, sub);
+  console.log(`[coupons:validate] Code: "${coupon.code}" | Approved | Discount: ₹${discount} on Subtotal: ₹${sub}`);
   res.json({
     valid: true,
     code: coupon.code,

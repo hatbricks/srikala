@@ -319,6 +319,14 @@ ALTER TABLE coupons ADD COLUMN IF NOT EXISTS applicable_categories TEXT[] DEFAUL
 ALTER TABLE coupons ADD COLUMN IF NOT EXISTS applicable_products TEXT[] DEFAULT '{}';
 ALTER TABLE coupons ADD COLUMN IF NOT EXISTS first_order_only BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Default store coupons
+INSERT INTO coupons (code, type, value, min_order, active, per_user_limit)
+VALUES
+  ('WELCOME10', 'percent', 10, 0, TRUE, 1),
+  ('FESTIVE10', 'percent', 10, 0, TRUE, 2),
+  ('SILK15', 'percent', 15, 5000, TRUE, 2)
+ON CONFLICT (code) DO NOTHING;
+
 -- Order extensions for full lifecycle, Shiprocket tracking, and payment statuses
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number TEXT UNIQUE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'PENDING';
