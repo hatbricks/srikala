@@ -327,6 +327,24 @@ VALUES
   ('SILK15', 'percent', 15, 5000, TRUE, 2)
 ON CONFLICT (code) DO NOTHING;
 
+-- Seed default customer test user if not present (Password: Password123!)
+INSERT INTO users (name, email, password_hash, mobile, is_admin)
+VALUES ('Pooja Sharma', 'test@ravichandratextiles.com', '$2a$10$OfJ7c4fdkoA5RUNVOXy5c.oi1zT.Buddn0eluDHtLAjhdjMg6JW/y', '9876543210', FALSE)
+ON CONFLICT (email) DO NOTHING;
+
+-- Seed default test delivery address for customer test user
+INSERT INTO addresses (user_id, name, mobile, line1, city, state, pincode, is_default)
+SELECT id, 'Pooja Sharma', '9876543210', 'Flat 402, Lotus Residency, 4th Cross', 'Bengaluru', 'Karnataka', '560001', TRUE
+FROM users WHERE email = 'test@ravichandratextiles.com'
+AND NOT EXISTS (
+  SELECT 1 FROM addresses WHERE user_id = (SELECT id FROM users WHERE email = 'test@ravichandratextiles.com')
+);
+
+-- Seed default admin account if not present (Password: Password123!)
+INSERT INTO users (name, email, password_hash, is_admin)
+VALUES ('Admin', 'admin@ravichandratextiles.com', '$2a$10$OfJ7c4fdkoA5RUNVOXy5c.oi1zT.Buddn0eluDHtLAjhdjMg6JW/y', TRUE)
+ON CONFLICT (email) DO NOTHING;
+
 -- Order extensions for full lifecycle, Shiprocket tracking, and payment statuses
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number TEXT UNIQUE;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'PENDING';
