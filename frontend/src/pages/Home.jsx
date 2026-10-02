@@ -543,6 +543,14 @@ export default function Home() {
           .hero-sub { font-size: 13px; margin: 14px auto 18px; }
           .promo-inner { flex-direction: column; align-items: flex-start; }
         }
+
+        @media (max-width: 360px) {
+          .hero-card { padding: 20px 14px; }
+          .hero-title { font-size: 20px; }
+          .hero-title-script { font-size: 38px; }
+          .hero-cta-group { gap: 10px; }
+          .hero-cta-group .btn { width: 100%; justify-content: center; }
+        }
       `}</style>
     </div>
   );

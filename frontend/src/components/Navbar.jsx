@@ -682,11 +682,21 @@ export default function Navbar() {
         }
 
         @media (max-width: 400px) {
-          .navbar-inner { padding: 0 10px; }
-          .brand-link { max-width: calc(100% - 130px); }
-          .brand-logo { height: 34px; max-width: 170px; }
+          .navbar-inner { padding: 0 8px; }
+          .brand-link { max-width: calc(100% - 96px); }
+          .brand-logo { height: 32px; max-width: 155px; }
           .icon-btn { width: 34px; height: 34px; }
           .icon-btn svg { width: 19px; height: 19px; }
+          .nav-left, .nav-actions { width: 38px; }
+        }
+
+        @media (max-width: 350px) {
+          .navbar-inner { padding: 0 6px; }
+          .brand-link { max-width: calc(100% - 84px); }
+          .brand-logo { height: 28px; max-width: 135px; }
+          .icon-btn { width: 30px; height: 30px; }
+          .icon-btn svg { width: 17px; height: 17px; }
+          .nav-left, .nav-actions { width: 34px; }
         }
       `}</style>
     </header>

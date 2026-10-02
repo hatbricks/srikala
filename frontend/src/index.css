@@ -189,7 +189,9 @@ section { padding: 88px 0; }
 }
 
 @media (max-width: 860px) {
-  body { padding-bottom: 78px; }
+  main { padding-top: 76px; }
+  .home { margin-top: -76px; }
+  body { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* A general density pass for phones — smaller type and tighter spacing so
@@ -197,8 +199,15 @@ section { padding: 88px 0; }
 @media (max-width: 600px) {
   section { padding: 40px 0; }
   .container { padding: 0 16px; }
-  .btn { padding: 12px 26px; font-size: 13px; }
+  .btn { padding: 12px 24px; font-size: 13px; }
   .eyebrow { font-size: 11px; letter-spacing: 0.18em; }
+}
+
+@media (max-width: 380px) {
+  .container { padding: 0 12px; }
+  .btn { padding: 11px 18px; font-size: 12.5px; }
+  h1 { font-size: 26px; }
+  h2 { font-size: 22px; }
 }
 
 /* focus visibility */

@@ -251,10 +251,31 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
             display: none;
           }
           .product-name {
-            font-size: 13.5px;
+            font-size: 13px;
+            line-height: 1.3;
+            margin-bottom: 4px;
           }
           .price {
-            font-size: 13.5px;
+            font-size: 13px;
+          }
+          .mrp {
+            font-size: 11px;
+          }
+          .badge {
+            font-size: 9.5px;
+            padding: 3px 7px;
+          }
+          .product-info {
+            padding: 8px 2px 4px;
+          }
+        }
+
+        @media (max-width: 360px) {
+          .product-name {
+            font-size: 12px;
+          }
+          .price {
+            font-size: 12px;
           }
         }
       `}</style>
