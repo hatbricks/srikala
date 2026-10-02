@@ -452,10 +452,12 @@ export default function Checkout() {
           gap: 14px;
           margin-bottom: 20px;
         }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
-        .address-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); }
+        .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .form-row.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .address-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); min-width: 0; }
         .address-form input {
+          width: 100%;
+          box-sizing: border-box;
           padding: 11px 12px;
           border-radius: var(--radius-sm);
           border: 1px solid var(--stone-200);

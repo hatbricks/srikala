@@ -100,18 +100,6 @@ export default function Navbar() {
             <span />
             <span />
           </button>
-
-          <button
-            className="icon-btn mobile-search-btn"
-            aria-label="Search"
-            aria-expanded={searchOpen}
-            onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false); setAccountOpen(false); }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
-              <line x1="16.2" y1="16.2" x2="21" y2="21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
         </div>
 
         <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
@@ -142,7 +130,7 @@ export default function Navbar() {
 
         <div className="nav-actions">
           <button
-            className="icon-btn desktop-search-btn"
+            className="icon-btn search-btn"
             aria-label="Search"
             aria-expanded={searchOpen}
             onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false); setAccountOpen(false); }}
@@ -152,7 +140,7 @@ export default function Navbar() {
               <line x1="16.2" y1="16.2" x2="21" y2="21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </button>
-          <div className="account-menu-wrap">
+          <div className="account-menu-wrap desktop-only-action">
             <button
               className="icon-btn"
               aria-label="Account"
@@ -200,7 +188,7 @@ export default function Navbar() {
               </>
             )}
           </div>
-          <Link to="/cart" className="icon-btn cart-link" aria-label="Cart">
+          <Link to="/cart" className="icon-btn cart-link desktop-only-action" aria-label="Cart">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 6h2l1.6 10.2a2 2 0 0 0 2 1.7h7.4a2 2 0 0 0 2-1.6L20 8H6.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               <circle cx="10" cy="21" r="1.3" fill="currentColor" />
@@ -314,10 +302,7 @@ export default function Navbar() {
         .nav-left {
           display: none;
         }
-        .mobile-search-btn {
-          display: none;
-        }
-        .desktop-search-btn {
+        .search-btn {
           display: flex;
         }
         .brand-link {
@@ -637,7 +622,7 @@ export default function Navbar() {
           .navbar { margin: 0; }
           .navbar-inner {
             height: 62px;
-            padding: 0 12px;
+            padding: 0 14px;
             position: relative;
             display: flex;
             align-items: center;
@@ -646,19 +631,13 @@ export default function Navbar() {
           .nav-left {
             display: flex;
             align-items: center;
-            gap: 2px;
             z-index: 2;
             position: relative;
+            width: 44px;
           }
           .nav-toggle {
             display: flex;
-            padding: 6px;
-          }
-          .mobile-search-btn {
-            display: flex;
-          }
-          .desktop-search-btn {
-            display: none;
+            padding: 8px;
           }
           .brand-link {
             position: absolute;
@@ -669,13 +648,13 @@ export default function Navbar() {
             display: flex;
             align-items: center;
             justify-content: center;
-            max-width: calc(100% - 170px);
+            max-width: calc(100% - 120px);
             text-align: center;
             pointer-events: auto;
           }
           .brand-logo {
-            height: 36px;
-            max-width: 180px;
+            height: 38px;
+            max-width: 200px;
             width: auto;
             object-fit: contain;
           }
@@ -683,22 +662,31 @@ export default function Navbar() {
           .nav-actions {
             display: flex;
             align-items: center;
-            gap: 2px;
+            justify-content: flex-end;
             z-index: 2;
             position: relative;
+            width: 44px;
           }
-          .icon-btn { width: 36px; height: 36px; }
-          .icon-btn svg { width: 20px; height: 20px; }
+          .desktop-only-action {
+            display: none !important;
+          }
+          .search-btn {
+            display: flex;
+            width: 38px;
+            height: 38px;
+          }
+          .icon-btn { width: 38px; height: 38px; }
+          .icon-btn svg { width: 21px; height: 21px; }
           .nav-popover { left: 8px; min-width: 220px; }
           .search-bar { margin: 8px 12px 0; border-radius: 18px; }
         }
 
         @media (max-width: 400px) {
-          .navbar-inner { padding: 0 8px; }
-          .brand-link { max-width: calc(100% - 150px); }
-          .brand-logo { height: 32px; max-width: 155px; }
-          .icon-btn { width: 32px; height: 32px; }
-          .icon-btn svg { width: 18px; height: 18px; }
+          .navbar-inner { padding: 0 10px; }
+          .brand-link { max-width: calc(100% - 130px); }
+          .brand-logo { height: 34px; max-width: 170px; }
+          .icon-btn { width: 34px; height: 34px; }
+          .icon-btn svg { width: 19px; height: 19px; }
         }
       `}</style>
     </header>
