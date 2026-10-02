@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { verifyWebhookSignature } from '../lib/razorpay.js';
+import { sendOrderConfirmationEmail } from '../lib/email.js';
 
 const router = Router();
 
@@ -67,6 +68,19 @@ router.post('/razorpay', async (req, res) => {
              WHERE id = $2`,
             [razorpayPaymentId, order.id]
           );
+
+          // Dispatch order confirmation email
+          try {
+            const { rows: userRows } = await query('SELECT * FROM users WHERE id = $1', [order.user_id]);
+            const { rows: itemRows } = await query('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+            if (userRows[0]) {
+              sendOrderConfirmationEmail(userRows[0], order, itemRows).catch((err) => {
+                console.warn('[webhook:razorpay] order email warning:', err.message);
+              });
+            }
+          } catch (emailErr) {
+            console.warn('[webhook:razorpay] email error:', emailErr.message);
+          }
         }
       }
     } else if (eventType === 'payment.failed') {

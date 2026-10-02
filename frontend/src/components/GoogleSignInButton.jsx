@@ -21,6 +21,11 @@ function loadGoogleScript() {
 
 export default function GoogleSignInButton({ onCredential, onError, text = 'continue_with', adminMode = false }) {
   const buttonRef = useRef(null);
+  const onCredentialRef = useRef(onCredential);
+  onCredentialRef.current = onCredential;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
+
   const [ready, setReady] = useState(false);
   const [configMissing, setConfigMissing] = useState(!CLIENT_ID);
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -36,36 +41,40 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
     loadGoogleScript()
       .then(() => {
         if (cancelled || !buttonRef.current) return;
-        window.google.accounts.id.initialize({
-          client_id: CLIENT_ID,
-          callback: (response) => {
-            if (response?.credential) {
-              onCredential?.(response.credential);
-            }
-          },
-          auto_select: false,
-        });
+        try {
+          window.google.accounts.id.initialize({
+            client_id: CLIENT_ID,
+            callback: (response) => {
+              if (response?.credential) {
+                onCredentialRef.current?.(response.credential);
+              }
+            },
+            auto_select: false,
+          });
 
-        window.google.accounts.id.renderButton(buttonRef.current, {
-          theme: 'outline',
-          size: 'large',
-          width: 320,
-          text: text,
-          shape: 'pill',
-          logo_alignment: 'left',
-        });
+          window.google.accounts.id.renderButton(buttonRef.current, {
+            theme: 'outline',
+            size: 'large',
+            width: 320,
+            text: text,
+            shape: 'pill',
+            logo_alignment: 'left',
+          });
 
-        setReady(true);
+          setReady(true);
+        } catch (initErr) {
+          console.warn('[GoogleSignInButton] init warning:', initErr);
+        }
       })
       .catch((err) => {
         console.error('[GoogleSignInButton] load error:', err);
-        onError?.(err.message);
+        onErrorRef.current?.(err.message);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [text, onCredential, onError]);
+  }, [text]);
 
   function handleFallbackClick() {
     if (!CLIENT_ID) {

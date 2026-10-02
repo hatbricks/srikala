@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { query } from '../db.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
-import { sendLoginEmail, sendPasswordResetEmail } from '../lib/email.js';
+import { sendLoginEmail, sendPasswordResetEmail, sendWelcomeEmail } from '../lib/email.js';
 import { authApiRateLimiter, checkLoginLockout, recordFailedLogin, recordSuccessfulLogin } from '../middleware/rateLimiter.js';
 
 const router = Router();
@@ -44,6 +44,10 @@ router.post('/signup', async (req, res) => {
 
   const user = rows[0];
   const token = signToken(user);
+
+  // Send welcome email with coupon code
+  sendWelcomeEmail(user).catch((err) => console.warn('[auth/signup] welcome email error:', err.message));
+
   res.status(201).json({ token, user: publicUser(user) });
 });
 
@@ -133,6 +137,7 @@ router.post('/google', async (req, res) => {
       [payload.name?.trim() || normalizedEmail.split('@')[0], normalizedEmail, randomPasswordHash, payload.sub, isAdmin]
     );
     user = insert.rows[0];
+    sendWelcomeEmail(user).catch((err) => console.warn('[auth/google] welcome email error:', err.message));
   } else {
     const promoteAdmin = Boolean(user.is_admin || isAdmin);
     const update = await query(
@@ -140,6 +145,7 @@ router.post('/google', async (req, res) => {
       [payload.sub, promoteAdmin, user.id]
     );
     user = update.rows[0];
+    sendLoginEmail(user).catch((err) => console.warn('[auth/google] login email error:', err.message));
   }
 
   const token = signToken(user);

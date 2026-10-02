@@ -23,7 +23,7 @@ function getTransporter() {
 }
 
 function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = (process.env.RESEND_API_KEY || process.env.ESEND_API_KEY || '').trim();
   if (apiKey && !apiKey.includes('xxxx') && apiKey.startsWith('re_')) {
     return new Resend(apiKey);
   }
@@ -31,9 +31,10 @@ function getResendClient() {
 }
 
 export function isEmailConfigured() {
+  const resendKey = (process.env.RESEND_API_KEY || process.env.ESEND_API_KEY || '').trim();
   return Boolean(
     (process.env.SMTP_USER && process.env.SMTP_PASS) ||
-    (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes('xxxx'))
+    (resendKey && !resendKey.includes('xxxx') && resendKey.startsWith('re_'))
   );
 }
 
@@ -46,6 +47,9 @@ if (!emailEnabled) {
 }
 
 async function send({ to, subject, html }) {
+  let smtpError = null;
+
+  // 1. Try SMTP (Gmail or custom mail server)
   const smtp = getTransporter();
   if (smtp) {
     const rawFrom = process.env.FROM_EMAIL || process.env.SMTP_USER;
@@ -55,29 +59,46 @@ async function send({ to, subject, html }) {
       console.log(`[email:smtp-sent] To: ${to} | ID: ${info.messageId}`);
       return { success: true, messageId: info.messageId, provider: 'smtp' };
     } catch (err) {
+      smtpError = err.message;
       console.error(`[email:smtp-error] To: ${to} | Error:`, err.message);
-      return { error: err.message, provider: 'smtp' };
+      console.log('[email:smtp-fallback] Attempting Resend delivery...');
     }
   }
 
+  // 2. Try Resend API (as primary or fallback)
   const resend = getResendClient();
   if (resend) {
-    const from = process.env.RESEND_FROM_EMAIL || process.env.FROM_EMAIL || "Ravichandra Textiles <onboarding@resend.dev>";
+    const from = (
+      process.env.RESEND_FROM_EMAIL ||
+      process.env.ESEND_FROM_EMAIL ||
+      process.env.FROM_EMAIL ||
+      'Ravichandra Textiles <onboarding@resend.dev>'
+    ).trim();
     try {
       const res = await resend.emails.send({ from, to, subject, html });
       if (res?.error) {
-        console.error(`[email:resend-error] To: ${to} | Error:`, res.error.message || res.error);
-        return { error: res.error.message || 'Resend delivery failed', provider: 'resend' };
+        const errMsg = res.error.message || JSON.stringify(res.error);
+        console.error(`[email:resend-error] To: ${to} | Error:`, errMsg);
+        if (errMsg.includes('testing emails to your own email address') || errMsg.includes('domain')) {
+          console.warn(
+            '[email:resend-hint] Resend default "onboarding@resend.dev" can only send to your own registered Resend email address. To email customers, verify ravichandratextiles.com at https://resend.com/domains OR configure Gmail SMTP in .env.'
+          );
+        }
+        return { error: errMsg, provider: 'resend', smtpError };
       }
       console.log(`[email:resend-sent] To: ${to} | ID: ${res?.data?.id}`);
       return { success: true, id: res?.data?.id, provider: 'resend' };
     } catch (err) {
       console.error(`[email:resend-exception] To: ${to} | Error:`, err.message);
-      return { error: err.message, provider: 'resend' };
+      return { error: err.message, provider: 'resend', smtpError };
     }
   }
 
-  console.warn(`[email:skipped] No email credentials configured. To: ${to} | Subject: ${subject}`);
+  if (smtpError) {
+    return { error: `SMTP failed: ${smtpError}`, provider: 'smtp' };
+  }
+
+  console.warn(`[email:skipped] No valid email credentials found in environment. To: ${to} | Subject: ${subject}`);
   return { skipped: true, error: 'No email credentials configured' };
 }
 
@@ -199,6 +220,39 @@ export function sendPasswordResetEmail(user, resetUrl) {
       content,
       ctaLabel: 'Reset password',
       ctaUrl: resetUrl,
+    }),
+  });
+}
+
+export function sendWelcomeEmail(user) {
+  const content = `
+    <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400;color:${COLORS.maroon900};margin:0 0 16px;">
+      Welcome to Ravichandra Textiles, ${escapeHtml(user.name)}!
+    </h1>
+    <p style="font-size:14px;line-height:1.7;color:${COLORS.ink600};margin:0 0 12px;">
+      Thank you for joining our family. Rooted in the legendary weaving hub of Dharmavaram, Andhra Pradesh, we bring you authentic, handcrafted pure silk sarees crafted with pure zari and timeless heritage.
+    </p>
+    <div style="background:${COLORS.stone100};border-left:4px solid ${COLORS.gold500};padding:14px 18px;border-radius:6px;margin:20px 0;">
+      <p style="margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:${COLORS.maroon900};">
+        A Welcome Gift for Your First Weave
+      </p>
+      <p style="margin:0;font-size:14px;color:${COLORS.ink900};">
+        Use coupon code <strong style="font-family:monospace;font-size:15px;color:${COLORS.maroon900};background:#fff;padding:2px 8px;border-radius:4px;border:1px solid ${COLORS.stone200};">WELCOME10</strong> at checkout to enjoy <strong>10% off</strong> your purchase.
+      </p>
+    </div>
+    <p style="font-size:13px;line-height:1.7;color:${COLORS.ink400};margin:16px 0 0;">
+      We are always here to help you pick the perfect drape for weddings, festivals, and life's most precious celebrations.
+    </p>
+  `;
+
+  return send({
+    to: user.email,
+    subject: "Welcome to Ravichandra Textiles · 10% Off Your First Order",
+    html: layout({
+      preheader: `Welcome to Ravichandra Textiles! Enjoy 10% off your first handcrafted pure silk saree with code WELCOME10.`,
+      content,
+      ctaLabel: 'Explore Pure Silk Sarees',
+      ctaUrl: `${siteUrl}/products`,
     }),
   });
 }
