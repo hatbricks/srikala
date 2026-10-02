@@ -154,11 +154,17 @@ export function renderInvoice(res, { order, items, customer, gstSettings, contac
   }
 
   let metaY = isGst ? 74 : 66;
-  doc.fontSize(8.5);
   for (const [label, value] of metaRight) {
-    doc.font('Helvetica').fillColor(INK_LIGHT).text(label, 320, metaY, { width: 100, align: 'right' });
-    doc.font('Helvetica-Bold').fillColor(INK).text(value, 430, metaY, { width: 120, align: 'right' });
-    metaY += 13;
+    const strVal = String(value || '—');
+    doc.font('Helvetica').fontSize(8.5);
+    const lh = doc.heightOfString(label, { width: 105, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(8.5);
+    const vh = doc.heightOfString(strVal, { width: 120, align: 'right' });
+    const rowH = Math.max(lh, vh, 11);
+
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(label, 320, metaY, { width: 105, align: 'right' });
+    doc.font('Helvetica-Bold').fillColor(INK).text(strVal, 430, metaY, { width: 120, align: 'right' });
+    metaY += rowH + 3.5;
   }
 
   const dividerY = Math.max(y, metaY) + 8;
@@ -167,7 +173,7 @@ export function renderInvoice(res, { order, items, customer, gstSettings, contac
   // ---------- Bill To / Buyer & Order Info ----------
   let blockY = dividerY + 10;
   doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9).text('BILLED TO / BUYER DETAILS', 45, blockY);
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9).text('ORDER & PAYMENT DETAILS', 320, blockY);
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9).text('ORDER & PAYMENT DETAILS', 305, blockY);
 
   blockY += 14;
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(10.5).text(order.address_name || customer?.name || 'Valued Customer', 45, blockY);
@@ -182,18 +188,25 @@ export function renderInvoice(res, { order, items, customer, gstSettings, contac
   if (customer?.email) { doc.text(`Email: ${customer.email}`, 45, addrY, { width: 250 }); addrY += 11; }
   if (placeOfSupply) { doc.text(`State / Place of Supply: ${placeOfSupply}`, 45, addrY, { width: 250 }); addrY += 11; }
 
-  // Right block: payment & fulfillment info
+  // Right block: payment & fulfillment info with dynamic row height
   let payY = blockY;
   const payInfo = [
     ['Order Ref', `#${order.id}`],
-    ['Payment Method', 'Online (Razorpay / UPI / Cards)'],
+    ['Payment Method', 'Online (UPI / Cards / NetBanking)'],
     ['Razorpay Payment ID', order.razorpay_payment_id || '—'],
     ['Fulfillment Mode', order.awb_code ? `${order.courier_name || 'Courier'}: ${order.awb_code}` : 'Standard Insured Logistics'],
   ];
   for (const [k, v] of payInfo) {
-    doc.font('Helvetica').fillColor(INK_LIGHT).text(k, 320, payY, { width: 105, align: 'right' });
-    doc.font('Helvetica-Bold').fillColor(INK).text(v, 435, payY, { width: 115, align: 'right' });
-    payY += 13;
+    const strVal = String(v || '—');
+    doc.font('Helvetica').fontSize(8.5);
+    const kHeight = doc.heightOfString(k, { width: 115, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(8.5);
+    const vHeight = doc.heightOfString(strVal, { width: 125, align: 'right' });
+    const rowH = Math.max(kHeight, vHeight, 11);
+
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(k, 305, payY, { width: 115, align: 'right' });
+    doc.font('Helvetica-Bold').fillColor(INK).text(strVal, 425, payY, { width: 125, align: 'right' });
+    payY += rowH + 4;
   }
 
   // ---------- Line Items Table ----------

@@ -79,24 +79,25 @@ export default function Footer() {
         {/* Shop Column */}
         <div className="footer-col">
           <h4>Shop</h4>
-          <Link to="/products">Sarees</Link>
+          <Link to="/products">All Sarees</Link>
           <Link to="/products?sort=newest">New Arrivals</Link>
           <Link to="/#collections">Collections</Link>
-          <Link to="/products">Best Sellers</Link>
-        </div>
-
-        {/* Information Column */}
-        <div className="footer-col">
-          <h4>Information</h4>
-          <Link to="/about">About Us</Link>
-          <Link to="/contact">Contact Us</Link>
-          <Link to="/orders">Orders &amp; Tracking</Link>
           <Link to="/about">Heritage &amp; Craft</Link>
         </div>
 
-        {/* Customer Care / Newsletter */}
-        <div className="footer-col footer-col-wide">
+        {/* Customer Care & Policies Column */}
+        <div className="footer-col">
           <h4>Customer Care</h4>
+          <Link to="/orders">Orders &amp; Tracking</Link>
+          <Link to="/user-guide">User &amp; Silk Guide</Link>
+          <Link to="/returns-and-cancellation">Returns &amp; Cancellation</Link>
+          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/contact">Contact Us</Link>
+        </div>
+
+        {/* Store Concierge */}
+        <div className="footer-col footer-col-wide">
+          <h4>Contact &amp; Store</h4>
           <p className="contact-item">
             <span className="contact-label">Phone:</span>
             <a href={`tel:${BRAND.contact.phone.replace(/\s+/g, '')}`}>{BRAND.contact.phone}</a>
@@ -126,7 +127,11 @@ export default function Footer() {
           </a>
         </div>
         <div className="footer-bottom-links">
-          <span>Best Traditional Silk Sarees in Dharmavaram</span>
+          <Link to="/privacy-policy">Privacy Policy</Link>
+          <span className="dot">•</span>
+          <Link to="/returns-and-cancellation">Returns &amp; Cancellation</Link>
+          <span className="dot">•</span>
+          <Link to="/user-guide">User Guide</Link>
         </div>
       </div>
 
@@ -242,6 +247,28 @@ export default function Footer() {
           object-fit: contain;
           display: inline-block;
           vertical-align: middle;
+        }
+        .footer-bottom-links {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .footer-bottom-links a {
+          color: var(--blush-300);
+          text-decoration: none;
+          opacity: 0.85;
+          font-size: 12px;
+          transition: opacity 0.2s ease, color 0.2s ease;
+        }
+        .footer-bottom-links a:hover {
+          opacity: 1;
+          color: var(--brand-gold-light);
+          text-decoration: underline;
+        }
+        .footer-bottom-links .dot {
+          opacity: 0.35;
+          font-size: 9px;
         }
         @media (max-width: 980px) {
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 36px; }

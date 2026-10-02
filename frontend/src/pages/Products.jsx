@@ -52,6 +52,20 @@ export default function Products() {
 
   const [filtersOpen, setFiltersOpen] = useState(!!location.state?.openFilters);
 
+  // Lock body scroll on mobile when filter drawer is open to prevent freezing/sticking
+  useEffect(() => {
+    if (filtersOpen) {
+      const prevOverflow = document.body.style.overflow;
+      const prevTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        document.body.style.touchAction = prevTouchAction;
+      };
+    }
+  }, [filtersOpen]);
+
   useEffect(() => {
     if (sortParam) {
       setSort(sortParam);
@@ -193,7 +207,7 @@ export default function Products() {
         )}
 
         {/* Sidebar Filter Panel */}
-        <aside className={`sidebar ${filtersOpen ? 'open' : ''}`}>
+        <aside className={`sidebar ${filtersOpen ? 'open' : ''}`} data-lenis-prevent>
           <div className="sidebar-head mobile-only-flex">
             <div className="sidebar-title-wrap">
               <h4>Filter &amp; Refine</h4>
@@ -205,113 +219,125 @@ export default function Products() {
                   Reset
                 </button>
               )}
-              <button type="button" className="sidebar-close" aria-label="Close filters" onClick={() => setFiltersOpen(false)}>✕</button>
+              <button
+                type="button"
+                className="sidebar-close"
+                aria-label="Close filters"
+                onClick={() => setFiltersOpen(false)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" width="16" height="16" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          {/* Categories */}
-          <div className="sidebar-block">
-            <div className="block-head">
-              <h4>Categories</h4>
-              {activeCategory !== 'all' && (
-                <button type="button" className="clear-filter-sub" onClick={() => setCategory('all')}>Clear</button>
-              )}
-            </div>
-            <ul className="category-list">
-              <li>
-                <button
-                  type="button"
-                  className={activeCategory === 'all' ? 'active' : ''}
-                  onClick={() => { setCategory('all'); setFiltersOpen(false); }}
-                >
-                  All Sarees
-                </button>
-              </li>
-              {categories.map((c) => (
-                <li key={c.id}>
+          <div className="sidebar-content-scroll" data-lenis-prevent>
+            {/* Categories */}
+            <div className="sidebar-block">
+              <div className="block-head">
+                <h4>Categories</h4>
+                {activeCategory !== 'all' && (
+                  <button type="button" className="clear-filter-sub" onClick={() => setCategory('all')}>Clear</button>
+                )}
+              </div>
+              <ul className="category-list">
+                <li>
                   <button
                     type="button"
-                    className={activeCategory === c.id ? 'active' : ''}
-                    onClick={() => { setCategory(c.id); setFiltersOpen(false); }}
+                    className={activeCategory === 'all' ? 'active' : ''}
+                    onClick={() => { setCategory('all'); setFiltersOpen(false); }}
                   >
-                    {c.name}
+                    All Sarees
                   </button>
                 </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Color Palette Filter */}
-          <div className="sidebar-block">
-            <div className="block-head">
-              <h4>Color Palette</h4>
-              {selectedColor && (
-                <button type="button" className="clear-filter-sub" onClick={() => setSelectedColor('')}>Clear</button>
-              )}
+                {categories.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      className={activeCategory === c.id ? 'active' : ''}
+                      onClick={() => { setCategory(c.id); setFiltersOpen(false); }}
+                    >
+                      {c.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="color-filter-grid">
-              {COLOR_MAP.map((c) => {
-                const isSelected = selectedColor === c.name;
-                return (
-                  <button
-                    key={c.name}
-                    type="button"
-                    className={`color-chip ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedColor(isSelected ? '' : c.name)}
-                    title={c.name}
-                  >
-                    <span
-                      className="color-dot"
-                      style={{
-                        backgroundColor: c.hex,
-                        border: c.border ? `1px solid ${c.border}` : '1px solid rgba(0,0,0,0.12)',
-                      }}
+
+            {/* Color Palette Filter */}
+            <div className="sidebar-block">
+              <div className="block-head">
+                <h4>Color Palette</h4>
+                {selectedColor && (
+                  <button type="button" className="clear-filter-sub" onClick={() => setSelectedColor('')}>Clear</button>
+                )}
+              </div>
+              <div className="color-filter-grid">
+                {COLOR_MAP.map((c) => {
+                  const isSelected = selectedColor === c.name;
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      className={`color-chip ${isSelected ? 'selected' : ''}`}
+                      onClick={() => setSelectedColor(isSelected ? '' : c.name)}
+                      title={c.name}
+                    >
+                      <span
+                        className="color-dot"
+                        style={{
+                          backgroundColor: c.hex,
+                          border: c.border ? `1px solid ${c.border}` : '1px solid rgba(0,0,0,0.12)',
+                        }}
+                      />
+                      <span className="color-name-text">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Price Range Filter */}
+            <div className="sidebar-block">
+              <div className="block-head">
+                <h4>Price Range</h4>
+                {priceRange !== 'all' && (
+                  <button type="button" className="clear-filter-sub" onClick={() => setPriceRange('all')}>Clear</button>
+                )}
+              </div>
+              <div className="price-radios-list">
+                {PRESET_PRICE_RANGES.map((r) => (
+                  <label key={r.id} className={`price-radio-label ${priceRange === r.id ? 'checked' : ''}`}>
+                    <input
+                      type="radio"
+                      name="priceRange"
+                      checked={priceRange === r.id}
+                      onChange={() => setPriceRange(r.id)}
                     />
-                    <span className="color-name-text">{c.name}</span>
-                  </button>
-                );
-              })}
+                    <span>{r.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Price Range Filter */}
-          <div className="sidebar-block">
-            <div className="block-head">
-              <h4>Price Range</h4>
-              {priceRange !== 'all' && (
-                <button type="button" className="clear-filter-sub" onClick={() => setPriceRange('all')}>Clear</button>
-              )}
-            </div>
-            <div className="price-radios-list">
-              {PRESET_PRICE_RANGES.map((r) => (
-                <label key={r.id} className={`price-radio-label ${priceRange === r.id ? 'checked' : ''}`}>
-                  <input
-                    type="radio"
-                    name="priceRange"
-                    checked={priceRange === r.id}
-                    onChange={() => setPriceRange(r.id)}
-                  />
-                  <span>{r.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Sort By */}
-          <div className="sidebar-block">
-            <h4>Sort By</h4>
-            <div className="sort-options">
-              {sortOptions.map((s) => (
-                <label key={s.id} className={`sort-option ${sort === s.id ? 'checked' : ''}`}>
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sort === s.id}
-                    onChange={() => setSort(s.id)}
-                  />
-                  <span>{s.label}</span>
-                </label>
-              ))}
+            {/* Sort By */}
+            <div className="sidebar-block">
+              <h4>Sort By</h4>
+              <div className="sort-options">
+                {sortOptions.map((s) => (
+                  <label key={s.id} className={`sort-option ${sort === s.id ? 'checked' : ''}`}>
+                    <input
+                      type="radio"
+                      name="sort"
+                      checked={sort === s.id}
+                      onChange={() => setSort(s.id)}
+                    />
+                    <span>{s.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -450,8 +476,8 @@ export default function Products() {
           position: relative;
           z-index: 1;
           display: grid;
-          grid-template-columns: 260px 1fr;
-          gap: 40px;
+          grid-template-columns: 280px 1fr;
+          gap: 36px;
           padding: 36px 32px 30px;
           align-items: flex-start;
           box-sizing: border-box;
@@ -463,13 +489,20 @@ export default function Products() {
           top: 100px;
           display: flex;
           flex-direction: column;
-          gap: 26px;
           background: #ffffff;
           border: 1px solid rgba(197, 139, 56, 0.28);
           border-radius: 20px;
-          padding: 24px 22px;
+          padding: 22px 18px;
           box-shadow: 0 8px 24px rgba(45, 12, 17, 0.04);
           box-sizing: border-box;
+          width: 100%;
+        }
+
+        .sidebar-content-scroll {
+          display: flex;
+          flex-direction: column;
+          gap: 22px;
+          width: 100%;
         }
 
         .sidebar-head.mobile-only-flex {
@@ -487,6 +520,8 @@ export default function Products() {
         .sidebar-block {
           border-bottom: 1px solid var(--stone-200, #e6dcce);
           padding-bottom: 20px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .sidebar-block:last-of-type {
@@ -558,24 +593,27 @@ export default function Products() {
         /* Color Filter Chips */
         .color-filter-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 6px;
+          width: 100%;
+          box-sizing: border-box;
         }
 
         .color-chip {
-          display: inline-flex;
+          display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           padding: 6px 8px;
           border-radius: 8px;
           border: 1px solid var(--stone-200, #e6dcce);
           background: #ffffff;
           cursor: pointer;
           font-family: var(--font-body);
-          font-size: 12px;
-          color: var(--ink-900, #220d0a);
-          transition: border-color 0.15s ease, background 0.15s ease;
+          transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
           text-align: left;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .color-chip:hover {
@@ -591,16 +629,21 @@ export default function Products() {
         }
 
         .color-dot {
-          width: 14px;
-          height: 14px;
+          width: 13px;
+          height: 13px;
           border-radius: 50%;
           flex-shrink: 0;
+          box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
         }
 
         .color-name-text {
+          font-size: 11.5px;
+          color: var(--ink-900, #220d0a);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
         }
 
         /* Price Range Options */
@@ -838,6 +881,7 @@ export default function Products() {
             grid-template-columns: 1fr;
             padding: 24px 18px 20px;
             gap: 20px;
+            position: static;
           }
 
           .filter-toggle-btn {
@@ -848,26 +892,39 @@ export default function Products() {
             display: none;
           }
 
+          .sidebar-overlay {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(32, 8, 11, 0.62);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            touch-action: none;
+          }
+
           /* Drawer Mode on Mobile */
           .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             bottom: 0;
-            width: min(85vw, 340px);
-            max-width: 340px;
+            width: min(88vw, 360px);
+            max-width: 360px;
+            height: 100vh;
+            height: 100dvh;
             background: #ffffff;
-            z-index: 170;
+            z-index: 1001;
+            display: flex;
             flex-direction: column;
-            gap: 22px;
-            padding: 20px 20px 80px;
+            gap: 0;
+            padding: 0;
             border-radius: 0 20px 20px 0;
             border: none;
-            box-shadow: 16px 0 40px rgba(0, 0, 0, 0.24);
+            box-shadow: 16px 0 40px rgba(0, 0, 0, 0.32);
             transform: translateX(-105%);
             transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.2, 1);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden;
           }
 
           .sidebar.open {
@@ -879,7 +936,9 @@ export default function Products() {
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--stone-200, #e6dcce);
-            padding-bottom: 14px;
+            padding: 16px 20px;
+            background: #ffffff;
+            flex-shrink: 0;
           }
 
           .sidebar-title-wrap {
@@ -889,10 +948,11 @@ export default function Products() {
           }
 
           .sidebar-title-wrap h4 {
-            font-size: 15px;
-            letter-spacing: 0.05em;
+            font-size: 15.5px;
+            letter-spacing: 0.04em;
             color: var(--maroon-900, #581e15);
             margin: 0;
+            font-weight: 600;
           }
 
           .filter-count-badge {
@@ -913,7 +973,7 @@ export default function Products() {
           .reset-filters-btn {
             background: none;
             border: none;
-            font-size: 12.5px;
+            font-size: 13px;
             color: #a13a3a;
             cursor: pointer;
             padding: 4px;
@@ -926,39 +986,50 @@ export default function Products() {
             border-radius: 50%;
             width: 32px;
             height: 32px;
-            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--ink-900);
             cursor: pointer;
+            padding: 0;
+            transition: background 0.15s ease;
           }
 
-          .sidebar-overlay {
-            display: block;
-            position: fixed;
-            inset: 0;
-            background: rgba(32, 8, 11, 0.55);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            z-index: 165;
+          .sidebar-close:hover {
+            background: #f2eae0;
+          }
+
+          /* Scrollable Content Body inside Drawer */
+          .sidebar-content-scroll {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
+            padding: 18px 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
           }
 
           .sidebar-apply-mobile {
             display: block;
-            position: sticky;
-            bottom: -20px;
-            margin: 16px -20px -20px;
+            position: relative;
+            flex-shrink: 0;
+            margin: 0;
             padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
             background: #ffffff;
             border-top: 1px solid var(--stone-200, #e6dcce);
-            box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08);
+            z-index: 10;
           }
 
           .apply-btn {
             width: 100%;
-            padding: 12px;
-            font-size: 13.5px;
+            padding: 13px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px;
           }
 
           .product-grid {
@@ -967,7 +1038,7 @@ export default function Products() {
           }
         }
 
-        /* Small Phones (iPhone SE, Galaxy S, 320px – 400px) */
+        /* Small Phones (iPhone SE, Galaxy S, 320px – 480px) */
         @media (max-width: 480px) {
           .products-layout {
             padding: 18px 12px 20px;
@@ -988,7 +1059,16 @@ export default function Products() {
           }
 
           .color-filter-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .color-chip {
+            padding: 6px 7px;
+          }
+
+          .color-name-text {
+            font-size: 11px;
           }
         }
 

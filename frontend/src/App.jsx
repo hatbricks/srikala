@@ -22,6 +22,9 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import CompleteProfile from './pages/CompleteProfile';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import CancellationReturnsPolicy from './pages/CancellationReturnsPolicy';
+import UserGuide from './pages/UserGuide';
 import NotFound from './pages/NotFound';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -42,6 +45,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 function PublicSite() {
   return (
     <>
+      <ScrollToTop />
       <SmoothScroll />
       <LogoIntro />
       <Navbar />
@@ -60,6 +64,11 @@ function PublicSite() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/complete-profile" element={<RequireAuth><CompleteProfile /></RequireAuth>} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/returns-and-cancellation" element={<CancellationReturnsPolicy />} />
+          <Route path="/return-cancellation-policy" element={<CancellationReturnsPolicy />} />
+          <Route path="/user-guide" element={<UserGuide />} />
+          <Route path="/silk-guide" element={<UserGuide />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
