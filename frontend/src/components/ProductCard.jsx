@@ -21,11 +21,27 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
     setTimeout(() => setAdded(false), 1800);
   }
 
+  const hoverImg = product.hoverImage || product.hover_image;
+
   return (
     <Link to={`/products/${product.id}`} className={`product-card ${outOfStock ? 'is-out' : ''}`}>
       <div className="product-image-wrap">
-        <div className="product-image">
-          <img src={product.image} alt={product.name} loading="lazy" />
+        <div className={`product-image ${hoverImg ? 'has-hover-image' : ''}`}>
+          <img
+            src={product.image}
+            alt={product.name}
+            className="product-img product-img-primary"
+            loading="lazy"
+          />
+          {hoverImg && (
+            <img
+              src={hoverImg}
+              alt={`${product.name} drape`}
+              className="product-img product-img-hover"
+              loading="lazy"
+              aria-hidden="true"
+            />
+          )}
           {outOfStock && <span className="badge badge-out">Sold Out</span>}
           {!hidePrice && !outOfStock && discount > 0 && (
             <span className="badge badge-sale">{discount}% OFF</span>
@@ -83,18 +99,42 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
           position: relative;
           aspect-ratio: 3 / 4;
           overflow: hidden;
+          background: #fbf7f2;
         }
-        .product-image img {
+        .product-image .product-img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           object-position: top center;
-          transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+          transition: transform 0.65s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.45s ease-in-out;
+          will-change: transform, opacity;
+          pointer-events: none;
         }
-        .product-card:hover .product-image img {
-          transform: scale(1.05);
+        .product-image .product-img-primary {
+          position: relative;
+          z-index: 1;
+          display: block;
         }
-        .is-out .product-image img {
+        .product-image .product-img-hover {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          opacity: 0;
+          display: block;
+        }
+        @media (hover: hover) {
+          .product-card:hover .product-img-primary {
+            transform: scale(1.06);
+          }
+          .product-card:hover .product-img-hover {
+            opacity: 1;
+            transform: scale(1.06);
+          }
+        }
+        .product-card:active .product-img-hover {
+          opacity: 1;
+        }
+        .is-out .product-image .product-img {
           opacity: 0.55;
           filter: grayscale(40%);
         }
@@ -108,7 +148,7 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
           text-transform: uppercase;
           padding: 4px 9px;
           border-radius: 999px;
-          z-index: 2;
+          z-index: 4;
         }
         .badge-sale {
           background: var(--brand-primary);

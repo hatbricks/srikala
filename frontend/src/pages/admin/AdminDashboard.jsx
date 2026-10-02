@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
+import { CheckIcon, ArrowRightIcon } from '../../components/admin/AdminIcons';
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -72,7 +73,7 @@ export default function AdminDashboard() {
         <div className="dash-section-card">
           <div className="section-head">
             <h3>Recent Customer Orders</h3>
-            <Link to="/admin/orders" className="view-all-link">View all orders →</Link>
+            <Link to="/admin/orders" className="view-all-link">View all orders <ArrowRightIcon width={13} height={13} /></Link>
           </div>
 
           <div className="orders-table-wrapper">
@@ -119,11 +120,13 @@ export default function AdminDashboard() {
         <div className="dash-section-card">
           <div className="section-head">
             <h3>Inventory Restock Watchlist</h3>
-            <Link to="/admin/products" className="view-all-link">Manage catalog →</Link>
+            <Link to="/admin/products" className="view-all-link">Manage catalog <ArrowRightIcon width={13} height={13} /></Link>
           </div>
 
           {lowStock.length === 0 ? (
-            <p className="clean-hint">✓ All products have adequate inventory levels.</p>
+            <p className="clean-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <CheckIcon width={14} height={14} /> All products have adequate inventory levels.
+            </p>
           ) : (
             <div className="low-stock-list">
               {lowStock.map((prod) => (
@@ -163,13 +166,14 @@ export default function AdminDashboard() {
           display: flex;
           flex-direction: column;
           gap: 6px;
+          min-width: 0;
         }
         .highlight-card {
           border-color: var(--maroon-900);
           background: #fdfaf9;
         }
         .kpi-title { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-400); }
-        .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 600; color: var(--maroon-900); }
+        .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 600; color: var(--maroon-900); word-break: break-word; }
         .kpi-sub { font-size: 11.5px; color: var(--ink-500); }
 
         .dashboard-content-grid {
@@ -177,29 +181,32 @@ export default function AdminDashboard() {
           grid-template-columns: 1.5fr 1fr;
           gap: 24px;
         }
-        @media (max-width: 900px) {
-          .dashboard-content-grid { grid-template-columns: 1fr; }
-        }
 
         .dash-section-card {
           background: var(--paper);
           border: 1px solid var(--stone-200);
           border-radius: var(--radius-md);
           padding: 22px;
+          min-width: 0;
         }
         .section-head {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 16px;
+          gap: 10px;
         }
         .section-head h3 { font-size: 16px; color: var(--ink-900); margin: 0; }
-        .view-all-link { font-size: 12.5px; color: var(--maroon-900); font-weight: 500; text-decoration: none; }
+        .view-all-link { font-size: 12.5px; color: var(--maroon-900); font-weight: 500; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 
-        .orders-table-wrapper { overflow-x: auto; }
+        .orders-table-wrapper {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin: 0 -4px;
+        }
         .dash-table { width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; }
-        .dash-table th { padding: 10px 12px; font-weight: 600; color: var(--ink-400); border-bottom: 1px solid var(--stone-200); font-size: 11.5px; }
-        .dash-table td { padding: 12px; border-bottom: 1px solid var(--stone-100); color: var(--ink-700); }
+        .dash-table th { padding: 10px 12px; font-weight: 600; color: var(--ink-400); border-bottom: 1px solid var(--stone-200); font-size: 11.5px; white-space: nowrap; }
+        .dash-table td { padding: 12px; border-bottom: 1px solid var(--stone-100); color: var(--ink-700); white-space: nowrap; }
 
         .badge {
           display: inline-block;
@@ -223,12 +230,42 @@ export default function AdminDashboard() {
           background: var(--stone-50);
           border-radius: var(--radius-sm);
         }
-        .stock-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
-        .stock-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-        .stock-info strong { font-size: 12.5px; color: var(--ink-900); }
+        .stock-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+        .stock-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .stock-info strong { font-size: 12.5px; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .stock-qty-tag { font-size: 11px; color: #a13a3a; font-weight: 500; }
-        .edit-link { font-size: 12px; color: var(--maroon-900); text-decoration: underline; }
+        .edit-link { font-size: 12px; color: var(--maroon-900); text-decoration: underline; white-space: nowrap; padding: 4px; }
         .clean-hint { font-size: 13px; color: #3c7a3c; padding: 16px 0; }
+
+        @media (max-width: 900px) {
+          .dashboard-content-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+          .admin-dashboard { padding-bottom: 40px; }
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+          }
+          .kpi-card {
+            padding: 14px 12px;
+            gap: 4px;
+          }
+          .kpi-title { font-size: 11px; }
+          .kpi-value { font-size: 21px; }
+          .kpi-sub { font-size: 11px; }
+          .dash-section-card { padding: 16px 14px; }
+          .dash-table { min-width: 520px; }
+        }
+
+        @media (max-width: 380px) {
+          .metrics-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );

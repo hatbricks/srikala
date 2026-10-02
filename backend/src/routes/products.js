@@ -17,6 +17,8 @@ function mapProduct(p, variants = []) {
     shortDescription: p.short_description || '',
     description: p.description || '',
     image: p.image || '',
+    hoverImage: p.hover_image || '',
+    hover_image: p.hover_image || '',
     images: Array.isArray(p.images) ? p.images : [],
     weightGrams: p.weight_grams ?? 500,
     lengthCm: p.length_cm ?? 30,
@@ -58,7 +60,7 @@ router.get('/', async (req, res) => {
   const { category } = req.query;
   const listColumns = `
     id, name, category_id, price, mrp, stock, sku, short_description,
-    image, weight_grams, return_available, return_window_hours, cancellation_available,
+    image, hover_image, weight_grams, return_available, return_window_hours, cancellation_available,
     active, created_at
   `;
 
@@ -135,6 +137,8 @@ router.post('/', requireAdmin, async (req, res) => {
     shortDescription,
     description,
     image,
+    hoverImage,
+    hover_image,
     images,
     weightGrams,
     lengthCm,
@@ -156,6 +160,7 @@ router.post('/', requireAdmin, async (req, res) => {
   const id = 'p' + Date.now();
   const cleanSlug = (slug || name).trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
   const cleanSku = (sku || `SK-${id.toUpperCase()}`).trim();
+  const finalHoverImage = (hoverImage !== undefined ? hoverImage : hover_image) || '';
 
   const client = await pool.connect();
   try {
@@ -164,14 +169,14 @@ router.post('/', requireAdmin, async (req, res) => {
     const insertResult = await client.query(
       `INSERT INTO products (
          id, name, category_id, price, mrp, stock, sku, short_description, description,
-         image, images, weight_grams, length_cm, width_cm, height_cm,
+         image, hover_image, images, weight_grams, length_cm, width_cm, height_cm,
          return_available, return_window_hours, cancellation_available,
          tags, attributes, seo_title, seo_description, slug
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9,
-         $10, $11::jsonb, $12, $13, $14, $15,
-         $16, $17, $18,
-         $19, $20::jsonb, $21, $22, $23
+         $10, $11, $12::jsonb, $13, $14, $15, $16,
+         $17, $18, $19,
+         $20, $21::jsonb, $22, $23, $24
        ) RETURNING *`,
       [
         id,
@@ -184,6 +189,7 @@ router.post('/', requireAdmin, async (req, res) => {
         shortDescription || '',
         description || '',
         image || '',
+        finalHoverImage,
         JSON.stringify(Array.isArray(images) ? images : []),
         Number(weightGrams) || 500,
         Number(lengthCm) || 30,
@@ -248,6 +254,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
     shortDescription,
     description,
     image,
+    hoverImage,
+    hover_image,
     images,
     weightGrams,
     lengthCm,
@@ -269,6 +277,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    const passedHover = hoverImage !== undefined ? hoverImage : (hover_image !== undefined ? hover_image : null);
+
     const { rows } = await client.query(
       `UPDATE products SET
          name = COALESCE($1, name),
@@ -280,22 +290,23 @@ router.put('/:id', requireAdmin, async (req, res) => {
          short_description = COALESCE($7, short_description),
          description = COALESCE($8, description),
          image = COALESCE($9, image),
-         images = COALESCE($10::jsonb, images),
-         weight_grams = COALESCE($11, weight_grams),
-         length_cm = COALESCE($12, length_cm),
-         width_cm = COALESCE($13, width_cm),
-         height_cm = COALESCE($14, height_cm),
-         return_available = COALESCE($15, return_available),
-         return_window_hours = COALESCE($16, return_window_hours),
-         cancellation_available = COALESCE($17, cancellation_available),
-         tags = COALESCE($18, tags),
-         attributes = COALESCE($19::jsonb, attributes),
-         seo_title = COALESCE($20, seo_title),
-         seo_description = COALESCE($21, seo_description),
-         slug = COALESCE($22, slug),
-         active = COALESCE($23, active),
+         hover_image = COALESCE($10, hover_image),
+         images = COALESCE($11::jsonb, images),
+         weight_grams = COALESCE($12, weight_grams),
+         length_cm = COALESCE($13, length_cm),
+         width_cm = COALESCE($14, width_cm),
+         height_cm = COALESCE($15, height_cm),
+         return_available = COALESCE($16, return_available),
+         return_window_hours = COALESCE($17, return_window_hours),
+         cancellation_available = COALESCE($18, cancellation_available),
+         tags = COALESCE($19, tags),
+         attributes = COALESCE($20::jsonb, attributes),
+         seo_title = COALESCE($21, seo_title),
+         seo_description = COALESCE($22, seo_description),
+         slug = COALESCE($23, slug),
+         active = COALESCE($24, active),
          updated_at = now()
-       WHERE id = $24 RETURNING *`,
+       WHERE id = $25 RETURNING *`,
       [
         name,
         category,
@@ -306,6 +317,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         shortDescription,
         description,
         image,
+        passedHover,
         images !== undefined ? JSON.stringify(images) : null,
         weightGrams != null ? Number(weightGrams) : null,
         lengthCm != null ? Number(lengthCm) : null,

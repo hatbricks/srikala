@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
+import { ReviewsIcon } from '../../components/admin/AdminIcons';
 
 const emptyForm = { productId: '', name: '', rating: 5, text: '', photo: '', active: true };
 
@@ -214,7 +215,21 @@ export default function AdminTestimonials() {
                   <div className="row-photo row-photo-fallback">{t.name.charAt(0)}</div>
                 )}
                 <div className="row-info">
-                  <strong>{t.name} · {'★'.repeat(t.rating)}{'☆'.repeat(5 - t.rating)}{!t.active && ' · inactive'}</strong>
+                  <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                    {t.name} ·
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <ReviewsIcon
+                          key={i}
+                          width={12}
+                          height={12}
+                          fill={i < t.rating ? 'var(--gold-500)' : 'none'}
+                          stroke="var(--gold-500)"
+                        />
+                      ))}
+                    </span>
+                    {!t.active && ' · inactive'}
+                  </strong>
                   <span className="row-product">{productName(t.product_id)}</span>
                   <span className="row-text">{t.text}</span>
                 </div>
@@ -306,7 +321,38 @@ export default function AdminTestimonials() {
         .row-actions .danger { color: #a13a3a; }
         .empty { color: var(--ink-400); font-size: 13.5px; }
         @media (max-width: 900px) {
-          .cms-layout { grid-template-columns: 1fr; }
+          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 640px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .cms-form { padding: 18px 14px; }
+          .form-actions { flex-direction: column; }
+          .form-actions .btn { width: 100%; text-align: center; justify-content: center; }
+          .filter-row { flex-direction: column; align-items: stretch; gap: 6px; }
+          .filter-row select { width: 100%; }
+
+          .cms-row {
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+          }
+          .row-actions {
+            width: 100%;
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid var(--stone-100);
+            gap: 8px;
+          }
+          .row-actions button {
+            padding: 6px 12px;
+            background: var(--stone-100);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          .row-actions .danger { background: #fdf2f2; }
         }
       `}</style>
     </div>

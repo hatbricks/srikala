@@ -42,13 +42,29 @@ export default function Checkout() {
   const [shippingEstimate, setShippingEstimate] = useState(null);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [shippingError, setShippingError] = useState('');
+  const [gstSettings, setGstSettings] = useState({ enabled: true, rate: 5, type: 'inclusive' });
   const navigate = useNavigate();
 
   const discount = coupon?.discount || 0;
+  const netOrderAmount = Math.max(subtotal - discount, 0);
   const qualifiesForFreeShipping = shippingSettings.freeThreshold > 0 && subtotal >= shippingSettings.freeThreshold;
   const effectiveShippingFee = shippingEstimate ? shippingEstimate.fee : (qualifiesForFreeShipping ? 0 : shippingSettings.fee);
   const amountToFreeShipping = shippingSettings.freeThreshold > 0 ? Math.max(shippingSettings.freeThreshold - subtotal, 0) : 0;
-  const total = Math.max(subtotal - discount, 0) + effectiveShippingFee;
+
+  // GST Calculation
+  const gstRate = Number(gstSettings?.rate) || 0;
+  const isGstEnabled = Boolean(gstSettings?.enabled && gstRate > 0);
+  const isExclusive = gstSettings?.type === 'exclusive';
+
+  const gstTaxAmount = isGstEnabled
+    ? isExclusive
+      ? Math.round(netOrderAmount * (gstRate / 100))
+      : Math.max(0, netOrderAmount - Math.round(netOrderAmount / (1 + (gstRate / 100))))
+    : 0;
+
+  const total = isGstEnabled && isExclusive
+    ? netOrderAmount + gstTaxAmount + effectiveShippingFee
+    : netOrderAmount + effectiveShippingFee;
 
   async function handleApplyCoupon() {
     if (!couponInput.trim()) return;
@@ -83,6 +99,12 @@ export default function Checkout() {
           fee: Number.isFinite(fee) ? fee : DEFAULT_SHIPPING.fee,
           freeThreshold: Number.isFinite(freeThreshold) ? freeThreshold : DEFAULT_SHIPPING.freeThreshold,
         });
+      }
+    }).catch(() => {});
+
+    api.getSetting('gst_settings').then(({ value }) => {
+      if (value) {
+        setGstSettings(value);
       }
     }).catch(() => {});
 
@@ -357,6 +379,9 @@ export default function Checkout() {
             {discount > 0 && (
               <div className="summary-row discount-row"><span>Coupon discount</span><span>−{formatINR(discount)}</span></div>
             )}
+            {isGstEnabled && isExclusive && (
+              <div className="summary-row"><span>GST ({gstRate}%)</span><span>+{formatINR(gstTaxAmount)}</span></div>
+            )}
             <div className="summary-row">
               <span>Shipping {shippingEstimate?.courierName ? `(${shippingEstimate.courierName})` : ''}</span>
               <span>{calculatingShipping ? 'Calculating…' : effectiveShippingFee === 0 ? 'Free' : formatINR(effectiveShippingFee)}</span>
@@ -370,6 +395,11 @@ export default function Checkout() {
             {amountToFreeShipping > 0 && effectiveShippingFee > 0 && (
               <p className="free-shipping-nudge">
                 Add {formatINR(amountToFreeShipping)} more to get free shipping.
+              </p>
+            )}
+            {isGstEnabled && !isExclusive && gstTaxAmount > 0 && (
+              <p className="tax-inclusive-nudge">
+                Includes ₹{gstTaxAmount.toLocaleString('en-IN')} ({gstRate}%) GST
               </p>
             )}
             <div className="summary-row total"><span>Total</span><span>{formatINR(total)}</span></div>
@@ -490,6 +520,7 @@ export default function Checkout() {
 
         .summary-row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--ink-600); margin-bottom: 12px; }
         .free-shipping-nudge { font-size: 11.5px; color: var(--gold-600); margin: -6px 0 12px; }
+        .tax-inclusive-nudge { font-size: 11.5px; color: var(--ink-400); margin: -4px 0 10px; font-style: italic; }
         .summary-row.total {
           font-size: 15px; font-weight: 600; color: var(--maroon-900);
           border-top: 1px solid var(--stone-200); padding-top: 14px; margin-top: 6px;

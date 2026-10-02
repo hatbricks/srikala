@@ -101,17 +101,29 @@ export default function Navbar() {
             <span />
           </button>
 
-          <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
-            <img
-              id="navBrandLogo"
-              src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight}
-              alt={BRAND.name}
-              className="brand-logo"
-              width="210"
-              height="46"
-            />
-          </Link>
+          <button
+            className="icon-btn mobile-search-btn"
+            aria-label="Search"
+            aria-expanded={searchOpen}
+            onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false); setAccountOpen(false); }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
+              <line x1="16.2" y1="16.2" x2="21" y2="21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
+
+        <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
+          <img
+            id="navBrandLogo"
+            src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight}
+            alt={BRAND.name}
+            className="brand-logo"
+            width="210"
+            height="46"
+          />
+        </Link>
 
         {/* Desktop Navigation */}
         <nav className="desktop-nav" aria-label="Main Navigation">
@@ -130,7 +142,7 @@ export default function Navbar() {
 
         <div className="nav-actions">
           <button
-            className="icon-btn"
+            className="icon-btn desktop-search-btn"
             aria-label="Search"
             aria-expanded={searchOpen}
             onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false); setAccountOpen(false); }}
@@ -300,9 +312,13 @@ export default function Navbar() {
           padding: 0 24px;
         }
         .nav-left {
+          display: none;
+        }
+        .mobile-search-btn {
+          display: none;
+        }
+        .desktop-search-btn {
           display: flex;
-          align-items: center;
-          gap: 16px;
         }
         .brand-link {
           display: flex;
@@ -619,14 +635,70 @@ export default function Navbar() {
 
         @media (max-width: 860px) {
           .navbar { margin: 0; }
-          .navbar-inner { height: 62px; }
-          .brand-logo { height: 38px; }
+          .navbar-inner {
+            height: 62px;
+            padding: 0 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            z-index: 2;
+            position: relative;
+          }
+          .nav-toggle {
+            display: flex;
+            padding: 6px;
+          }
+          .mobile-search-btn {
+            display: flex;
+          }
+          .desktop-search-btn {
+            display: none;
+          }
+          .brand-link {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: calc(100% - 170px);
+            text-align: center;
+            pointer-events: auto;
+          }
+          .brand-logo {
+            height: 36px;
+            max-width: 180px;
+            width: auto;
+            object-fit: contain;
+          }
           .desktop-nav { display: none; }
-          .nav-toggle { display: flex; }
-          .icon-btn { width: 34px; height: 34px; }
-          .icon-btn svg { width: 19px; height: 19px; }
-          .nav-popover { left: 6px; min-width: 220px; }
+          .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            z-index: 2;
+            position: relative;
+          }
+          .icon-btn { width: 36px; height: 36px; }
+          .icon-btn svg { width: 20px; height: 20px; }
+          .nav-popover { left: 8px; min-width: 220px; }
           .search-bar { margin: 8px 12px 0; border-radius: 18px; }
+        }
+
+        @media (max-width: 400px) {
+          .navbar-inner { padding: 0 8px; }
+          .brand-link { max-width: calc(100% - 150px); }
+          .brand-logo { height: 32px; max-width: 155px; }
+          .icon-btn { width: 32px; height: 32px; }
+          .icon-btn svg { width: 18px; height: 18px; }
         }
       `}</style>
     </header>

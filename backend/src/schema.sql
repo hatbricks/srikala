@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS products (
   stock       INTEGER NOT NULL DEFAULT 0,
   description TEXT,
   image       TEXT,
+  hover_image TEXT,
   -- Extra gallery photos beyond the main `image` (cover), shown as a
   -- thumbnail strip on the product page. Array of image URLs / data URLs.
   images      JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -72,6 +73,7 @@ CREATE TABLE IF NOT EXISTS products (
 -- Safe on every boot: adds the column for databases created before the
 -- gallery feature existed. No-op once it's there.
 ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS hover_image TEXT;
 -- Lets the admin hide a product from the storefront without deleting it
 -- (and losing its order history / reviews link) — hidden products stay
 -- fully visible and editable in the admin panel.
@@ -171,6 +173,10 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_percent INTEGER;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_amount INTEGER;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_fee INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tax_amount INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gst_rate NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gst_type TEXT DEFAULT 'inclusive';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS gstin TEXT;
 
 -- Cancellation policy — fully admin-editable tiers, e.g. "within 1 day,
 -- 100% refund" / "within 3 days, 50% refund". max_days is the cutoff (in

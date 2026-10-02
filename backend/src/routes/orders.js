@@ -26,6 +26,33 @@ async function getShippingSettings() {
   };
 }
 
+async function getGstSettings() {
+  const { rows } = await query("SELECT value FROM settings WHERE key = 'gst_settings'");
+  if (rows[0]?.value) {
+    const g = rows[0].value;
+    return {
+      enabled: g.enabled !== false,
+      rate: Number(g.rate) || 5,
+      type: g.type === 'exclusive' ? 'exclusive' : 'inclusive',
+      gstin: g.gstin || '',
+      legalName: g.legalName || 'Ravichandra Textiles',
+      state: g.state || 'Andhra Pradesh',
+      stateCode: g.stateCode || '37',
+      hsnCode: g.hsnCode || '5007',
+    };
+  }
+  return {
+    enabled: true,
+    rate: 5,
+    type: 'inclusive',
+    gstin: '37AAAAA0000A1Z5',
+    legalName: 'Ravichandra Textiles',
+    state: 'Andhra Pradesh',
+    stateCode: '37',
+    hsnCode: '5007',
+  };
+}
+
 function generateOrderNumber() {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const rand = Math.floor(1000 + Math.random() * 9000);
@@ -121,7 +148,24 @@ router.post('/create', requireAuth, async (req, res) => {
     shippingFee = clientShippingFee;
   }
 
-  const total = Math.max(0, subtotal - discount) + shippingFee;
+  // GST calculation
+  const gstSettings = await getGstSettings();
+  const netOrderAmount = Math.max(0, subtotal - discount);
+  let taxAmount = 0;
+  let finalTotal = netOrderAmount + shippingFee;
+
+  if (gstSettings.enabled && gstSettings.rate > 0) {
+    if (gstSettings.type === 'exclusive') {
+      taxAmount = Math.round(netOrderAmount * (gstSettings.rate / 100));
+      finalTotal = netOrderAmount + taxAmount + shippingFee;
+    } else {
+      // Inclusive: catalog merchandise price already includes GST
+      const taxable = Math.round(netOrderAmount / (1 + (gstSettings.rate / 100)));
+      taxAmount = Math.max(0, netOrderAmount - taxable);
+      finalTotal = netOrderAmount + shippingFee;
+    }
+  }
+
   const orderNumber = generateOrderNumber();
 
   const client = await pool.connect();
@@ -136,20 +180,25 @@ router.post('/create', requireAuth, async (req, res) => {
          user_id, order_number, status, payment_status, shipment_status,
          subtotal, shipping_fee, total_amount, total_weight_grams,
          coupon_id, coupon_code, discount,
+         tax_amount, gst_rate, gst_type, gstin,
          address_name, address_mobile, address_line1, address_line2, address_city, address_state, address_pincode, address_country,
          pickup_location_id
        )
-       VALUES ($1,$2,'created','PENDING','PENDING',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+       VALUES ($1,$2,'created','PENDING','PENDING',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING *`,
       [
         req.user.id,
         orderNumber,
         subtotal,
         shippingFee,
-        total,
+        finalTotal,
         totalWeightGrams,
         coupon?.id || null,
         coupon?.code || null,
         discount,
+        taxAmount,
+        gstSettings.enabled ? gstSettings.rate : 0,
+        gstSettings.type || 'inclusive',
+        gstSettings.gstin || '',
         address.name,
         address.mobile,
         address.line1,
@@ -192,7 +241,7 @@ router.post('/create', requireAuth, async (req, res) => {
 
     // Create Razorpay order
     const rpOrder = await razorpay.orders.create({
-      amount: total * 100,
+      amount: finalTotal * 100,
       currency: 'INR',
       receipt: orderNumber,
       notes: { orderId: String(order.id), orderNumber, userId: String(req.user.id) },
@@ -210,7 +259,10 @@ router.post('/create', requireAuth, async (req, res) => {
       keyId: process.env.RAZORPAY_KEY_ID,
       discount,
       shippingFee,
-      totalAmount: total,
+      taxAmount,
+      gstRate: gstSettings.enabled ? gstSettings.rate : 0,
+      gstType: gstSettings.type || 'inclusive',
+      totalAmount: finalTotal,
     });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -592,9 +644,26 @@ router.get('/:id/invoice', requireAuth, async (req, res) => {
   const { rows: items } = await query('SELECT * FROM order_items WHERE order_id = $1 ORDER BY id', [order.id]);
   const { rows: userRows } = await query('SELECT name, email, mobile FROM users WHERE id = $1', [order.user_id]);
 
+  const { rows: settingsRows } = await query("SELECT key, value FROM settings WHERE key IN ('gst_settings', 'contact_info')");
+  const settingsMap = {};
+  for (const s of settingsRows) {
+    settingsMap[s.key] = s.value;
+  }
+  const gstSettings = settingsMap.gst_settings || {
+    enabled: true,
+    rate: 5,
+    type: 'inclusive',
+    gstin: '37AAAAA0000A1Z5',
+    legalName: 'Ravichandra Textiles',
+    state: 'Andhra Pradesh',
+    stateCode: '37',
+    hsnCode: '5007'
+  };
+  const contactInfo = settingsMap.contact_info || null;
+
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="RavichandraTextiles-Invoice-${order.order_number || order.id}.pdf"`);
-  renderInvoice(res, { order, items, customer: userRows[0] });
+  renderInvoice(res, { order, items, customer: userRows[0], gstSettings, contactInfo });
 });
 
 export default router;

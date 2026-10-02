@@ -165,7 +165,34 @@ export default function AdminCancellationPolicy() {
         .empty { color: var(--ink-400); font-size: 13.5px; }
 
         @media (max-width: 980px) {
-          .cms-layout { grid-template-columns: 1fr; }
+          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 640px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .cms-form { padding: 18px 14px; }
+          .form-row { grid-template-columns: 1fr; }
+          .form-actions .btn { width: 100%; text-align: center; justify-content: center; }
+          .cms-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 14px;
+          }
+          .row-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid var(--stone-100);
+          }
+          .row-actions button {
+            padding: 6px 14px;
+            background: #fdf2f2;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
         }
       `}</style>
     </div>

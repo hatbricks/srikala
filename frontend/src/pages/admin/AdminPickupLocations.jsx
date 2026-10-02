@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../data/api';
+import { RefreshIcon } from '../../components/admin/AdminIcons';
 
 const emptyForm = {
   nickname: '',
@@ -90,10 +91,11 @@ export default function AdminPickupLocations() {
           <button
             type="button"
             className="btn btn-outline sync-btn"
+            style={{ display: 'inline-flex', alignItems: 'center' }}
             disabled={syncing}
             onClick={handleSync}
           >
-            {syncing ? 'Syncing…' : '🔄 Sync from Shiprocket'}
+            {syncing ? 'Syncing…' : <><RefreshIcon width={14} height={14} style={{ marginRight: 6 }} /> Sync from Shiprocket</>}
           </button>
         </div>
       </div>
@@ -271,8 +273,41 @@ export default function AdminPickupLocations() {
 
         .row-actions { display: flex; align-items: center; gap: 12px; }
         .row-actions button { background: none; border: none; font-size: 12.5px; color: var(--maroon-900); cursor: pointer; }
-        .row-actions .danger { color: #a13a3a; }
         .empty { font-size: 13.5px; color: var(--ink-400); padding: 20px 0; }
+
+        @media (max-width: 900px) {
+          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 640px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .head-row { flex-direction: column; align-items: stretch; gap: 12px; }
+          .sync-btn { width: 100%; text-align: center; }
+          .cms-form { padding: 18px 14px; }
+          .form-row { grid-template-columns: 1fr; }
+          .cms-form .btn { width: 100%; text-align: center; justify-content: center; }
+          .cms-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 14px;
+          }
+          .row-actions {
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid var(--stone-100);
+            gap: 8px;
+          }
+          .row-actions button {
+            padding: 6px 12px;
+            background: var(--stone-100);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          .row-actions .danger { background: #fdf2f2; }
+        }
       `}</style>
     </div>
   );

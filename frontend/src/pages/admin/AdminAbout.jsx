@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
+import { CheckIcon } from '../../components/admin/AdminIcons';
 
 function GalleryEditor({ images = [], onChange }) {
   const fileInput = useRef(null);
@@ -144,7 +145,11 @@ export default function AdminAbout() {
           </label>
           <div className="section-card-foot">
             <button className="btn btn-primary" onClick={() => handleSave('about_hero')}>Save</button>
-            {savedKey === 'about_hero' && <span className="saved-msg">Saved ✓</span>}
+            {savedKey === 'about_hero' && (
+              <span className="saved-msg" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <CheckIcon width={13} height={13} /> Saved
+              </span>
+            )}
           </div>
         </div>
 
@@ -190,7 +195,11 @@ export default function AdminAbout() {
 
           <div className="section-card-foot">
             <button className="btn btn-primary" onClick={() => handleSave('about_story')}>Save</button>
-            {savedKey === 'about_story' && <span className="saved-msg">Saved ✓</span>}
+            {savedKey === 'about_story' && (
+              <span className="saved-msg" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <CheckIcon width={13} height={13} /> Saved
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -260,6 +269,14 @@ export default function AdminAbout() {
         .section-card-foot { display: flex; align-items: center; gap: 12px; }
         .section-card-foot .btn { padding: 10px 18px; font-size: 13px; }
         .saved-msg { font-size: 12.5px; color: #3c7a3c; }
+
+        @media (max-width: 680px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .section-card { padding: 16px 14px; }
+          .slide-upload-actions .btn { width: 100%; text-align: center; justify-content: center; }
+          .section-card-foot .btn { width: 100%; text-align: center; justify-content: center; }
+        }
       `}</style>
     </div>
   );

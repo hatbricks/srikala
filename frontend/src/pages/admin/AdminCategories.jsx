@@ -231,8 +231,49 @@ export default function AdminCategories() {
           flex: 0 0 auto;
         }
         .empty { color: var(--ink-400); font-size: 13.5px; }
+
         @media (max-width: 900px) {
-          .cms-layout { grid-template-columns: 1fr; }
+          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 640px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .cms-form { padding: 18px 14px; }
+          .form-actions { flex-direction: column; gap: 8px; }
+          .form-actions .btn { width: 100%; text-align: center; justify-content: center; }
+
+          .cms-row {
+            display: grid;
+            grid-template-columns: 48px 1fr auto;
+            grid-template-areas:
+              "thumb info badge"
+              "actions actions actions";
+            gap: 10px 12px;
+            padding: 14px;
+            align-items: center;
+          }
+          .row-thumb { grid-area: thumb; }
+          .row-info { grid-area: info; min-width: 0; }
+          .hidden-badge { grid-area: badge; }
+          .row-actions {
+            grid-area: actions;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px solid var(--stone-100);
+            width: 100%;
+          }
+          .row-actions button {
+            padding: 6px 14px;
+            background: var(--stone-100);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          .row-actions .danger { background: #fdf2f2; }
         }
       `}</style>
     </div>

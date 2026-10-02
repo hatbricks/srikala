@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
+import { CloseIcon } from '../../components/admin/AdminIcons';
 
 const emptyForm = {
   name: '',
@@ -25,6 +26,7 @@ const emptyForm = {
   seoDescription: '',
   slug: '',
   image: '',
+  hoverImage: '',
   images: [],
   active: true,
   variants: [],
@@ -75,6 +77,7 @@ export default function AdminProducts() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const fileInput = useRef(null);
+  const hoverFileInput = useRef(null);
   const galleryInput = useRef(null);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [movingId, setMovingId] = useState(null);
@@ -94,6 +97,17 @@ export default function AdminProducts() {
     const file = e.target.files?.[0];
     if (!file) return;
     compressImageFile(file).then((dataUrl) => setForm((f) => ({ ...f, image: dataUrl })));
+  }
+
+  function handleHoverImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    compressImageFile(file).then((dataUrl) => setForm((f) => ({ ...f, hoverImage: dataUrl })));
+  }
+
+  function removeHoverImage() {
+    setForm((f) => ({ ...f, hoverImage: '' }));
+    if (hoverFileInput.current) hoverFileInput.current.value = '';
   }
 
   async function handleGalleryFiles(e) {
@@ -118,6 +132,7 @@ export default function AdminProducts() {
     setEditingId(null);
     pricingEditRef.current = null;
     if (fileInput.current) fileInput.current.value = '';
+    if (hoverFileInput.current) hoverFileInput.current.value = '';
   }
 
   const pricingEditRef = useRef(null);
@@ -221,6 +236,7 @@ export default function AdminProducts() {
       seoDescription: form.seoDescription,
       slug: form.slug,
       image: form.image || 'https://images.unsplash.com/photo-1717585679395-bbe39b5fb6bc?auto=format&fit=crop&w=800&q=80',
+      hoverImage: form.hoverImage || '',
       images: form.images || [],
       active: form.active !== false,
       variants: form.variants || [],
@@ -263,6 +279,7 @@ export default function AdminProducts() {
       seoDescription: product.seoDescription || '',
       slug: product.slug || '',
       image: product.image,
+      hoverImage: product.hoverImage || product.hover_image || '',
       images: product.images || [],
       active: product.active,
       variants: product.variants || [],
@@ -273,6 +290,7 @@ export default function AdminProducts() {
       const { product: full } = await api.getProduct(product.id);
       setForm((f) => ({
         ...f,
+        hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
         images: full.images || f.images,
         variants: full.variants || f.variants,
       }));
@@ -597,7 +615,7 @@ export default function AdminProducts() {
                         onClick={() => removeVariant(i)}
                         title="Remove color"
                       >
-                        ✕
+                        <CloseIcon width={12} height={12} />
                       </button>
                     </div>
                     <div className="variant-fields-grid">
@@ -637,19 +655,55 @@ export default function AdminProducts() {
           </div>
 
           <div className="form-section">
-            <p className="section-label">Photos</p>
-            <label>
-              Main photo
-              <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
-            </label>
-
-            {form.image && (
-              <div className="preview-thumb">
-                <img src={form.image} alt="Preview" />
+            <p className="section-label">Photos &amp; Hover Preview</p>
+            
+            <div className="photo-inputs-grid">
+              <div className="photo-input-card">
+                <label>
+                  <span className="photo-field-title">Main Saree Photo</span>
+                  <span className="field-hint">Initial storefront photo (saree flat lay / folded).</span>
+                  <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
+                </label>
+                {form.image ? (
+                  <div className="preview-thumb-card">
+                    <img src={form.image} alt="Main Saree Preview" />
+                    <span className="preview-chip chip-primary">Default Saree View</span>
+                  </div>
+                ) : (
+                  <div className="preview-empty-slot">
+                    <span>No main photo selected</span>
+                  </div>
+                )}
               </div>
-            )}
 
-            <label>
+              <div className="photo-input-card">
+                <label>
+                  <span className="photo-field-title">Hover Photo (Model Wearing Saree)</span>
+                  <span className="field-hint">Revealed when shopper hovers over the product card.</span>
+                  <input type="file" accept="image/*" ref={hoverFileInput} onChange={handleHoverImage} />
+                </label>
+                {form.hoverImage ? (
+                  <div className="preview-thumb-card">
+                    <img src={form.hoverImage} alt="Hover Model Preview" />
+                    <span className="preview-chip chip-model">Hover / Wearing View</span>
+                    <button
+                      type="button"
+                      className="photo-clear-btn"
+                      onClick={removeHoverImage}
+                      title="Remove hover model photo"
+                    >
+                      <CloseIcon width={12} height={12} /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="preview-empty-slot">
+                    <span>Optional · Fallbacks to main photo on hover</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <label style={{ marginTop: 10 }}>
               Gallery photos
               <span className="field-hint">Extra angles or close-ups shown as thumbnails on the product page. Any size works — they're cropped to fit.</span>
             </label>
@@ -659,7 +713,9 @@ export default function AdminProducts() {
                 {form.images.map((src, i) => (
                   <div className="gallery-thumb" key={i}>
                     <img src={src} alt="" />
-                    <button type="button" className="gallery-remove" onClick={() => removeGalleryImage(i)} aria-label="Remove image">×</button>
+                    <button type="button" className="gallery-remove" onClick={() => removeGalleryImage(i)} aria-label="Remove image">
+                      <CloseIcon width={12} height={12} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -728,11 +784,27 @@ export default function AdminProducts() {
           {products.map((p) => {
             const hasDiscount = p.mrp > p.price;
             const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+            const hasHover = Boolean(p.hoverImage || p.hover_image);
             return (
               <div className={`cms-row ${p.active === false ? 'is-hidden' : ''}`} key={p.id}>
-                <img src={p.image} alt="" className="row-thumb-sq" />
+                <div
+                  className="admin-row-thumb-container"
+                  title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
+                >
+                  <img src={p.image} alt="" className="row-thumb-sq" />
+                  {hasHover && (
+                    <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
+                  )}
+                </div>
                 <div className="row-info">
-                  <strong>{p.name}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <strong>{p.name}</strong>
+                    {hasHover && (
+                      <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
+                        Model Hover
+                      </span>
+                    )}
+                  </div>
                   <span className="row-category">{categoryName(p.category)}</span>
                   <span className="row-price-line">
                     <span className="row-price">{formatINR(p.price)}</span>
@@ -903,6 +975,94 @@ export default function AdminProducts() {
         .variant-fields-grid input { font-size: 12.5px; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--stone-300); }
         .opt-tag { font-size: 10px; color: var(--ink-400); font-weight: normal; }
 
+        .photo-inputs-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .photo-input-card {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .photo-field-title {
+          font-weight: 600;
+          color: var(--ink-800);
+          font-size: 12.5px;
+          display: block;
+        }
+        .preview-thumb-card {
+          position: relative;
+          width: 100%;
+          height: 140px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          background: #fbf7f2;
+          border: 1px solid var(--stone-200);
+        }
+        .preview-thumb-card img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top center;
+        }
+        .preview-chip {
+          position: absolute;
+          bottom: 8px;
+          left: 8px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          padding: 3px 8px;
+          border-radius: 4px;
+          text-transform: uppercase;
+        }
+        .chip-primary {
+          background: rgba(32, 8, 11, 0.78);
+          color: #ffffff;
+        }
+        .chip-model {
+          background: rgba(88, 30, 21, 0.88);
+          color: #fbdba2;
+          border: 1px solid rgba(251, 219, 162, 0.35);
+        }
+        .photo-clear-btn {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          background: rgba(255, 255, 255, 0.92);
+          border: 1px solid rgba(0, 0, 0, 0.15);
+          border-radius: 4px;
+          font-size: 11px;
+          padding: 3px 7px;
+          color: #a13a3a;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          transition: background 0.2s ease;
+        }
+        .photo-clear-btn:hover {
+          background: #f6e3e3;
+        }
+        .preview-empty-slot {
+          height: 70px;
+          border: 1px dashed var(--stone-300);
+          border-radius: var(--radius-sm);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 8px;
+          font-size: 11px;
+          color: var(--ink-400);
+          background: rgba(255, 255, 255, 0.6);
+        }
+
         .preview-thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
         .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .gallery-grid { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -931,6 +1091,10 @@ export default function AdminProducts() {
           display: flex;
           align-items: center;
           justify-content: center;
+          cursor: pointer;
+        }
+        .gallery-remove:hover {
+          background: #a13a3a;
         }
         .form-actions { display: flex; gap: 10px; }
         .form-actions .btn { padding: 11px 20px; font-size: 13px; }
@@ -943,6 +1107,43 @@ export default function AdminProducts() {
           display: flex;
           align-items: center;
           gap: 14px;
+        }
+        .admin-row-thumb-container {
+          position: relative;
+          width: 52px;
+          height: 52px;
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          flex: 0 0 52px;
+          background: var(--stone-100);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          cursor: pointer;
+        }
+        .admin-row-thumb-container .row-thumb-sq {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: opacity 0.3s ease;
+          display: block;
+        }
+        .admin-row-thumb-container .row-thumb-hover {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+        }
+        .admin-row-thumb-container:hover .row-thumb-hover {
+          opacity: 1;
+        }
+        .row-hover-badge {
+          font-size: 9.5px;
+          font-weight: 600;
+          color: #581e15;
+          background: #fdf2ea;
+          border: 1px solid rgba(88, 30, 21, 0.22);
+          padding: 1px 5px;
+          border-radius: 4px;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
         }
         .row-thumb-sq { width: 52px; height: 52px; border-radius: var(--radius-sm); object-fit: cover; flex: 0 0 auto; }
         .row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -990,18 +1191,124 @@ export default function AdminProducts() {
           max-width: 130px;
         }
         .empty { color: var(--ink-400); font-size: 13.5px; }
+
         @media (max-width: 980px) {
-          .cms-layout { grid-template-columns: 1fr; }
+          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
         }
-        @media (max-width: 640px) {
+
+        @media (max-width: 680px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .cms-form { padding: 18px 14px; gap: 18px; }
           .form-row { grid-template-columns: 1fr; }
           .category-picker { flex-direction: column; }
-          .category-preview { flex-basis: auto; width: 100%; }
-          .cms-row { flex-wrap: wrap; }
-          .row-info { flex-basis: 100%; order: 1; }
-          .row-thumb-sq { order: 0; }
-          .stock-badge { order: 2; }
-          .row-actions { order: 3; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+          .category-preview { flex-basis: auto; width: 100%; max-height: 140px; box-sizing: border-box; }
+          
+          .variant-top-row { gap: 8px; }
+          .color-swatch-picker { padding: 2px 6px; }
+          .variant-fields-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+          }
+          .variant-fields-grid label:last-child {
+            grid-column: span 2;
+          }
+
+          .form-actions {
+            flex-direction: column;
+            gap: 8px;
+          }
+          .form-actions .btn {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+          }
+
+          .cms-row {
+            display: grid;
+            grid-template-columns: 52px 1fr auto;
+            grid-template-areas:
+              "thumb info badge"
+              "actions actions actions";
+            gap: 10px 12px;
+            align-items: center;
+            padding: 14px;
+            box-sizing: border-box;
+          }
+          .photo-inputs-grid { grid-template-columns: 1fr; }
+          .admin-row-thumb-container,
+          .row-thumb-sq {
+            grid-area: thumb;
+          }
+          .row-info {
+            grid-area: info;
+            min-width: 0;
+          }
+          .stock-badge {
+            grid-area: badge;
+            align-self: flex-start;
+          }
+          .hidden-badge {
+            margin-right: 4px;
+          }
+          .row-actions {
+            grid-area: actions;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding-top: 10px;
+            border-top: 1px solid var(--stone-100);
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .row-move-select {
+            flex: 1;
+            max-width: none;
+            font-size: 12px;
+            padding: 6px 8px;
+          }
+          .row-actions button {
+            padding: 7px 11px;
+            background: var(--stone-100);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+          }
+          .row-actions .danger {
+            background: #fdf2f2;
+          }
+        }
+
+        @media (max-width: 440px) {
+          .variant-fields-grid {
+            grid-template-columns: 1fr;
+          }
+          .variant-fields-grid label:last-child {
+            grid-column: span 1;
+          }
+          .cms-row {
+            grid-template-columns: 46px 1fr;
+            grid-template-areas:
+              "thumb info"
+              "badge badge"
+              "actions actions";
+          }
+          .stock-badge {
+            justify-self: flex-start;
+          }
+          .row-actions {
+            flex-wrap: wrap;
+          }
+          .row-move-select {
+            width: 100%;
+            margin-bottom: 4px;
+          }
+          .row-actions button {
+            flex: 1;
+            text-align: center;
+          }
         }
       `}</style>
     </div>

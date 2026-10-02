@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../data/api';
+import { ReviewsIcon } from '../../components/admin/AdminIcons';
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([]);
@@ -48,7 +49,17 @@ export default function AdminReviews() {
             <div className="review-row-main">
               <div className="review-row-head">
                 <strong>{r.product_name}</strong>
-                <span className="stars">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                <span className="stars" style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <ReviewsIcon
+                      key={i}
+                      width={13}
+                      height={13}
+                      fill={i < r.rating ? 'var(--gold-500)' : 'none'}
+                      stroke="var(--gold-500)"
+                    />
+                  ))}
+                </span>
               </div>
               {r.comment && <p>{r.comment}</p>}
               <span className="review-by">{r.user_name} · {r.user_email} · {new Date(r.created_at).toLocaleDateString('en-IN')}</span>
@@ -87,6 +98,31 @@ export default function AdminReviews() {
         .row-actions { display: flex; gap: 10px; flex: 0 0 auto; }
         .row-actions button { background: none; border: none; font-size: 12.5px; color: var(--maroon-900); }
         .row-actions .danger { color: #a13a3a; }
+
+        @media (max-width: 640px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .review-row {
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+          }
+          .row-actions {
+            width: 100%;
+            justify-content: flex-end;
+            padding-top: 8px;
+            border-top: 1px solid var(--stone-100);
+            gap: 8px;
+          }
+          .row-actions button {
+            padding: 6px 12px;
+            background: var(--stone-100);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          .row-actions .danger { background: #fdf2f2; }
+        }
       `}</style>
     </div>
   );

@@ -234,6 +234,39 @@ export default function AdminReturns() {
         .approve-btn { color: #3c7a3c; border-color: #3c7a3c; }
         .reject-btn { color: #a13a3a; border-color: #a13a3a; }
         .refund-btn { background: #15803d; border-color: #15803d; color: #fff; }
+
+        @media (max-width: 700px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .return-card { padding: 14px; }
+          .return-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+          .return-body {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .return-actions-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .admin-note-input {
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .action-buttons {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            justify-content: center;
+            padding: 8px 12px;
+          }
+        }
       `}</style>
     </div>
   );

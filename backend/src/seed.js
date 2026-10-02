@@ -14,18 +14,18 @@ const categories = [
 ];
 
 const products = [
-  { id: 'p1', name: 'Purple Kanjivaram with Gold Zari', category: 'kanjivaram', price: 18500, mrp: 24000, image: img('photo-1641699862936-be9f49b1c38d'), stock: 4, description: 'Handwoven Kanjivaram silk saree in deep purple with a temple-border gold zari pallu.' },
-  { id: 'p2', name: 'Maroon Banarasi Silk', category: 'banarasi', price: 15200, mrp: 19000, image: img('photo-1610030469983-98e550d6193c'), stock: 0, description: 'Classic Banarasi weave in maroon with fine brocade work through the body and pallu.' },
-  { id: 'p3', name: 'Emerald Tussar Cotton', category: 'tussar', price: 4200, mrp: 5200, image: img('photo-1717585679395-bbe39b5fb6bc'), stock: 12, description: 'Breathable tussar-cotton blend, ideal for daily wear and office festivities.' },
-  { id: 'p4', name: 'Ivory Bridal Kanjivaram', category: 'bridal', price: 32500, mrp: 39000, image: img('photo-1619516388835-2b60acc4049e'), stock: 2, description: 'Statement bridal Kanjivaram in ivory and gold, paired with a heavy contrast pallu.' },
-  { id: 'p5', name: 'Sage Linen Saree', category: 'linen', price: 3600, mrp: 4400, image: img('photo-1609748340041-f5d61e061ebc'), stock: 9, description: 'Handloom linen in sage green with a woven self-border, styled for warm afternoons.' },
-  { id: 'p6', name: 'Blush Organza Festive', category: 'organza', price: 6800, mrp: 8500, image: img('photo-1610189013429-a703f4b245cf'), stock: 6, description: 'Sheer organza with sequin scatter work, light enough for festive evenings.' },
-  { id: 'p7', name: 'Teal Kanjivaram Temple Border', category: 'kanjivaram', price: 21000, mrp: 26500, image: img('photo-1676696706907-0e04665b80bd'), stock: 3, description: 'Rich teal Kanjivaram with a wide temple-border pallu and contrast blouse piece.' },
-  { id: 'p8', name: 'Gold Banarasi Tissue', category: 'banarasi', price: 17800, mrp: 22000, image: img('photo-1727430228383-aa1fb59db8bf'), stock: 5, description: 'Tissue-finish Banarasi in gold with all-over floral butis.' },
-  { id: 'p9', name: 'Rust Cotton Handloom', category: 'tussar', price: 3800, mrp: 4600, image: img('photo-1588140686379-1b76a52103dc'), stock: 15, description: 'Rust handloom cotton with a simple striped border, easy for daily wear.' },
-  { id: 'p10', name: 'Wine Bridal Silk', category: 'bridal', price: 28900, mrp: 35000, image: img('photo-1618901185975-d59f7091bcfe'), stock: 0, description: 'Deep wine bridal silk with heavy gold zari work through the pallu and border.' },
-  { id: 'p11', name: 'Mustard Linen Weave', category: 'linen', price: 3900, mrp: 4700, image: img('photo-1617627143750-d86bc21e42bb'), stock: 7, description: 'Mustard handloom linen with a fine self-check pattern.' },
-  { id: 'p12', name: 'Peacock Blue Organza', category: 'organza', price: 7200, mrp: 8900, image: img('photo-1610189012906-4c0aa9b9781e'), stock: 8, description: 'Peacock-blue organza with delicate thread embroidery along the border.' },
+  { id: 'p1', name: 'Purple Kanjivaram with Gold Zari', category: 'kanjivaram', price: 18500, mrp: 24000, image: img('photo-1641699862936-be9f49b1c38d'), hoverImage: img('photo-1617627143750-d86bc21e42bb'), stock: 4, description: 'Handwoven Kanjivaram silk saree in deep purple with a temple-border gold zari pallu.' },
+  { id: 'p2', name: 'Maroon Banarasi Silk', category: 'banarasi', price: 15200, mrp: 19000, image: img('photo-1610030469983-98e550d6193c'), hoverImage: img('photo-1618901185975-d59f7091bcfe'), stock: 0, description: 'Classic Banarasi weave in maroon with fine brocade work through the body and pallu.' },
+  { id: 'p3', name: 'Emerald Tussar Cotton', category: 'tussar', price: 4200, mrp: 5200, image: img('photo-1717585679395-bbe39b5fb6bc'), hoverImage: img('photo-1676696706907-0e04665b80bd'), stock: 12, description: 'Breathable tussar-cotton blend, ideal for daily wear and office festivities.' },
+  { id: 'p4', name: 'Ivory Bridal Kanjivaram', category: 'bridal', price: 32500, mrp: 39000, image: img('photo-1619516388835-2b60acc4049e'), hoverImage: img('photo-1692992193981-d3d92fabd9cb'), stock: 2, description: 'Statement bridal Kanjivaram in ivory and gold, paired with a heavy contrast pallu.' },
+  { id: 'p5', name: 'Sage Linen Saree', category: 'linen', price: 3600, mrp: 4400, image: img('photo-1609748340041-f5d61e061ebc'), hoverImage: img('photo-1588140686379-1b76a52103dc'), stock: 9, description: 'Handloom linen in sage green with a woven self-border, styled for warm afternoons.' },
+  { id: 'p6', name: 'Blush Organza Festive', category: 'organza', price: 6800, mrp: 8500, image: img('photo-1610189013429-a703f4b245cf'), hoverImage: img('photo-1610189012906-4c0aa9b9781e'), stock: 6, description: 'Sheer organza with sequin scatter work, light enough for festive evenings.' },
+  { id: 'p7', name: 'Teal Kanjivaram Temple Border', category: 'kanjivaram', price: 21000, mrp: 26500, image: img('photo-1676696706907-0e04665b80bd'), hoverImage: img('photo-1641699862936-be9f49b1c38d'), stock: 3, description: 'Rich teal Kanjivaram with a wide temple-border pallu and contrast blouse piece.' },
+  { id: 'p8', name: 'Gold Banarasi Tissue', category: 'banarasi', price: 17800, mrp: 22000, image: img('photo-1727430228383-aa1fb59db8bf'), hoverImage: img('photo-1619516388835-2b60acc4049e'), stock: 5, description: 'Tissue-finish Banarasi in gold with all-over floral butis.' },
+  { id: 'p9', name: 'Rust Cotton Handloom', category: 'tussar', price: 3800, mrp: 4600, image: img('photo-1588140686379-1b76a52103dc'), hoverImage: img('photo-1609748340041-f5d61e061ebc'), stock: 15, description: 'Rust handloom cotton with a simple striped border, easy for daily wear.' },
+  { id: 'p10', name: 'Wine Bridal Silk', category: 'bridal', price: 28900, mrp: 35000, image: img('photo-1618901185975-d59f7091bcfe'), hoverImage: img('photo-1692992193981-d3d92fabd9cb'), stock: 0, description: 'Deep wine bridal silk with heavy gold zari work through the pallu and border.' },
+  { id: 'p11', name: 'Mustard Linen Weave', category: 'linen', price: 3900, mrp: 4700, image: img('photo-1617627143750-d86bc21e42bb'), hoverImage: img('photo-1717585679395-bbe39b5fb6bc'), stock: 7, description: 'Mustard handloom linen with a fine self-check pattern.' },
+  { id: 'p12', name: 'Peacock Blue Organza', category: 'organza', price: 7200, mrp: 8900, image: img('photo-1610189012906-4c0aa9b9781e'), hoverImage: img('photo-1610189013429-a703f4b245cf'), stock: 8, description: 'Peacock-blue organza with delicate thread embroidery along the border.' },
 ];
 
 const homeSections = [
@@ -69,7 +69,20 @@ const homeSections = [
       },
     ],
   } },
-  { key: 'showcase', title: 'Our Collections (rail)', sort: 2, content: {
+  { key: 'ticker', title: 'Scrolling Sale & Announcement Ticker (Below Hero)', sort: 2, enabled: true, content: {
+    bgColor: '#581e15',
+    textColor: '#ffffff',
+    speed: 'normal',
+    pauseOnHover: true,
+    items: [
+      { id: 't1', icon: 'bag', text: 'New arrivals every week - Stay tuned!', link: '/products?sort=newest' },
+      { id: 't2', icon: 'sparkles', text: '100% Authentic Handcrafted Sarees', link: '/about' },
+      { id: 't3', icon: 'whatsapp', text: 'WhatsApp us for personalized assistance', link: 'https://wa.me/918317551337' },
+      { id: 't4', icon: 'truck', text: 'Free Shipping on orders above ₹5000', link: '/products' },
+      { id: 't5', icon: 'gift', text: 'Use code WELCOME10 for 10% off', link: '/products' },
+    ],
+  } },
+  { key: 'showcase', title: 'Our Collections (rail)', sort: 3, content: {
     note: "Ravichandra Textiles brings together the best traditional sarees in Dharmavaram, honoring centuries of sacred weaving heritage.",
     heading: 'Our Collections',
   } },
@@ -219,11 +232,11 @@ async function main() {
   for (const p of products) {
     const sku = `SK-${p.id.toUpperCase()}`;
     await pool.query(
-      `INSERT INTO products (id,name,category_id,price,mrp,stock,description,image,sku,weight_grams,return_available,return_window_hours,cancellation_available)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,650,TRUE,24,TRUE)
+      `INSERT INTO products (id,name,category_id,price,mrp,stock,description,image,hover_image,sku,weight_grams,return_available,return_window_hours,cancellation_available)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,650,TRUE,24,TRUE)
        ON CONFLICT (id) DO UPDATE SET
-         name=$2, category_id=$3, price=$4, mrp=$5, stock=$6, description=$7, image=$8, sku=$9`,
-      [p.id, p.name, p.category, p.price, p.mrp, p.stock, p.description, p.image, sku]
+         name=$2, category_id=$3, price=$4, mrp=$5, stock=$6, description=$7, image=$8, hover_image=$9, sku=$10`,
+      [p.id, p.name, p.category, p.price, p.mrp, p.stock, p.description, p.image, p.hoverImage || '', sku]
     );
 
     // Seed sample color variants if none exist for this product

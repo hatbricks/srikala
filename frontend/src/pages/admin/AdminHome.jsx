@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
+import ScrollingTicker from '../../components/ScrollingTicker';
+import { TICKER_ICONS, renderTickerSvg } from '../../components/TickerIcons';
+import { RulerIcon, UploadIcon, VideoIcon, CheckIcon, ReviewsIcon } from '../../components/admin/AdminIcons';
 
 const sectionLabels = {
   hero: 'Hero Banner & 4K Video Carousel',
+  ticker: 'Scrolling Sale & Announcement Ticker (Below Hero)',
   showcase: 'Our Collections (rail)',
   featured_categories: 'Shop by Category',
   promo_banner: 'Promo Banner',
@@ -163,7 +167,11 @@ function readFileAsDataUrl(file) {
 
   return (
     <div className="slides-editor">
-      {sizeHint && <p className="field-hint size-hint">📐 Recommended size: <strong>{sizeHint}</strong></p>}
+      {sizeHint && (
+        <p className="field-hint size-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <RulerIcon width={14} height={14} /> Recommended size: <strong>{sizeHint}</strong>
+        </p>
+      )}
       <p className="field-hint">
         Slides play horizontally in order. For buttery-smooth, zero-lag 4K video playback, you can directly use a fast video URL or local path (e.g. <code>/videos/hero1.mp4</code>) or upload a clip.
       </p>
@@ -192,7 +200,7 @@ function readFileAsDataUrl(file) {
                     <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveSlide(i, -1)} title="Move up">↑</button>
                     <button type="button" className="btn-icon" disabled={i === slides.length - 1} onClick={() => moveSlide(i, 1)} title="Move down">↓</button>
                     <button type="button" className="btn-icon btn-expand" onClick={() => setExpandedIndex(isExpanded ? null : i)}>
-                      {isExpanded ? '▲ Edit' : '▼ Edit'}
+                      {isExpanded ? 'Collapse' : 'Edit'}
                     </button>
                     <button type="button" className="btn-icon btn-remove" onClick={() => removeSlide(i)} title="Remove slide">×</button>
                   </div>
@@ -285,11 +293,11 @@ function readFileAsDataUrl(file) {
         <button type="button" className="btn btn-outline" disabled={busy} onClick={() => addSlideManual('image')}>
           + Add Image Slide
         </button>
-        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => photoInput.current?.click()}>
-          {busy ? 'Uploading…' : '📁 Upload Photo File'}
+        <button type="button" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy} onClick={() => photoInput.current?.click()}>
+          {busy ? 'Uploading…' : <><UploadIcon width={14} height={14} /> Upload Photo File</>}
         </button>
-        <button type="button" className="btn btn-outline" disabled={busy} onClick={() => videoInput.current?.click()}>
-          {busy ? 'Uploading…' : '📁 Upload Video File'}
+        <button type="button" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} disabled={busy} onClick={() => videoInput.current?.click()}>
+          {busy ? 'Uploading…' : <><VideoIcon width={14} height={14} /> Upload Video File</>}
         </button>
         <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => handleFiles(e, 'image')} />
         <input ref={videoInput} type="file" accept="video/*" multiple hidden onChange={(e) => handleFiles(e, 'video')} />
@@ -298,6 +306,290 @@ function readFileAsDataUrl(file) {
       {slides.length === 0 && (
         <p className="field-hint" style={{ marginTop: 8 }}>No slides added yet — the default 4K video &amp; saree slides will be displayed.</p>
       )}
+    </div>
+  );
+}
+
+function TickerEditor({ data = {}, onChange }) {
+  const items = Array.isArray(data.items) ? data.items : [];
+  const bgColor = data.bgColor || '#581e15';
+  const textColor = data.textColor || '#ffffff';
+  const speed = data.speed || 'normal';
+  const pauseOnHover = data.pauseOnHover !== false;
+
+  // Brand color palette presets matching Ravichandra Textiles Design System
+  const brandBgPresets = [
+    { label: 'Royal Silk Maroon (#581e15)', hex: '#581e15' },
+    { label: 'Antique Zari Gold (#b0732e)', hex: '#b0732e' },
+    { label: 'Temple Gold (#c58b38)', hex: '#c58b38' },
+    { label: 'Deep Midnight Maroon (#20080b)', hex: '#20080b' },
+    { label: 'Rich Espresso (#2c1810)', hex: '#2c1810' },
+    { label: 'Vibrant Silk Crimson (#6c241a)', hex: '#6c241a' },
+    { label: 'Ivory Silk Background (#faf6f0)', hex: '#faf6f0' },
+  ];
+
+  const brandTextPresets = [
+    { label: 'Pure White (#ffffff)', hex: '#ffffff' },
+    { label: 'Luminous Gold (#fbdfa2)', hex: '#fbdfa2' },
+    { label: 'Soft Warm Gold (#eed59b)', hex: '#eed59b' },
+    { label: 'Warm Linen (#fcf9f5)', hex: '#fcf9f5' },
+    { label: 'Royal Silk Maroon (#581e15)', hex: '#581e15' },
+  ];
+
+  function updateField(field, val) {
+    onChange({ ...data, [field]: val });
+  }
+
+  function updateItem(index, field, val) {
+    const next = [...items];
+    next[index] = { ...next[index], [field]: val };
+    onChange({ ...data, items: next });
+  }
+
+  function addItem() {
+    const newItem = {
+      id: `t-${Date.now()}`,
+      icon: 'sparkles',
+      text: 'Special festive offer: Flat 10% off on authentic Dharmavaram Silks',
+      link: '/products',
+    };
+    onChange({ ...data, items: [...items, newItem] });
+  }
+
+  function moveItem(index, dir) {
+    const target = index + dir;
+    if (target < 0 || target >= items.length) return;
+    const next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange({ ...data, items: next });
+  }
+
+  function removeItem(index) {
+    onChange({ ...data, items: items.filter((_, idx) => idx !== index) });
+  }
+
+  function resetSamplePresets() {
+    onChange({
+      ...data,
+      bgColor: '#581e15',
+      textColor: '#ffffff',
+      speed: 'normal',
+      pauseOnHover: true,
+      items: [
+        { id: `t-1`, icon: 'bag', text: 'New arrivals every week - Stay tuned!', link: '/products?sort=newest' },
+        { id: `t-2`, icon: 'sparkles', text: '100% Authentic Handcrafted Sarees', link: '/about' },
+        { id: `t-3`, icon: 'whatsapp', text: 'WhatsApp us for personalized assistance', link: 'https://wa.me/918317551337' },
+        { id: `t-4`, icon: 'truck', text: 'Free Shipping on orders above ₹5000', link: '/products' },
+        { id: `t-5`, icon: 'gift', text: 'Use code WELCOME10 for 10% off', link: '/products' },
+      ],
+    });
+  }
+
+  return (
+    <div className="ticker-editor">
+      <p className="field-hint">
+        Continuous scrolling announcement &amp; sale ticker banner displayed directly below the hero section. Fully editable icons, text, links, and speed matching the brand palette.
+      </p>
+
+      {/* Live Preview Strip */}
+      <div className="ticker-preview-box">
+        <div className="ticker-preview-header">
+          <span className="ticker-preview-badge">Live Storefront Preview</span>
+          <span className="field-hint" style={{ fontSize: '11.5px' }}>
+            {items.length} announcement{items.length !== 1 ? 's' : ''} in loop
+          </span>
+        </div>
+        <div className="ticker-preview-shell">
+          <ScrollingTicker config={{ ...data, bgColor, textColor, speed, pauseOnHover, items }} />
+        </div>
+      </div>
+
+      {/* Brand Color Palette & Behavior */}
+      <div className="ticker-config-grid">
+        <label className="field-label">
+          Background Color (Brand Palette)
+          <div className="color-picker-row">
+            <input
+              type="color"
+              value={bgColor}
+              onChange={(e) => updateField('bgColor', e.target.value)}
+              title="Custom hex color"
+            />
+            <input
+              type="text"
+              value={bgColor}
+              onChange={(e) => updateField('bgColor', e.target.value)}
+              style={{ width: '92px', fontFamily: 'monospace', fontSize: '12px' }}
+            />
+            <div className="color-presets-row">
+              {brandBgPresets.map((p) => (
+                <button
+                  type="button"
+                  key={p.hex}
+                  className={`color-swatch-btn ${bgColor.toLowerCase() === p.hex.toLowerCase() ? 'active' : ''}`}
+                  style={{ backgroundColor: p.hex }}
+                  title={p.label}
+                  onClick={() => updateField('bgColor', p.hex)}
+                />
+              ))}
+            </div>
+          </div>
+        </label>
+
+        <label className="field-label">
+          Text &amp; Motif Color
+          <div className="color-picker-row">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => updateField('textColor', e.target.value)}
+              title="Custom text color"
+            />
+            <input
+              type="text"
+              value={textColor}
+              onChange={(e) => updateField('textColor', e.target.value)}
+              style={{ width: '92px', fontFamily: 'monospace', fontSize: '12px' }}
+            />
+            <div className="color-presets-row">
+              {brandTextPresets.map((p) => (
+                <button
+                  type="button"
+                  key={p.hex}
+                  className={`color-swatch-btn ${textColor.toLowerCase() === p.hex.toLowerCase() ? 'active' : ''}`}
+                  style={{ backgroundColor: p.hex }}
+                  title={p.label}
+                  onClick={() => updateField('textColor', p.hex)}
+                />
+              ))}
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div className="grid-2-col">
+        <label className="field-label">
+          Marquee Scrolling Speed
+          <select value={speed} onChange={(e) => updateField('speed', e.target.value)}>
+            <option value="slow">Slow (Smooth &amp; Relaxed — 38s)</option>
+            <option value="normal">Normal (Recommended — 24s)</option>
+            <option value="fast">Fast (Lively — 16s)</option>
+          </select>
+        </label>
+
+        <label className="field-label" style={{ justifyContent: 'center' }}>
+          <span style={{ marginBottom: 4 }}>Hover Behavior</span>
+          <label className="toggle" style={{ cursor: 'pointer', padding: '6px 0' }}>
+            <input
+              type="checkbox"
+              checked={pauseOnHover}
+              onChange={(e) => updateField('pauseOnHover', e.target.checked)}
+            />
+            Pause scrolling when mouse hovers
+          </label>
+        </label>
+      </div>
+
+      {/* Announcements List */}
+      <div className="ticker-items-section">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+          <span className="field-label" style={{ fontWeight: 600, color: 'var(--ink-900)' }}>
+            Ticker Announcement Items ({items.length})
+          </span>
+          <button
+            type="button"
+            className="btn btn-outline"
+            style={{ fontSize: '11.5px', padding: '4px 10px' }}
+            onClick={resetSamplePresets}
+            title="Reset to brand default announcements"
+          >
+            ↺ Reset to Brand Presets
+          </button>
+        </div>
+
+        <div className="ticker-items-list">
+          {items.map((it, i) => (
+            <div className="ticker-item-card" key={it.id || i}>
+              <div className="ticker-item-head">
+                <span className="ticker-item-num">Announcement #{i + 1}</span>
+                <div className="slide-header-actions">
+                  <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveItem(i, -1)} title="Move up">↑</button>
+                  <button type="button" className="btn-icon" disabled={i === items.length - 1} onClick={() => moveItem(i, 1)} title="Move down">↓</button>
+                  <button type="button" className="btn-icon btn-remove" onClick={() => removeItem(i)} title="Remove announcement">×</button>
+                </div>
+              </div>
+
+              <div className="grid-2-col" style={{ marginTop: 4 }}>
+                <label className="field-label">
+                  SVG Vector Icon
+                  <div className="svg-icon-select-row">
+                    <div className="current-svg-badge" title="Selected SVG preview">
+                      {renderTickerSvg(it.icon || 'sparkles', { width: 17, height: 17 })}
+                    </div>
+                    <select
+                      value={it.icon || 'sparkles'}
+                      onChange={(e) => updateItem(i, 'icon', e.target.value)}
+                    >
+                      {Object.entries(TICKER_ICONS).map(([key, def]) => (
+                        <option key={key} value={key}>
+                          {def.label} ({key})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="svg-quick-picker">
+                    {Object.entries(TICKER_ICONS).map(([key, def]) => {
+                      const isSelected = (it.icon || 'sparkles') === key;
+                      return (
+                        <button
+                          type="button"
+                          key={key}
+                          className={`svg-icon-btn ${isSelected ? 'active' : ''}`}
+                          onClick={() => updateItem(i, 'icon', key)}
+                          title={def.label}
+                        >
+                          {def.svg({ width: 13, height: 13 })}
+                          <span>{key}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </label>
+
+                <label className="field-label">
+                  Target Link (Optional)
+                  <input
+                    type="text"
+                    value={it.link || ''}
+                    placeholder="e.g. /products or https://wa.me/..."
+                    onChange={(e) => updateItem(i, 'link', e.target.value)}
+                  />
+                  <span className="field-hint">Internal page or external WhatsApp link.</span>
+                </label>
+              </div>
+
+              <label className="field-label" style={{ marginTop: 4 }}>
+                Announcement Text
+                <input
+                  type="text"
+                  value={it.text || ''}
+                  placeholder="e.g. 100% Authentic Handcrafted Sarees"
+                  onChange={(e) => updateItem(i, 'text', e.target.value)}
+                />
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={addItem}
+          style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
+        >
+          + Add Announcement Item
+        </button>
+      </div>
     </div>
   );
 }
@@ -353,8 +645,12 @@ function GoogleReviewsEditor({ data = {}, onChange }) {
                 {r.avatarInitial || r.name?.charAt(0) || 'U'}
               </div>
               <div className="gr-edit-title">
-                <strong>{r.name || `Review ${i + 1}`}</strong>
-                <span>{r.userBadge} · {'★'.repeat(r.rating || 5)} · {r.timeAgo}</span>
+                <strong className="gr-edit-name">{r.name || `Review ${i + 1}`}</strong>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                  {r.userBadge} · {Array.from({ length: r.rating || 5 }).map((_, si) => (
+                    <ReviewsIcon key={si} width={12} height={12} fill="#e65100" stroke="#e65100" />
+                  ))} · {r.timeAgo}
+                </span>
               </div>
               <div className="slide-header-actions">
                 <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveReview(i, -1)} title="Move up">↑</button>
@@ -716,6 +1012,13 @@ export default function AdminHome() {
                 </>
               )}
 
+              {s.section_key === 'ticker' && (
+                <TickerEditor
+                  data={draft}
+                  onChange={(nextData) => setDrafts((prev) => ({ ...prev, ticker: nextData }))}
+                />
+              )}
+
               {s.section_key === 'story' && (
                 <label className="field-label">
                   Photo
@@ -797,7 +1100,11 @@ export default function AdminHome() {
 
               <div className="section-card-foot">
                 <button className="btn btn-primary" onClick={() => handleSave(s.section_key)}>Save</button>
-                {savedKey === s.section_key && <span className="saved-msg">Saved ✓</span>}
+                {savedKey === s.section_key && (
+                  <span className="saved-msg" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <CheckIcon width={13} height={13} /> Saved
+                  </span>
+                )}
               </div>
             </div>
           );
@@ -1030,6 +1337,139 @@ export default function AdminHome() {
         .gr-edit-title { flex: 1; display: flex; flex-direction: column; }
         .gr-edit-title strong { font-size: 13px; color: var(--ink-900); }
         .gr-edit-title span { font-size: 11px; color: var(--ink-400); }
+
+        /* Ticker Editor Styles */
+        .ticker-editor { display: flex; flex-direction: column; gap: 14px; }
+        .ticker-preview-box {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          background: #faf8f5;
+          padding: 10px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--stone-200);
+        }
+        .ticker-preview-header { display: flex; align-items: center; justify-content: space-between; }
+        .ticker-preview-badge {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--maroon-900);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .ticker-preview-shell {
+          border-radius: 6px;
+          overflow: hidden;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .ticker-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .color-picker-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .color-picker-row input[type="color"] {
+          width: 36px;
+          height: 36px;
+          padding: 2px;
+          border-radius: 6px;
+          border: 1px solid var(--stone-200);
+          cursor: pointer;
+          background: none;
+        }
+        .color-presets-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .color-swatch-btn {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 2px solid #fff;
+          box-shadow: 0 0 0 1px var(--stone-300);
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          padding: 0;
+        }
+        .color-swatch-btn:hover { transform: scale(1.15); }
+        .color-swatch-btn.active {
+          box-shadow: 0 0 0 2.5px var(--maroon-900);
+          transform: scale(1.1);
+        }
+        .ticker-items-section { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+        .ticker-items-list { display: flex; flex-direction: column; gap: 10px; }
+        .ticker-item-card {
+          border: 1px solid var(--stone-200);
+          border-radius: var(--radius-sm);
+          padding: 12px;
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .ticker-item-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 6px;
+          border-bottom: 1px solid var(--stone-100);
+        }
+        .ticker-item-num { font-size: 12px; font-weight: 600; color: var(--maroon-900); }
+        .svg-icon-select-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .svg-icon-select-row select {
+          flex: 1;
+          padding: 8px 12px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--stone-200);
+          font-family: var(--font-body);
+          font-size: 13px;
+          background: #fff;
+        }
+        .current-svg-badge {
+          width: 36px;
+          height: 36px;
+          border-radius: var(--radius-sm);
+          background: #581e15;
+          color: #fbdfa2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .svg-quick-picker { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+        .svg-icon-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: var(--stone-100);
+          border: 1px solid var(--stone-200);
+          border-radius: 4px;
+          padding: 4px 8px;
+          font-size: 11.5px;
+          color: var(--ink-700);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .svg-icon-btn:hover {
+          background: var(--blush-400);
+          border-color: var(--maroon-700);
+          color: var(--maroon-900);
+        }
+        .svg-icon-btn.active {
+          background: #581e15;
+          border-color: #581e15;
+          color: #fbdfa2;
+          font-weight: 500;
+        }
+        .svg-icon-btn svg { flex-shrink: 0; }
+
+        @media (max-width: 680px) {
+          .admin-page-head { margin-bottom: 18px; }
+          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
+          .section-card { padding: 16px 14px; }
+          .grid-2-col { grid-template-columns: 1fr; }
+          .grid-3-col { grid-template-columns: 1fr; }
+          .slide-upload-actions { flex-direction: column; gap: 8px; }
+          .slide-upload-actions .btn { width: 100%; text-align: center; }
+          .section-card-foot .btn { width: 100%; text-align: center; justify-content: center; }
+          .slide-card-header { padding: 8px 10px; gap: 8px; }
+          .slide-header-actions { flex-wrap: wrap; }
+          .picker-chip { flex-wrap: wrap; gap: 6px; }
+        }
       `}</style>
     </div>
   );

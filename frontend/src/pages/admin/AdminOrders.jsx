@@ -2,6 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
+import {
+  WarningIcon,
+  CheckIcon,
+  CloseIcon,
+  WhatsAppIcon,
+  PhoneIcon,
+  EditIcon,
+  TruckIcon,
+  DocumentIcon,
+} from '../../components/admin/AdminIcons';
 
 const statusLabels = {
   paid: 'Paid',
@@ -196,7 +206,9 @@ export default function AdminOrders() {
               {o.status === 'cancellation_requested' && (
                 <div className="admin-cancel-req-box">
                   <div className="acrb-top">
-                    <span className="acrb-alert-badge">⚠️ Action Required</span>
+                    <span className="acrb-alert-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <WarningIcon width={13} height={13} /> Action Required
+                    </span>
                     <span className="acrb-time">
                       Requested {o.cancellation_requested_at ? new Date(o.cancellation_requested_at).toLocaleString('en-IN') : 'recently'}
                     </span>
@@ -213,40 +225,45 @@ export default function AdminOrders() {
                     <button
                       type="button"
                       className="btn btn-sm btn-approve"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       disabled={actionBusy[o.id]}
                       onClick={() => handleApproveCancellation(o.id)}
                     >
-                      {actionBusy[o.id] ? 'Processing…' : '✓ Approve & Process Refund'}
+                      {actionBusy[o.id] ? 'Processing…' : <><CheckIcon width={14} height={14} /> Approve &amp; Process Refund</>}
                     </button>
                     <button
                       type="button"
                       className="btn btn-sm btn-reject"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       disabled={actionBusy[o.id]}
                       onClick={() => handleRejectCancellation(o.id)}
                     >
-                      ✕ Reject Request
+                      <CloseIcon width={14} height={14} /> Reject Request
                     </button>
                     <a
                       href={`https://wa.me/${(o.address_mobile || o.customer_mobile || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${o.customer_name || 'Customer'}, this is Ravichandra Handlooms regarding your cancellation request for order #${o.order_number || o.id}.`)}`}
                       target="_blank"
                       rel="noreferrer"
                       className="btn btn-sm btn-wa-chat"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      💬 WhatsApp Customer
+                      <WhatsAppIcon width={14} height={14} /> WhatsApp Customer
                     </a>
                     <a
                       href={`tel:${o.address_mobile || o.customer_mobile || ''}`}
                       className="btn btn-sm btn-call-cust"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     >
-                      📞 Call Customer
+                      <PhoneIcon width={14} height={14} /> Call Customer
                     </a>
                   </div>
                 </div>
               )}
 
               {o.status === 'paid_oversold' && (
-                <div className="oversold-banner">
-                  ⚠ Paid after stock ran out for one or more items — check inventory and contact the customer if needed.
+                <div className="oversold-banner" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <WarningIcon width={16} height={16} style={{ flexShrink: 0 }} />
+                  <span>Paid after stock ran out for one or more items — check inventory and contact the customer if needed.</span>
                 </div>
               )}
               {o.status === 'cancelled' && (
@@ -303,9 +320,10 @@ export default function AdminOrders() {
                   <button
                     type="button"
                     className="btn-edit-shipping"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
                     onClick={() => openShippingEditor(o)}
                   >
-                    ✏️ {o.awb_code || o.courier_name ? 'Edit Courier / AWB' : '+ Add Courier / AWB'}
+                    <EditIcon width={13} height={13} /> {o.awb_code || o.courier_name ? 'Edit Courier / AWB' : '+ Add Courier / AWB'}
                   </button>
                 </div>
 
@@ -315,6 +333,11 @@ export default function AdminOrders() {
                   <p className="detail-value mono">Payment ID: {o.razorpay_payment_id || '—'}</p>
                   {o.coupon_code && (
                     <p className="detail-value coupon-tag">{o.coupon_code} applied · −{formatINR(o.discount)}</p>
+                  )}
+                  {o.tax_amount > 0 && (
+                    <p className="detail-value">
+                      GST ({o.gst_rate || 5}% {o.gst_type || 'inclusive'}): <strong>{formatINR(o.tax_amount)}</strong>
+                    </p>
                   )}
                   <p className="detail-value">Package Weight: {o.total_weight_grams || 600}g</p>
                 </div>
@@ -356,19 +379,21 @@ export default function AdminOrders() {
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                     onClick={() => openShippingEditor(o)}
                   >
-                    🚚 Courier &amp; AWB
+                    <TruckIcon width={14} height={14} /> Courier &amp; AWB
                   </button>
 
                   {o.paid_at && (
                     <button
                       type="button"
                       className="btn btn-outline btn-sm invoice-btn"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       disabled={invoiceId === o.id}
                       onClick={() => handleDownloadInvoice(o)}
                     >
-                      {invoiceId === o.id ? 'Preparing…' : '📄 Invoice'}
+                      {invoiceId === o.id ? 'Preparing…' : <><DocumentIcon width={14} height={14} /> Invoice</>}
                     </button>
                   )}
                 </div>
@@ -377,6 +402,11 @@ export default function AdminOrders() {
               <div className="order-row-foot">
                 <span>Shipping: {o.shipping_fee === 0 ? 'Free' : formatINR(o.shipping_fee)}</span>
                 {o.discount > 0 && <span>Discount: −{formatINR(o.discount)}</span>}
+                {o.tax_amount > 0 && (
+                  <span>
+                    GST ({o.gst_rate || 5}%): {formatINR(o.tax_amount)} {o.gst_type === 'exclusive' ? '(added)' : '(incl.)'}
+                  </span>
+                )}
                 <strong className="order-final-total">
                   Total: {formatINR(o.total_amount || (o.subtotal - (o.discount || 0) + (o.shipping_fee || 0)))}
                 </strong>
@@ -392,7 +422,9 @@ export default function AdminOrders() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <h3>Courier &amp; Tracking Details</h3>
-              <button type="button" className="close-btn" onClick={() => setEditingShippingOrder(null)}>✕</button>
+              <button type="button" className="close-btn" onClick={() => setEditingShippingOrder(null)}>
+                <CloseIcon width={16} height={16} />
+              </button>
             </div>
             <form className="shipping-edit-form" onSubmit={handleSaveShipping}>
               <p className="modal-order-tag">
@@ -468,10 +500,19 @@ export default function AdminOrders() {
       <style>{`
         .admin-orders { padding-bottom: 50px; }
         .admin-page-head { margin-bottom: 24px; }
-        .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+        .head-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
         .admin-page-head h1 { font-size: 26px; margin-bottom: 6px; }
         .admin-page-head p { font-size: 13px; color: var(--ink-400); max-width: 580px; line-height: 1.6; }
-        .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filter-tabs {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+          scrollbar-width: none;
+          max-width: 100%;
+        }
+        .filter-tabs::-webkit-scrollbar { display: none; }
         .tab-btn {
           font-size: 11.5px;
           padding: 6px 12px;
@@ -480,6 +521,8 @@ export default function AdminOrders() {
           background: #fff;
           cursor: pointer;
           color: var(--ink-600);
+          white-space: nowrap;
+          flex-shrink: 0;
         }
         .tab-btn.active {
           background: var(--maroon-900);
@@ -496,6 +539,8 @@ export default function AdminOrders() {
           border-radius: var(--radius-md);
           border: 1px solid var(--stone-200);
           padding: 18px 20px;
+          min-width: 0;
+          box-sizing: border-box;
         }
         .order-row-head {
           display: flex;
@@ -507,12 +552,18 @@ export default function AdminOrders() {
           flex-wrap: wrap;
           gap: 10px;
         }
-        .order-identity strong { color: var(--maroon-900); font-size: 15px; margin-right: 10px; }
-        .order-customer { font-size: 13px; color: var(--ink-700); margin-right: 10px; }
+        .order-identity {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .order-identity strong { color: var(--maroon-900); font-size: 15px; margin-right: 2px; }
+        .order-customer { font-size: 13px; color: var(--ink-700); }
         .order-date { font-size: 12px; color: var(--ink-400); }
 
-        .status-pill-group { display: flex; gap: 8px; }
-        .status-pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
+        .status-pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .status-pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
         .status-paid { background: #e8f2e6; color: #3c7a3c; }
         .status-created, .status-pending { background: #fdf0d5; color: #8a5a10; }
         .status-failed { background: #f6e3e3; color: #a13a3a; }
@@ -530,21 +581,21 @@ export default function AdminOrders() {
           font-size: 12.5px;
           margin-bottom: 14px;
         }
-        @media (max-width: 800px) {
-          .order-detail-grid { grid-template-columns: 1fr; }
-        }
+        .detail-block { min-width: 0; }
         .detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--ink-400); margin: 0 0 4px; }
-        .detail-value { margin: 2px 0; color: var(--ink-700); }
-        .mono { font-family: monospace; font-size: 11.5px; }
+        .detail-value { margin: 2px 0; color: var(--ink-700); word-break: break-word; overflow-wrap: anywhere; }
+        .mono { font-family: monospace; font-size: 11.5px; word-break: break-all; overflow-wrap: anywhere; }
         .coupon-tag { color: #3c7a3c; font-weight: 500; }
-        .tracking-link { font-size: 11.5px; color: var(--maroon-900); text-decoration: underline; display: inline-block; margin-top: 2px; }
+        .tracking-link { font-size: 11.5px; color: var(--maroon-900); text-decoration: underline; display: inline-block; margin-top: 2px; word-break: break-all; }
 
         .order-row-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-        .item-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
-        .item-link img { width: 36px; height: 46px; object-fit: cover; border-radius: 4px; }
-        .variant-tag { font-size: 11px; color: var(--maroon-900); background: #fdf6f5; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
-        .item-sku { font-size: 11px; color: var(--ink-400); margin-left: 6px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; gap: 10px; }
+        .item-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; flex: 1; }
+        .item-link img { width: 36px; height: 46px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+        .item-name { word-break: break-word; }
+        .variant-tag { font-size: 11px; color: var(--maroon-900); background: #fdf6f5; padding: 1px 6px; border-radius: 4px; margin-left: 6px; white-space: nowrap; }
+        .item-sku { font-size: 11px; color: var(--ink-400); margin-left: 6px; white-space: nowrap; }
+        .item-qty-price { white-space: nowrap; font-weight: 500; }
 
         .fulfillment-bar {
           display: flex;
@@ -559,7 +610,7 @@ export default function AdminOrders() {
           gap: 12px;
         }
         .status-updater { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
-        .status-updater select { font-size: 12px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--stone-300); }
+        .status-updater select { font-size: 12px; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--stone-300); }
         .order-actions-right { display: flex; gap: 8px; }
 
         .order-row-foot {
@@ -570,6 +621,7 @@ export default function AdminOrders() {
           font-size: 12.5px;
           color: var(--ink-600);
           padding-top: 8px;
+          flex-wrap: wrap;
         }
         .order-final-total { font-size: 15px; color: var(--maroon-900); }
 
@@ -608,6 +660,8 @@ export default function AdminOrders() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 6px;
+          flex-wrap: wrap;
+          gap: 6px;
         }
         .acrb-alert-badge {
           background: #e74a3b;
@@ -621,16 +675,16 @@ export default function AdminOrders() {
         .acrb-time { font-size: 11.5px; color: #856404; }
         .acrb-heading { font-size: 15px; font-weight: 600; color: #5a3c02; margin: 0 0 4px; }
         .acrb-desc { font-size: 13px; color: #664d03; margin: 0 0 6px; }
-        .acrb-reason { font-size: 12.5px; color: #78350f; background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 0 0 12px; }
+        .acrb-reason { font-size: 12.5px; color: #78350f; background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 4px; display: inline-block; margin: 0 0 12px; word-break: break-word; }
         .acrb-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
         
-        .btn-approve { background: #1cc88a; color: #fff; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-approve { background: #1cc88a; color: #fff; border: none; font-weight: 600; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
         .btn-approve:hover { background: #17a673; }
-        .btn-reject { background: #e74a3b; color: #fff; border: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-reject { background: #e74a3b; color: #fff; border: none; font-weight: 600; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
         .btn-reject:hover { background: #be2617; }
-        .btn-wa-chat { background: #25d366; color: #fff; text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; }
+        .btn-wa-chat { background: #25d366; color: #fff; text-decoration: none; font-weight: 600; padding: 8px 12px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; }
         .btn-wa-chat:hover { background: #1ebc59; color: #fff; }
-        .btn-call-cust { background: var(--maroon-900); color: #fff; text-decoration: none; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; }
+        .btn-call-cust { background: var(--maroon-900); color: #fff; text-decoration: none; font-weight: 600; padding: 8px 12px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; }
         .btn-call-cust:hover { background: var(--maroon-800); color: #fff; }
 
         .btn-edit-shipping {
@@ -639,7 +693,7 @@ export default function AdminOrders() {
           color: var(--maroon-900);
           font-size: 11.5px;
           font-weight: 500;
-          padding: 3px 8px;
+          padding: 5px 10px;
           border-radius: 4px;
           cursor: pointer;
           margin-top: 6px;
@@ -652,47 +706,108 @@ export default function AdminOrders() {
         .modal-backdrop {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0, 0, 0, 0.55);
+          background: rgba(0, 0, 0, 0.65);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 999;
-          padding: 20px;
+          padding: 16px;
+          box-sizing: border-box;
         }
         .modal-content {
           background: #fff;
           border-radius: var(--radius-md);
           max-width: 480px;
           width: 100%;
-          padding: 24px;
+          max-height: 90vh;
+          max-height: 90dvh;
+          overflow-y: auto;
+          padding: 22px 18px;
+          box-sizing: border-box;
           box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .modal-head h3 { font-size: 18px; color: var(--maroon-900); margin: 0; }
-        .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--ink-400); }
+        .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--ink-400); padding: 4px; }
         
         .modal-order-tag { font-size: 12.5px; color: var(--ink-600); margin: 0 0 14px; background: var(--stone-50); padding: 6px 10px; border-radius: 4px; }
         .shipping-edit-form { display: flex; flex-direction: column; gap: 12px; font-size: 12.5px; }
         .shipping-edit-form label { display: flex; flex-direction: column; gap: 5px; color: var(--ink-700); font-weight: 500; }
         .shipping-edit-form input, .shipping-edit-form select {
           font-size: 13px;
-          padding: 8px 10px;
+          padding: 9px 10px;
           border-radius: var(--radius-sm);
           border: 1px solid var(--stone-300);
         }
-        .courier-quick-picks { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: -4px; margin-bottom: 4px; }
+        .courier-quick-picks { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: -2px; margin-bottom: 4px; }
         .courier-quick-picks span { font-size: 11px; color: var(--ink-400); }
         .quick-pick-btn {
-          font-size: 10.5px;
+          font-size: 11px;
           background: var(--stone-100);
           border: 1px solid var(--stone-300);
-          padding: 2px 7px;
-          border-radius: 3px;
+          padding: 4px 8px;
+          border-radius: 4px;
           cursor: pointer;
           color: var(--ink-700);
         }
         .quick-pick-btn:hover { background: var(--maroon-900); color: #fff; border-color: var(--maroon-900); }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+        @media (max-width: 800px) {
+          .order-detail-grid { grid-template-columns: 1fr; gap: 12px; }
+        }
+
+        @media (max-width: 680px) {
+          .head-row { flex-direction: column; align-items: stretch; gap: 12px; }
+          .admin-page-head h1 { font-size: 22px; }
+          .order-row { padding: 14px 14px; }
+          .order-row-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+          .item-row { flex-wrap: wrap; }
+          .fulfillment-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+          }
+          .status-updater {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+          }
+          .status-updater select {
+            flex: 1;
+            max-width: 200px;
+          }
+          .order-actions-right {
+            width: 100%;
+            display: flex;
+            gap: 8px;
+          }
+          .order-actions-right .btn {
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+          }
+          .order-row-foot {
+            justify-content: space-between;
+          }
+          .acrb-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+          }
+          .acrb-btn-row .btn {
+            width: 100%;
+            font-size: 11.5px;
+            padding: 8px 6px;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .acrb-btn-row {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );

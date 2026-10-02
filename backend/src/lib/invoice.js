@@ -9,16 +9,21 @@ const MAROON = '#581e15';
 const INK = '#220D0A';
 const INK_LIGHT = '#6E5D57';
 const RULE = '#E4DDD4';
+const BG_ALT = '#FAF6F1';
 
-const STORE = {
+const DEFAULT_STORE = {
   name: 'Ravichandra Textiles',
+  legalName: 'Ravichandra Textiles & Handlooms',
   addressLines: [
-    'Ravichandra Textiles & Handlooms',
     '10-28, Kpt street, near Punjab National Bank',
-    'Dharmavaram 515671, Andhra Pradesh',
+    'Dharmavaram 515671, Andhra Pradesh, India',
   ],
   phone: process.env.STORE_PHONE || process.env.RAVICHANDRA_PHONE || '+91 83175 51337',
   email: process.env.STORE_EMAIL || process.env.RAVICHANDRA_EMAIL || 'ravichandratextiles39@gmail.com',
+  state: 'Andhra Pradesh',
+  stateCode: '37',
+  gstin: '37AAAAA0000A1Z5',
+  hsnCode: '5007',
 };
 
 function formatINR(amount) {
@@ -30,6 +35,48 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function numberToWordsINR(amount) {
+  const num = Math.round(Number(amount) || 0);
+  if (num === 0) return 'Rupees Zero Only';
+  const ones = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
+  ];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function convertLessThanOneThousand(n) {
+    let str = '';
+    if (n >= 100) {
+      str += ones[Math.floor(n / 100)] + ' Hundred ';
+      n %= 100;
+    }
+    if (n >= 20) {
+      str += tens[Math.floor(n / 10)] + ' ';
+      n %= 10;
+    }
+    if (n > 0) {
+      str += ones[n] + ' ';
+    }
+    return str.trim();
+  }
+
+  let crore = Math.floor(num / 10000000);
+  let rem = num % 10000000;
+  let lakh = Math.floor(rem / 100000);
+  rem %= 100000;
+  let thousand = Math.floor(rem / 1000);
+  rem %= 1000;
+  let hundred = rem;
+
+  let words = '';
+  if (crore > 0) words += convertLessThanOneThousand(crore) + ' Crore ';
+  if (lakh > 0) words += convertLessThanOneThousand(lakh) + ' Lakh ';
+  if (thousand > 0) words += convertLessThanOneThousand(thousand) + ' Thousand ';
+  if (hundred > 0) words += convertLessThanOneThousand(hundred) + ' ';
+
+  return 'Rupees ' + words.trim() + ' Only';
+}
+
 const STATUS_LABEL = {
   created: 'Payment Pending',
   paid: 'Paid',
@@ -38,111 +85,266 @@ const STATUS_LABEL = {
   failed: 'Payment Failed',
 };
 
-// Renders a full invoice PDF for one order directly onto the given
-// writable stream (the Express response) and ends it — the caller just
-// pipes/awaits this, no buffer juggling needed for a document this size.
-export function renderInvoice(res, { order, items, customer }) {
-  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+// Renders a full, GST-compliant Tax Invoice directly onto the response stream
+export function renderInvoice(res, { order, items, customer, gstSettings, contactInfo }) {
+  const doc = new PDFDocument({ size: 'A4', margin: 45 });
   doc.pipe(res);
 
-  // ---------- Header: logo + store details, invoice number + dates ----------
+  const gstConfig = {
+    enabled: gstSettings?.enabled !== false,
+    rate: Number(gstSettings?.rate ?? 5),
+    type: gstSettings?.type || 'inclusive',
+    gstin: gstSettings?.gstin || DEFAULT_STORE.gstin,
+    legalName: gstSettings?.legalName || DEFAULT_STORE.legalName,
+    state: gstSettings?.state || DEFAULT_STORE.state,
+    stateCode: gstSettings?.stateCode || DEFAULT_STORE.stateCode,
+    hsnCode: gstSettings?.hsnCode || DEFAULT_STORE.hsnCode,
+  };
+
+  const storePhone = contactInfo?.phone || DEFAULT_STORE.phone;
+  const storeEmail = contactInfo?.email || DEFAULT_STORE.email;
+  const storeAddressLines = contactInfo?.address
+    ? [contactInfo.address]
+    : DEFAULT_STORE.addressLines;
+
+  // Header Left: Store details + GSTIN
   try {
-    doc.image(LOGO_PATH, 50, 45, { width: 34 });
+    doc.image(LOGO_PATH, 45, 42, { width: 34 });
   } catch {
-    /* logo missing shouldn't block the invoice itself */
+    /* fallback if missing */
   }
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(16).text(STORE.name, 92, 50);
+
+  const headerLeftX = 86;
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(14).text(gstConfig.legalName, headerLeftX, 42);
   doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(8.5);
-  let y = 70;
-  for (const line of STORE.addressLines) { doc.text(line, 92, y, { width: 260 }); y += 11; }
-  doc.text(`${STORE.phone}  \u00B7  ${STORE.email}`, 92, y);
+  let y = 58;
+  for (const line of storeAddressLines) {
+    doc.text(line, headerLeftX, y, { width: 250 });
+    y += 11;
+  }
+  doc.text(`Phone: ${storePhone}  \u00B7  Email: ${storeEmail}`, headerLeftX, y);
+  y += 12;
 
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(20).text('INVOICE', 0, 48, { align: 'right' });
-  doc.font('Helvetica').fontSize(9);
+  if (gstConfig.enabled && gstConfig.gstin) {
+    doc.font('Helvetica-Bold').fillColor(MAROON).text(`GSTIN: `, headerLeftX, y, { continued: true });
+    doc.font('Helvetica-Bold').fillColor(INK).text(gstConfig.gstin, { continued: true });
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(`  \u00B7  State: ${gstConfig.state} (${gstConfig.stateCode})`);
+    y += 13;
+  }
+
+  // Header Right: Invoice Title & Meta
+  const isGst = gstConfig.enabled;
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(isGst ? 18 : 20).text(isGst ? 'TAX INVOICE' : 'INVOICE', 0, 42, { align: 'right' });
+  if (isGst) {
+    doc.font('Helvetica').fontSize(8).fillColor(INK_LIGHT).text('(Original for Recipient)', 0, 62, { align: 'right' });
+  }
+
+  const invoiceNumber = order.order_number || `SK${order.id}`;
+  const placeOfSupply = order.address_state || gstConfig.state;
+
   const metaRight = [
-    [`Invoice #`, `SK${order.id}`],
-    [`Order Date`, formatDate(order.created_at)],
-    [`Payment Date`, formatDate(order.paid_at)],
-    [`Status`, STATUS_LABEL[order.status] || order.status],
+    ['Invoice #', invoiceNumber],
+    ['Invoice Date', formatDate(order.paid_at || order.created_at)],
+    ['Place of Supply', placeOfSupply],
+    ['Payment Status', STATUS_LABEL[order.status] || order.status],
   ];
-  let metaY = 78;
+
+  if (isGst) {
+    metaRight.push(['Reverse Charge', 'No']);
+  }
+
+  let metaY = isGst ? 74 : 66;
+  doc.fontSize(8.5);
   for (const [label, value] of metaRight) {
-    doc.fillColor(INK_LIGHT).text(label, 300, metaY, { width: 115, align: 'right' });
-    doc.fillColor(INK).font('Helvetica-Bold').text(value, 425, metaY, { width: 120, align: 'right' });
-    doc.font('Helvetica');
-    metaY += 14;
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(label, 320, metaY, { width: 100, align: 'right' });
+    doc.font('Helvetica-Bold').fillColor(INK).text(value, 430, metaY, { width: 120, align: 'right' });
+    metaY += 13;
   }
 
-  doc.moveTo(50, 140).lineTo(545, 140).strokeColor(RULE).lineWidth(1).stroke();
+  const dividerY = Math.max(y, metaY) + 8;
+  doc.moveTo(45, dividerY).lineTo(550, dividerY).strokeColor(RULE).lineWidth(1).stroke();
 
-  // ---------- Bill to ----------
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9.5).text('BILL TO', 50, 155);
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(11).text(order.address_name || customer?.name || '—', 50, 170);
-  doc.font('Helvetica').fontSize(9.5).fillColor(INK_LIGHT);
-  let billY = 186;
-  doc.text(order.address_line1 || '', 50, billY, { width: 260 }); billY += 13;
+  // ---------- Bill To / Buyer & Order Info ----------
+  let blockY = dividerY + 10;
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9).text('BILLED TO / BUYER DETAILS', 45, blockY);
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9).text('ORDER & PAYMENT DETAILS', 320, blockY);
+
+  blockY += 14;
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(10.5).text(order.address_name || customer?.name || 'Valued Customer', 45, blockY);
+
+  doc.font('Helvetica').fontSize(8.5).fillColor(INK_LIGHT);
+  let addrY = blockY + 14;
+  if (order.address_line1) { doc.text(order.address_line1, 45, addrY, { width: 250 }); addrY += 11; }
+  if (order.address_line2) { doc.text(order.address_line2, 45, addrY, { width: 250 }); addrY += 11; }
   const cityLine = [order.address_city, order.address_state, order.address_pincode].filter(Boolean).join(', ');
-  if (cityLine) { doc.text(cityLine, 50, billY, { width: 260 }); billY += 13; }
-  if (order.address_mobile) { doc.text(`Mobile: ${order.address_mobile}`, 50, billY, { width: 260 }); billY += 13; }
-  if (customer?.email) { doc.text(customer.email, 50, billY, { width: 260 }); billY += 13; }
+  if (cityLine) { doc.text(cityLine, 45, addrY, { width: 250 }); addrY += 11; }
+  if (order.address_mobile) { doc.text(`Mobile: ${order.address_mobile}`, 45, addrY, { width: 250 }); addrY += 11; }
+  if (customer?.email) { doc.text(`Email: ${customer.email}`, 45, addrY, { width: 250 }); addrY += 11; }
+  if (placeOfSupply) { doc.text(`State / Place of Supply: ${placeOfSupply}`, 45, addrY, { width: 250 }); addrY += 11; }
 
-  if (order.razorpay_payment_id) {
-    doc.font('Helvetica').fontSize(9).fillColor(INK_LIGHT).text('Payment ID', 300, 155, { width: 245, align: 'right' });
-    doc.fillColor(INK).text(order.razorpay_payment_id, 300, 168, { width: 245, align: 'right' });
+  // Right block: payment & fulfillment info
+  let payY = blockY;
+  const payInfo = [
+    ['Order Ref', `#${order.id}`],
+    ['Payment Method', 'Online (Razorpay / UPI / Cards)'],
+    ['Razorpay Payment ID', order.razorpay_payment_id || '—'],
+    ['Fulfillment Mode', order.awb_code ? `${order.courier_name || 'Courier'}: ${order.awb_code}` : 'Standard Insured Logistics'],
+  ];
+  for (const [k, v] of payInfo) {
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(k, 320, payY, { width: 105, align: 'right' });
+    doc.font('Helvetica-Bold').fillColor(INK).text(v, 435, payY, { width: 115, align: 'right' });
+    payY += 13;
   }
 
-  // ---------- Line items table ----------
-  const tableTop = Math.max(billY, 230) + 20;
-  const col = { item: 50, qty: 340, price: 400, total: 470 };
-  doc.rect(50, tableTop, 495, 22).fill(MAROON);
-  doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9);
-  doc.text('ITEM', col.item + 8, tableTop + 7);
-  doc.text('QTY', col.qty, tableTop + 7, { width: 40, align: 'right' });
-  doc.text('PRICE', col.price, tableTop + 7, { width: 60, align: 'right' });
-  doc.text('TOTAL', col.total, tableTop + 7, { width: 65, align: 'right' });
+  // ---------- Line Items Table ----------
+  const tableTop = Math.max(addrY, payY) + 14;
+  const col = {
+    sno: 45,
+    item: 70,
+    hsn: 285,
+    qty: 345,
+    price: 390,
+    total: 470,
+  };
 
-  let rowY = tableTop + 22;
-  doc.font('Helvetica').fontSize(9.5);
+  doc.rect(45, tableTop, 505, 20).fill(MAROON);
+  doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8.5);
+  doc.text('#', col.sno + 6, tableTop + 6);
+  doc.text('ITEM DESCRIPTION', col.item, tableTop + 6);
+  doc.text('HSN/SAC', col.hsn, tableTop + 6, { width: 50, align: 'center' });
+  doc.text('QTY', col.qty, tableTop + 6, { width: 35, align: 'right' });
+  doc.text('RATE', col.price, tableTop + 6, { width: 65, align: 'right' });
+  doc.text('AMOUNT', col.total, tableTop + 6, { width: 70, align: 'right' });
+
+  let rowY = tableTop + 20;
+  doc.font('Helvetica').fontSize(9);
+
   items.forEach((item, i) => {
-    const rowHeight = 24;
-    if (i % 2 === 1) doc.rect(50, rowY, 495, rowHeight).fill('#FAF6F1');
-    doc.fillColor(INK).text(item.product_name, col.item + 8, rowY + 7, { width: 275 });
-    doc.text(String(item.qty), col.qty, rowY + 7, { width: 40, align: 'right' });
-    doc.text(formatINR(item.price), col.price, rowY + 7, { width: 60, align: 'right' });
-    doc.text(formatINR(item.price * item.qty), col.total, rowY + 7, { width: 65, align: 'right' });
+    const rowHeight = item.variant_name ? 28 : 22;
+    if (i % 2 === 1) doc.rect(45, rowY, 505, rowHeight).fill(BG_ALT);
+    doc.fillColor(INK_LIGHT).text(String(i + 1), col.sno + 6, rowY + 6);
+
+    doc.fillColor(INK).font('Helvetica-Bold').text(item.product_name, col.item, rowY + 6, { width: 210 });
+    if (item.variant_name) {
+      doc.font('Helvetica').fontSize(7.5).fillColor(INK_LIGHT).text(`Color: ${item.variant_name}`, col.item, rowY + 17);
+      doc.fontSize(9);
+    }
+
+    doc.font('Helvetica').fillColor(INK_LIGHT).text(item.hsn || gstConfig.hsnCode, col.hsn, rowY + 6, { width: 50, align: 'center' });
+    doc.fillColor(INK).text(String(item.qty), col.qty, rowY + 6, { width: 35, align: 'right' });
+    doc.text(formatINR(item.price), col.price, rowY + 6, { width: 65, align: 'right' });
+    doc.text(formatINR(item.price * item.qty), col.total, rowY + 6, { width: 70, align: 'right' });
+
     rowY += rowHeight;
   });
-  doc.moveTo(50, rowY).lineTo(545, rowY).strokeColor(RULE).lineWidth(1).stroke();
-  rowY += 14;
 
-  // ---------- Totals ----------
-  const payable = (order.subtotal || 0) - (order.discount || 0) + (order.shipping_fee || 0);
-  const totalsRows = [['Subtotal', formatINR(order.subtotal)]];
-  if (order.discount) {
-    totalsRows.push([`Discount${order.coupon_code ? ` (${order.coupon_code})` : ''}`, `-${formatINR(order.discount)}`]);
-  }
-  totalsRows.push(['Shipping', order.shipping_fee ? formatINR(order.shipping_fee) : 'Free']);
-  if (order.status === 'cancelled' && order.refund_amount) {
-    totalsRows.push([`Refunded (${order.refund_percent}%)`, `-${formatINR(order.refund_amount)}`]);
-  }
-  doc.font('Helvetica').fontSize(9.5);
-  for (const [label, value] of totalsRows) {
-    doc.fillColor(INK_LIGHT).text(label, 300, rowY, { width: 155, align: 'right' });
-    doc.fillColor(INK).text(value, 460, rowY, { width: 85, align: 'right' });
-    rowY += 15;
-  }
-  rowY += 4;
-  doc.rect(340, rowY, 205, 26).fill('#FAF6F1');
-  doc.font('Helvetica-Bold').fontSize(11).fillColor(MAROON);
-  doc.text('Total Paid', 350, rowY + 7, { width: 110 });
-  doc.text(formatINR(payable), 340, rowY + 7, { width: 185, align: 'right' });
+  doc.moveTo(45, rowY).lineTo(550, rowY).strokeColor(RULE).lineWidth(1).stroke();
+  rowY += 10;
 
-  // ---------- Footer ----------
-  doc.font('Helvetica').fontSize(8.5).fillColor(INK_LIGHT)
-    .text(
-      `Thank you for shopping with ${STORE.name}. For any questions about this order, reach us at ${STORE.email} or ${STORE.phone}.`,
-      50, 760, { width: 495, align: 'center' }
+  // ---------- GST & Totals Computation ----------
+  const subtotal = Number(order.subtotal || 0);
+  const discount = Number(order.discount || 0);
+  const shippingFee = Number(order.shipping_fee || 0);
+  const netMerchandise = Math.max(0, subtotal - discount);
+  const effectiveGstRate = isGst ? (order.gst_rate != null ? Number(order.gst_rate) : gstConfig.rate) : 0;
+  const gstType = order.gst_type || gstConfig.type;
+
+  let taxAmount = 0;
+  let taxableValue = netMerchandise;
+  if (isGst && effectiveGstRate > 0) {
+    if (order.tax_amount != null && Number(order.tax_amount) > 0) {
+      taxAmount = Number(order.tax_amount);
+      taxableValue = gstType === 'inclusive' ? Math.max(0, netMerchandise - taxAmount) : netMerchandise;
+    } else if (gstType === 'inclusive') {
+      taxableValue = Math.round(netMerchandise / (1 + effectiveGstRate / 100));
+      taxAmount = Math.max(0, netMerchandise - taxableValue);
+    } else {
+      taxableValue = netMerchandise;
+      taxAmount = Math.round(taxableValue * (effectiveGstRate / 100));
+    }
+  }
+
+  const finalPayable = gstType === 'exclusive'
+    ? (taxableValue + taxAmount + shippingFee)
+    : (netMerchandise + shippingFee);
+
+  // Check interstate vs intrastate
+  const custState = (order.address_state || '').trim().toLowerCase();
+  const storeState = gstConfig.state.trim().toLowerCase();
+  const isIntrastate = isGst && (custState === storeState || !custState);
+
+  const cgstAmount = isIntrastate ? Math.round(taxAmount / 2) : 0;
+  const sgstAmount = isIntrastate ? (taxAmount - cgstAmount) : 0;
+  const igstAmount = !isIntrastate ? taxAmount : 0;
+
+  // Left side: Amount in Words + Notes
+  const leftBottomY = rowY;
+  doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MAROON).text('Amount Chargeable (in words):', 45, leftBottomY);
+  doc.font('Helvetica-Bold').fontSize(8.5).fillColor(INK).text(numberToWordsINR(finalPayable), 45, leftBottomY + 12, { width: 250 });
+
+  if (isGst) {
+    doc.font('Helvetica').fontSize(8).fillColor(INK_LIGHT).text(
+      gstType === 'inclusive'
+        ? `* Note: Retail prices shown on the store are inclusive of GST @ ${effectiveGstRate}%.`
+        : `* Note: GST @ ${effectiveGstRate}% has been added as applicable on merchandise.`,
+      45, leftBottomY + 36, { width: 250 }
     );
+  }
+
+  // Right side: Totals Breakdown Table
+  const totalsRows = [];
+  totalsRows.push(['Gross Merchandise Value', formatINR(subtotal)]);
+  if (discount > 0) {
+    totalsRows.push([`Coupon Discount${order.coupon_code ? ` (${order.coupon_code})` : ''}`, `-${formatINR(discount)}`]);
+  }
+  if (isGst && effectiveGstRate > 0) {
+    totalsRows.push(['Taxable Value', formatINR(taxableValue)]);
+    if (isIntrastate) {
+      totalsRows.push([`CGST (${effectiveGstRate / 2}%)`, formatINR(cgstAmount)]);
+      totalsRows.push([`SGST (${effectiveGstRate / 2}%)`, formatINR(sgstAmount)]);
+    } else {
+      totalsRows.push([`IGST (${effectiveGstRate}%)`, formatINR(igstAmount)]);
+    }
+  }
+  totalsRows.push(['Shipping & Handling Charges', shippingFee > 0 ? formatINR(shippingFee) : 'FREE']);
+
+  let totalsY = rowY;
+  doc.font('Helvetica').fontSize(8.5);
+  for (const [label, val] of totalsRows) {
+    doc.fillColor(INK_LIGHT).text(label, 300, totalsY, { width: 155, align: 'right' });
+    doc.fillColor(INK).text(val, 465, totalsY, { width: 85, align: 'right' });
+    totalsY += 13;
+  }
+
+  totalsY += 4;
+  doc.rect(300, totalsY, 250, 24).fill('#FAF6F1');
+  doc.font('Helvetica-Bold').fontSize(10.5).fillColor(MAROON);
+  doc.text('Total Amount Paid', 310, totalsY + 7, { width: 120 });
+  doc.text(formatINR(finalPayable), 430, totalsY + 7, { width: 110, align: 'right' });
+
+  // Signatory & Legal Box
+  const signY = Math.max(leftBottomY + 65, totalsY + 35);
+  doc.moveTo(45, signY).lineTo(550, signY).strokeColor(RULE).lineWidth(0.75).stroke();
+
+  doc.font('Helvetica').fontSize(7.5).fillColor(INK_LIGHT).text(
+    'Declaration: We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.',
+    45, signY + 10, { width: 300 }
+  );
+
+  doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MAROON).text(
+    `For ${gstConfig.legalName}`,
+    370, signY + 10, { width: 175, align: 'right' }
+  );
+  doc.font('Helvetica').fontSize(8).fillColor(INK_LIGHT).text(
+    'Authorized Signatory',
+    370, signY + 38, { width: 175, align: 'right' }
+  );
+
+  // Bottom Footer
+  doc.font('Helvetica').fontSize(8).fillColor(INK_LIGHT).text(
+    `Handcrafted in Dharmavaram  \u00B7  ${gstConfig.legalName}  \u00B7  Support: ${storePhone}  \u00B7  ${storeEmail}`,
+    45, 770, { width: 505, align: 'center' }
+  );
 
   doc.end();
 }

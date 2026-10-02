@@ -94,7 +94,7 @@ export default function ProductDetail() {
 
   // Cover image plus any gallery photos, plus selected variant images if available
   const variantImgs = selectedVariant?.images || [];
-  const baseGallery = [product.image, ...(product.images || [])];
+  const baseGallery = [product.image, product.hoverImage || product.hover_image, ...(product.images || [])].filter(Boolean);
   const gallery = [...variantImgs, ...baseGallery].filter((src, i, arr) => src && arr.indexOf(src) === i);
   const mainImage = activeImage || gallery[0];
   const ogImage = mainImage?.startsWith('http') ? mainImage : undefined;

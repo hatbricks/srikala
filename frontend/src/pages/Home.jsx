@@ -9,6 +9,7 @@ import ScrollReveal from '../components/ScrollReveal';
 import Seo from '../components/Seo';
 import ShopByStyle from '../components/ShopByStyle';
 import TextReveal from '../components/TextReveal';
+import ScrollingTicker from '../components/ScrollingTicker';
 import { api } from '../data/api';
 import { getCategories, getProducts } from '../data/store';
 
@@ -89,6 +90,19 @@ const defaults = {
     ctaLink: '/about',
     image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80',
   },
+  ticker: {
+    bgColor: '#581e15',
+    textColor: '#ffffff',
+    speed: 'normal',
+    pauseOnHover: true,
+    items: [
+      { id: 't1', icon: 'bag', text: 'New arrivals every week - Stay tuned!', link: '/products?sort=newest' },
+      { id: 't2', icon: 'sparkles', text: '100% Authentic Handcrafted Sarees', link: '/about' },
+      { id: 't3', icon: 'whatsapp', text: 'WhatsApp us for personalized assistance', link: 'https://wa.me/918317551337' },
+      { id: 't4', icon: 'truck', text: 'Free Shipping on orders above ₹5000', link: '/products' },
+      { id: 't5', icon: 'gift', text: 'Use code WELCOME10 for 10% off', link: '/products' },
+    ],
+  },
 };
 
 export default function Home() {
@@ -106,6 +120,8 @@ export default function Home() {
   const [promo, setPromo] = useState(null);
   const [googleReviews, setGoogleReviews] = useState(null);
   const [googleReviewsEnabled, setGoogleReviewsEnabled] = useState(true);
+  const [ticker, setTicker] = useState(defaults.ticker);
+  const [tickerEnabled, setTickerEnabled] = useState(true);
 
   useEffect(() => {
     // Categories & products — try the live backend first, fall back to the
@@ -123,6 +139,14 @@ export default function Home() {
         if (byKey.recommended) setRecommended({ ...defaults.recommended, ...byKey.recommended });
         if (byKey.story) setStory({ ...defaults.story, ...byKey.story });
         if (byKey.promo_banner) setPromo(byKey.promo_banner);
+
+        const tickerSection = sections.find((s) => s.section_key === 'ticker');
+        if (tickerSection) {
+          setTicker({ ...defaults.ticker, ...tickerSection.content });
+          setTickerEnabled(tickerSection.enabled !== false);
+        } else if (byKey.ticker) {
+          setTicker({ ...defaults.ticker, ...byKey.ticker });
+        }
 
         const newArrSection = sections.find((s) => s.section_key === 'new_arrivals' || s.section_key === 'featured');
         if (newArrSection) {
@@ -192,6 +216,10 @@ export default function Home() {
           <HeroSlider slides={heroReady ? hero.slides : null} mobileSlides={heroReady ? hero.mobileSlides : null} />
         </div>
       </section>
+
+      {tickerEnabled && ticker && ticker.items?.length > 0 && (
+        <ScrollingTicker config={ticker} />
+      )}
 
       <section className="collections" id="collections">
         <div className="sparkle-bg sparkle-bg-a" aria-hidden="true">
