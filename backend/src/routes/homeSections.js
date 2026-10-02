@@ -40,8 +40,24 @@ router.get('/:key', async (req, res) => {
   res.json({ section: rows[0] });
 });
 
+const DEFAULT_SORT_ORDERS = {
+  hero: 1,
+  ticker: 2,
+  showcase: 3,
+  featured_categories: 4,
+  promo_banner: 5,
+  new_arrivals: 6,
+  featured: 6,
+  shop_by_style: 7,
+  recommended: 8,
+  story: 9,
+  google_reviews: 10,
+  social_links: 11,
+};
+
 router.put('/:key', requireAdmin, async (req, res) => {
   const { title, enabled, content, sortOrder } = req.body || {};
+  const effectiveSort = sortOrder ?? DEFAULT_SORT_ORDERS[req.params.key] ?? 50;
   const { rows } = await query(
     `INSERT INTO home_sections (section_key, title, enabled, content, sort_order, updated_at)
      VALUES ($1,$2,$3, COALESCE($4::jsonb, '{}'::jsonb), $5, now())
@@ -57,7 +73,7 @@ router.put('/:key', requireAdmin, async (req, res) => {
     // an existing row keeps what it already had. This matters because a
     // visibility toggle (enabled-only, no content) must never blank out a
     // section's saved text/media.
-    [req.params.key, title ?? null, enabled ?? true, content !== undefined ? JSON.stringify(content) : null, sortOrder ?? 0]
+    [req.params.key, title ?? null, enabled ?? true, content !== undefined ? JSON.stringify(content) : null, effectiveSort]
   );
   res.json({ section: rows[0] });
 });

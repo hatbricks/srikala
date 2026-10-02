@@ -93,6 +93,29 @@ CREATE TABLE IF NOT EXISTS home_sections (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Default ticker section: announcement bar scrolling below the hero
+INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
+VALUES (
+  'ticker',
+  'Scrolling Sale & Announcement Ticker (Below Hero)',
+  TRUE,
+  '{
+    "bgColor": "#581e15",
+    "textColor": "#ffffff",
+    "speed": "normal",
+    "pauseOnHover": true,
+    "items": [
+      { "id": "t1", "icon": "bag", "text": "New arrivals every week - Stay tuned!", "link": "/products?sort=newest" },
+      { "id": "t2", "icon": "sparkles", "text": "100% Authentic Handcrafted Sarees", "link": "/about" },
+      { "id": "t3", "icon": "whatsapp", "text": "WhatsApp us for personalized assistance", "link": "https://wa.me/918317551337" },
+      { "id": "t4", "icon": "truck", "text": "Free Shipping on orders above ₹5000", "link": "/products" },
+      { "id": "t5", "icon": "gift", "text": "Use code WELCOME10 for 10% off", "link": "/products" }
+    ]
+  }'::jsonb,
+  2
+)
+ON CONFLICT (section_key) DO NOTHING;
+
 -- Testimonials — short customer quotes used in two places: a general
 -- rotating band on the homepage (product_id NULL) and/or tied to a specific
 -- product's detail page. Backend-stored (not localStorage) so an admin's

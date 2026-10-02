@@ -887,13 +887,59 @@ export default function AdminHome() {
   const [savedKey, setSavedKey] = useState('');
   const storyFileInput = useRef(null);
 
+  const defaultTickerContent = {
+    bgColor: '#581e15',
+    textColor: '#ffffff',
+    speed: 'normal',
+    pauseOnHover: true,
+    items: [
+      { id: 't1', icon: 'bag', text: 'New arrivals every week - Stay tuned!', link: '/products?sort=newest' },
+      { id: 't2', icon: 'sparkles', text: '100% Authentic Handcrafted Sarees', link: '/about' },
+      { id: 't3', icon: 'whatsapp', text: 'WhatsApp us for personalized assistance', link: 'https://wa.me/918317551337' },
+      { id: 't4', icon: 'truck', text: 'Free Shipping on orders above ₹5000', link: '/products' },
+      { id: 't5', icon: 'gift', text: 'Use code WELCOME10 for 10% off', link: '/products' },
+    ],
+  };
+
   useEffect(() => {
     api
       .getAllHomeSections()
       .then(({ sections }) => {
-        setSections(sections);
+        let secList = sections || [];
+        if (!secList.some((s) => s.section_key === 'ticker')) {
+          const defaultTicker = {
+            section_key: 'ticker',
+            title: 'Scrolling Sale & Announcement Ticker (Below Hero)',
+            enabled: true,
+            sort_order: 2,
+            content: defaultTickerContent,
+          };
+          const heroIdx = secList.findIndex((s) => s.section_key === 'hero');
+          if (heroIdx !== -1) {
+            secList = [
+              ...secList.slice(0, heroIdx + 1),
+              defaultTicker,
+              ...secList.slice(heroIdx + 1),
+            ];
+          } else {
+            secList = [defaultTicker, ...secList];
+          }
+        }
+        setSections(secList);
         const map = {};
-        sections.forEach((s) => { map[s.section_key] = { ...s.content, enabled: s.enabled }; });
+        secList.forEach((s) => {
+          if (s.section_key === 'ticker') {
+            const hasItems = Array.isArray(s.content?.items) && s.content.items.length > 0;
+            map[s.section_key] = {
+              ...defaultTickerContent,
+              ...s.content,
+              items: hasItems ? s.content.items : defaultTickerContent.items,
+              enabled: s.enabled !== false,
+            };
+          } else {
+            map[s.section_key] = { ...s.content, enabled: s.enabled };
+          }
+        });
         setDrafts(map);
       })
       .catch((err) => setError(err.message));
@@ -916,8 +962,16 @@ export default function AdminHome() {
     setError('');
     const { enabled, ...content } = drafts[key] || {};
     try {
-      const { section } = await api.updateHomeSection(key, { content, enabled });
-      setSections((prev) => prev.map((s) => (s.section_key === key ? section : s)));
+      const { section } = await api.updateHomeSection(key, {
+        content,
+        enabled,
+        title: sectionLabels[key],
+      });
+      setSections((prev) => {
+        const exists = prev.some((s) => s.section_key === key);
+        if (!exists) return [...prev, section];
+        return prev.map((s) => (s.section_key === key ? section : s));
+      });
       setSavedKey(key);
       setTimeout(() => setSavedKey(''), 2000);
     } catch (err) {
@@ -926,10 +980,20 @@ export default function AdminHome() {
   }
 
   async function toggleEnabled(key, current) {
-    updateField(key, 'enabled', !current);
+    const nextEnabled = !current;
+    updateField(key, 'enabled', nextEnabled);
     try {
-      await api.updateHomeSection(key, { enabled: !current });
-      setSections((prev) => prev.map((s) => (s.section_key === key ? { ...s, enabled: !current } : s)));
+      const { enabled: _e, ...content } = drafts[key] || {};
+      const payload = { enabled: nextEnabled, title: sectionLabels[key] };
+      if (Object.keys(content).length > 0) {
+        payload.content = content;
+      }
+      const { section } = await api.updateHomeSection(key, payload);
+      setSections((prev) => {
+        const exists = prev.some((s) => s.section_key === key);
+        if (!exists) return [...prev, section || { section_key: key, enabled: nextEnabled }];
+        return prev.map((s) => (s.section_key === key ? { ...s, enabled: nextEnabled } : s));
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -1015,7 +1079,7 @@ export default function AdminHome() {
               {s.section_key === 'ticker' && (
                 <TickerEditor
                   data={draft}
-                  onChange={(nextData) => setDrafts((prev) => ({ ...prev, ticker: nextData }))}
+                  onChange={(nextData) => setDrafts((prev) => ({ ...prev, ticker: { ...prev.ticker, ...nextData } }))}
                 />
               )}
 

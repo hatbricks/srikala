@@ -41,11 +41,12 @@ export default function ScrollingTicker({ config }) {
       </span>
     );
 
+    const targetUrl = item.link && item.link.startsWith('wa.me') ? `https://${item.link}` : item.link;
     const wrappedItem = item.link ? (
       isExternal ? (
         <a
           key={`ticker-item-${idx}`}
-          href={item.link}
+          href={targetUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="ticker-item ticker-link"
@@ -55,7 +56,7 @@ export default function ScrollingTicker({ config }) {
       ) : (
         <Link
           key={`ticker-item-${idx}`}
-          to={item.link}
+          to={targetUrl}
           className="ticker-item ticker-link"
         >
           {content}
