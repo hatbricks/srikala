@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigationStack } from '../context/NavigationContext';
 import { api } from '../data/api';
 import { formatINR } from '../data/store';
 import BRAND from '../config/brand';
@@ -25,6 +26,7 @@ export default function Navbar() {
   const [searchProducts, setSearchProducts] = useState(null);
   const { count } = useCart();
   const { user, logout } = useAuth();
+  const { goBack } = useNavigationStack();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -96,13 +98,7 @@ export default function Navbar() {
               type="button"
               className="nav-back-btn"
               aria-label="Go back"
-              onClick={() => {
-                if (window.history.state && window.history.state.idx > 0) {
-                  navigate(-1);
-                } else {
-                  navigate('/');
-                }
-              }}
+              onClick={() => goBack(location.pathname.startsWith('/products/') ? '/products' : '/')}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7" />

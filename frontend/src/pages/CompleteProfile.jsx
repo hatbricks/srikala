@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNavigationStack } from '../context/NavigationContext';
 import Seo from '../components/Seo';
 import BRAND from '../config/brand';
 
@@ -28,6 +29,7 @@ export default function CompleteProfile() {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const { goBack } = useNavigationStack();
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = location.state?.from;
@@ -230,7 +232,7 @@ export default function CompleteProfile() {
             <button
               type="button"
               className="back-storefront-link"
-              onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))}
+              onClick={() => goBack('/')}
             >
               ← Return to Storefront
             </button>

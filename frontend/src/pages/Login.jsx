@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNavigationStack } from '../context/NavigationContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import Seo from '../components/Seo';
 import BRAND from '../config/brand';
@@ -11,6 +12,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const { login, googleLogin } = useAuth();
+  const { goBack } = useNavigationStack();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -245,7 +247,7 @@ export default function Login() {
               <button
                 type="button"
                 className="back-storefront-link"
-                onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))}
+                onClick={() => goBack('/')}
               >
                 ← Return to Storefront
               </button>

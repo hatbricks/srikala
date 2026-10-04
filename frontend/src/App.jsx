@@ -9,6 +9,7 @@ import SmoothScroll from './components/SmoothScroll';
 import WhatsAppButton from './components/WhatsAppButton';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { NavigationProvider } from './context/NavigationContext';
 import Home from './pages/Home';
 import About from './pages/About';
 import Products from './pages/Products';
@@ -113,7 +114,9 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <PublicSite />
+        <NavigationProvider>
+          <PublicSite />
+        </NavigationProvider>
       </CartProvider>
     </AuthProvider>
   );

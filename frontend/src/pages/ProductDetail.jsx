@@ -5,6 +5,7 @@ import ProductReviews from '../components/ProductReviews';
 import CancellationPolicyCard from '../components/CancellationPolicyCard';
 import Seo, { SITE_URL } from '../components/Seo';
 import { useCart } from '../context/CartContext';
+import { useNavigationStack } from '../context/NavigationContext';
 import { api } from '../data/api';
 import { formatINR, getProducts } from '../data/store';
 import BRAND from '../config/brand';
@@ -19,6 +20,7 @@ export default function ProductDetail() {
   const [allProducts, setAllProducts] = useState(null);
   const [recommended, setRecommended] = useState({ heading: 'Recommended For You', productIds: [] });
   const { addItem } = useCart();
+  const { goBack } = useNavigationStack();
   const navigate = useNavigate();
 
   // The full product list (for "Recommended") and the admin's curated
@@ -83,7 +85,7 @@ export default function ProductDetail() {
           type="button"
           className="btn btn-outline"
           style={{ marginTop: 16 }}
-          onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/products'))}
+          onClick={() => goBack('/products')}
         >
           ← Back to products
         </button>
@@ -166,7 +168,7 @@ export default function ProductDetail() {
           <button
             type="button"
             className="back-nav-btn"
-            onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/products'))}
+            onClick={() => goBack('/products')}
             aria-label="Go back to previous page"
           >
             ← Back
