@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import RecommendedProducts from '../components/RecommendedProducts';
+import ProductReviews from '../components/ProductReviews';
 import CancellationPolicyCard from '../components/CancellationPolicyCard';
 import Seo, { SITE_URL } from '../components/Seo';
 import { useCart } from '../context/CartContext';
@@ -78,7 +79,14 @@ export default function ProductDetail() {
     return (
       <div className="container" style={{ padding: '80px 32px' }}>
         <p>We couldn&apos;t find that saree.</p>
-        <Link to="/products" className="btn btn-outline" style={{ marginTop: 16 }}>Back to products</Link>
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ marginTop: 16 }}
+          onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/products'))}
+        >
+          ← Back to products
+        </button>
       </div>
     );
   }
@@ -155,7 +163,14 @@ export default function ProductDetail() {
           )}
         </div>
         <div className="detail-info">
-          <Link to="/products" className="back-link">← All products</Link>
+          <button
+            type="button"
+            className="back-nav-btn"
+            onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/products'))}
+            aria-label="Go back to previous page"
+          >
+            ← Back
+          </button>
           <h1>{product.name}</h1>
           <div className="detail-price">
             <span className="price">{formatINR(currentPrice)}</span>
@@ -252,6 +267,8 @@ export default function ProductDetail() {
         </div>
       </div>
 
+      <ProductReviews productId={product.id} productName={product.name} />
+
       <RecommendedProducts
         products={allProducts}
         curatedIds={recommended.productIds}
@@ -300,7 +317,25 @@ export default function ProductDetail() {
         .detail-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .detail-thumb:hover { opacity: 1; }
         .detail-thumb.active { border-color: var(--maroon-900); opacity: 1; }
-        .back-link { font-size: 13px; color: var(--ink-400); margin-bottom: 18px; display: inline-block; }
+        .back-link,
+        .back-nav-btn {
+          font-size: 13px;
+          color: var(--ink-400);
+          margin-bottom: 18px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          font-family: inherit;
+          transition: color 0.15s ease;
+        }
+        .back-nav-btn:hover,
+        .back-link:hover {
+          color: var(--maroon-900);
+        }
         .detail-info h1 { font-size: 30px; margin-bottom: 16px; }
         .detail-price { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
         .detail-price .price { font-size: 24px; font-weight: 600; color: var(--maroon-900); }

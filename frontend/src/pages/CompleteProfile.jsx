@@ -227,9 +227,13 @@ export default function CompleteProfile() {
           </form>
 
           <div className="profile-footer-nav">
-            <Link to="/" className="back-storefront-link">
+            <button
+              type="button"
+              className="back-storefront-link"
+              onClick={() => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'))}
+            >
               ← Return to Storefront
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -507,6 +511,11 @@ export default function CompleteProfile() {
           font-size: 13px;
           color: var(--ink-600, #735e59);
           text-decoration: none;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          font-family: inherit;
           transition: color 0.2s ease;
         }
 

@@ -20,17 +20,29 @@ router.get('/products/:productId/reviews', async (req, res) => {
 });
 
 router.post('/products/:productId/reviews', requireAuth, async (req, res) => {
-  const { rating, comment, photos } = req.body || {};
+  const { rating, comment, photos, image, photo } = req.body || {};
   const r = Number(rating);
   if (!r || r < 1 || r > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5.' });
-  const cleanPhotos = Array.isArray(photos) ? photos.slice(0, 3) : [];
+
+  let cleanPhotos = [];
+  const candidate = (Array.isArray(photos) && photos[0]) || (typeof photos === 'string' && photos) || image || photo;
+  if (candidate && typeof candidate === 'string' && candidate.trim()) {
+    // 2 MB in base64 is roughly 2.8 MB of characters
+    if (candidate.length > 3 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Image must be less than 2 MB.' });
+    }
+    cleanPhotos = [candidate.trim()];
+  }
+
+  const cleanComment = (comment || '').trim().slice(0, 2000);
+  const userName = req.user.name || req.user.email?.split('@')[0] || 'Customer';
 
   const { rows } = await query(
     `INSERT INTO reviews (product_id, user_id, rating, comment, photos) VALUES ($1,$2,$3,$4,$5::jsonb)
      RETURNING id, rating, comment, photos, created_at`,
-    [req.params.productId, req.user.id, r, (comment || '').trim().slice(0, 1000), JSON.stringify(cleanPhotos)]
+    [req.params.productId, req.user.id, r, cleanComment, JSON.stringify(cleanPhotos)]
   );
-  res.status(201).json({ review: { ...rows[0], user_name: req.user.email.split('@')[0] } });
+  res.status(201).json({ review: { ...rows[0], user_name: userName } });
 });
 
 // Admin moderation

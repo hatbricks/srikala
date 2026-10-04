@@ -91,6 +91,24 @@ export default function Navbar() {
     <header className={`navbar ${navClass}`}>
       <div className="container navbar-inner">
         <div className="nav-left">
+          {location.pathname !== '/' && (
+            <button
+              type="button"
+              className="nav-back-btn"
+              aria-label="Go back"
+              onClick={() => {
+                if (window.history.state && window.history.state.idx > 0) {
+                  navigate(-1);
+                } else {
+                  navigate('/');
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
           <button
             className="nav-toggle"
             aria-label="Open menu"
@@ -363,6 +381,10 @@ export default function Navbar() {
           color: #b87d2b;
         }
 
+        .nav-back-btn {
+          display: none;
+        }
+
         .nav-toggle {
           display: none;
           flex-direction: column;
@@ -633,7 +655,32 @@ export default function Navbar() {
             align-items: center;
             z-index: 2;
             position: relative;
-            width: 44px;
+            width: auto;
+            min-width: 44px;
+            gap: 2px;
+          }
+          .nav-back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: none;
+            border: none;
+            padding: 0;
+            color: #2c1810;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+          }
+          .nav-back-btn:hover,
+          .nav-back-btn:active {
+            background: rgba(184, 125, 43, 0.12);
+            color: #b87d2b;
+          }
+          .nav-back-btn svg {
+            width: 21px;
+            height: 21px;
           }
           .nav-toggle {
             display: flex;
@@ -683,20 +730,24 @@ export default function Navbar() {
 
         @media (max-width: 400px) {
           .navbar-inner { padding: 0 8px; }
-          .brand-link { max-width: calc(100% - 96px); }
-          .brand-logo { height: 32px; max-width: 155px; }
+          .brand-link { max-width: calc(100% - 110px); }
+          .brand-logo { height: 32px; max-width: 145px; }
           .icon-btn { width: 34px; height: 34px; }
           .icon-btn svg { width: 19px; height: 19px; }
-          .nav-left, .nav-actions { width: 38px; }
+          .nav-back-btn { width: 32px; height: 32px; }
+          .nav-back-btn svg { width: 19px; height: 19px; }
+          .nav-left, .nav-actions { width: auto; min-width: 36px; }
         }
 
         @media (max-width: 350px) {
           .navbar-inner { padding: 0 6px; }
-          .brand-link { max-width: calc(100% - 84px); }
-          .brand-logo { height: 28px; max-width: 135px; }
+          .brand-link { max-width: calc(100% - 95px); }
+          .brand-logo { height: 28px; max-width: 125px; }
           .icon-btn { width: 30px; height: 30px; }
           .icon-btn svg { width: 17px; height: 17px; }
-          .nav-left, .nav-actions { width: 34px; }
+          .nav-back-btn { width: 28px; height: 28px; }
+          .nav-back-btn svg { width: 17px; height: 17px; }
+          .nav-left, .nav-actions { width: auto; min-width: 30px; }
         }
       `}</style>
     </header>
