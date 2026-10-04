@@ -36,10 +36,16 @@ const COLOR_MAP = [
   { name: 'Black', hex: '#1c1917', keywords: ['black', 'charcoal', 'dark'] },
 ];
 
+// Module-scoped cache to render catalog immediately on back navigation without layout jump
+const productsPageCache = {
+  categories: null,
+  products: null,
+};
+
 export default function Products() {
   const location = useLocation();
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(() => productsPageCache.categories || getCategories());
+  const [products, setProducts] = useState(() => productsPageCache.products || getProducts());
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activeCategory = searchParams.get('category') || 'all';
@@ -73,8 +79,27 @@ export default function Products() {
   }, [sortParam]);
 
   useEffect(() => {
-    api.getCategories().then(({ categories }) => setCategories(categories)).catch(() => setCategories(getCategories()));
-    api.getProducts().then(({ products }) => setProducts(products)).catch(() => setProducts(getProducts()));
+    api.getCategories()
+      .then(({ categories }) => {
+        productsPageCache.categories = categories;
+        setCategories(categories);
+      })
+      .catch(() => {
+        const fallback = getCategories();
+        productsPageCache.categories = fallback;
+        setCategories(fallback);
+      });
+
+    api.getProducts()
+      .then(({ products }) => {
+        productsPageCache.products = products;
+        setProducts(products);
+      })
+      .catch(() => {
+        const fallback = getProducts();
+        productsPageCache.products = fallback;
+        setProducts(fallback);
+      });
   }, []);
 
   // Compute dynamic max price from product catalog

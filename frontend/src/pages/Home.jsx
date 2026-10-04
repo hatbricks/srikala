@@ -105,79 +105,164 @@ const defaults = {
   },
 };
 
+// Module-scoped cache to prevent layout collapse and ensure instant scroll restoration
+// when the user navigates back from a product detail page to the home sections
+const homeCache = {
+  categories: null,
+  products: null,
+  hero: null,
+  heroReady: false,
+  showcase: null,
+  newArrivals: null,
+  newArrivalsEnabled: true,
+  shopByStyle: null,
+  shopByStyleEnabled: true,
+  recommended: null,
+  story: null,
+  promo: null,
+  googleReviews: null,
+  googleReviewsEnabled: true,
+  ticker: null,
+  tickerEnabled: true,
+};
+
 export default function Home() {
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [hero, setHero] = useState(defaults.hero);
-  const [heroReady, setHeroReady] = useState(false);
-  const [showcase, setShowcase] = useState(defaults.showcase);
-  const [newArrivals, setNewArrivals] = useState(defaults.new_arrivals);
-  const [newArrivalsEnabled, setNewArrivalsEnabled] = useState(true);
-  const [shopByStyle, setShopByStyle] = useState(defaults.shop_by_style);
-  const [shopByStyleEnabled, setShopByStyleEnabled] = useState(true);
-  const [recommended, setRecommended] = useState(defaults.recommended);
-  const [story, setStory] = useState(defaults.story);
-  const [promo, setPromo] = useState(null);
-  const [googleReviews, setGoogleReviews] = useState(null);
-  const [googleReviewsEnabled, setGoogleReviewsEnabled] = useState(true);
-  const [ticker, setTicker] = useState(defaults.ticker);
-  const [tickerEnabled, setTickerEnabled] = useState(true);
+  const [categories, setCategories] = useState(() => homeCache.categories || getCategories());
+  const [products, setProducts] = useState(() => homeCache.products || getProducts());
+  const [hero, setHero] = useState(() => homeCache.hero || defaults.hero);
+  const [heroReady, setHeroReady] = useState(() => homeCache.heroReady);
+  const [showcase, setShowcase] = useState(() => homeCache.showcase || defaults.showcase);
+  const [newArrivals, setNewArrivals] = useState(() => homeCache.newArrivals || defaults.new_arrivals);
+  const [newArrivalsEnabled, setNewArrivalsEnabled] = useState(() => homeCache.newArrivalsEnabled);
+  const [shopByStyle, setShopByStyle] = useState(() => homeCache.shopByStyle || defaults.shop_by_style);
+  const [shopByStyleEnabled, setShopByStyleEnabled] = useState(() => homeCache.shopByStyleEnabled);
+  const [recommended, setRecommended] = useState(() => homeCache.recommended || defaults.recommended);
+  const [story, setStory] = useState(() => homeCache.story || defaults.story);
+  const [promo, setPromo] = useState(() => homeCache.promo || null);
+  const [googleReviews, setGoogleReviews] = useState(() => homeCache.googleReviews || null);
+  const [googleReviewsEnabled, setGoogleReviewsEnabled] = useState(() => homeCache.googleReviewsEnabled);
+  const [ticker, setTicker] = useState(() => homeCache.ticker || defaults.ticker);
+  const [tickerEnabled, setTickerEnabled] = useState(() => homeCache.tickerEnabled);
 
   useEffect(() => {
     // Categories & products — try the live backend first, fall back to the
     // local seed so the storefront still renders if the API isn't running.
-    api.getCategories().then(({ categories }) => setCategories(categories)).catch(() => setCategories(getCategories()));
-    api.getProducts().then(({ products }) => setProducts(products)).catch(() => setProducts(getProducts()));
+    api.getCategories()
+      .then(({ categories }) => {
+        homeCache.categories = categories;
+        setCategories(categories);
+      })
+      .catch(() => {
+        const fallback = getCategories();
+        homeCache.categories = fallback;
+        setCategories(fallback);
+      });
+
+    api.getProducts()
+      .then(({ products }) => {
+        homeCache.products = products;
+        setProducts(products);
+      })
+      .catch(() => {
+        const fallback = getProducts();
+        homeCache.products = fallback;
+        setProducts(fallback);
+      });
 
     // Home CMS sections — every block below is editable from the admin panel.
     api
       .getHomeSections()
       .then(({ sections }) => {
         const byKey = Object.fromEntries(sections.map((s) => [s.section_key, s.content]));
-        if (byKey.hero) setHero({ ...defaults.hero, ...byKey.hero });
-        if (byKey.showcase) setShowcase({ ...defaults.showcase, ...byKey.showcase });
-        if (byKey.recommended) setRecommended({ ...defaults.recommended, ...byKey.recommended });
-        if (byKey.story) setStory({ ...defaults.story, ...byKey.story });
-        if (byKey.promo_banner) setPromo(byKey.promo_banner);
+        if (byKey.hero) {
+          const h = { ...defaults.hero, ...byKey.hero };
+          homeCache.hero = h;
+          setHero(h);
+        }
+        if (byKey.showcase) {
+          const sc = { ...defaults.showcase, ...byKey.showcase };
+          homeCache.showcase = sc;
+          setShowcase(sc);
+        }
+        if (byKey.recommended) {
+          const rec = { ...defaults.recommended, ...byKey.recommended };
+          homeCache.recommended = rec;
+          setRecommended(rec);
+        }
+        if (byKey.story) {
+          const st = { ...defaults.story, ...byKey.story };
+          homeCache.story = st;
+          setStory(st);
+        }
+        if (byKey.promo_banner) {
+          homeCache.promo = byKey.promo_banner;
+          setPromo(byKey.promo_banner);
+        }
 
         const tickerSection = sections.find((s) => s.section_key === 'ticker');
         if (tickerSection) {
-          setTicker({ ...defaults.ticker, ...tickerSection.content });
-          setTickerEnabled(tickerSection.enabled !== false);
+          const tk = { ...defaults.ticker, ...tickerSection.content };
+          const enabled = tickerSection.enabled !== false;
+          homeCache.ticker = tk;
+          homeCache.tickerEnabled = enabled;
+          setTicker(tk);
+          setTickerEnabled(enabled);
         } else if (byKey.ticker) {
-          setTicker({ ...defaults.ticker, ...byKey.ticker });
+          const tk = { ...defaults.ticker, ...byKey.ticker };
+          homeCache.ticker = tk;
+          setTicker(tk);
         }
 
         const newArrSection = sections.find((s) => s.section_key === 'new_arrivals' || s.section_key === 'featured');
         if (newArrSection) {
-          setNewArrivals({ ...defaults.new_arrivals, ...newArrSection.content });
-          setNewArrivalsEnabled(newArrSection.enabled !== false);
+          const na = { ...defaults.new_arrivals, ...newArrSection.content };
+          const enabled = newArrSection.enabled !== false;
+          homeCache.newArrivals = na;
+          homeCache.newArrivalsEnabled = enabled;
+          setNewArrivals(na);
+          setNewArrivalsEnabled(enabled);
         } else if (sections.length > 0) {
           if (byKey.new_arrivals || byKey.featured) {
-            setNewArrivals({ ...defaults.new_arrivals, ...(byKey.new_arrivals || byKey.featured) });
+            const na = { ...defaults.new_arrivals, ...(byKey.new_arrivals || byKey.featured) };
+            homeCache.newArrivals = na;
+            setNewArrivals(na);
           }
         }
 
         const styleSection = sections.find((s) => s.section_key === 'shop_by_style' || s.section_key === 'featured_styles');
         if (styleSection) {
-          setShopByStyle({ ...defaults.shop_by_style, ...styleSection.content });
-          setShopByStyleEnabled(styleSection.enabled !== false);
+          const sbs = { ...defaults.shop_by_style, ...styleSection.content };
+          const enabled = styleSection.enabled !== false;
+          homeCache.shopByStyle = sbs;
+          homeCache.shopByStyleEnabled = enabled;
+          setShopByStyle(sbs);
+          setShopByStyleEnabled(enabled);
         } else if (sections.length > 0) {
           if (byKey.shop_by_style) {
-            setShopByStyle({ ...defaults.shop_by_style, ...byKey.shop_by_style });
+            const sbs = { ...defaults.shop_by_style, ...byKey.shop_by_style };
+            homeCache.shopByStyle = sbs;
+            setShopByStyle(sbs);
           }
         }
 
         const grSection = sections.find((s) => s.section_key === 'google_reviews');
         if (grSection) {
-          setGoogleReviews(grSection.content);
-          setGoogleReviewsEnabled(grSection.enabled !== false);
+          const gr = grSection.content;
+          const enabled = grSection.enabled !== false;
+          homeCache.googleReviews = gr;
+          homeCache.googleReviewsEnabled = enabled;
+          setGoogleReviews(gr);
+          setGoogleReviewsEnabled(enabled);
         } else if (byKey.google_reviews) {
+          homeCache.googleReviews = byKey.google_reviews;
           setGoogleReviews(byKey.google_reviews);
         }
       })
       .catch(() => {})
-      .finally(() => setHeroReady(true));
+      .finally(() => {
+        homeCache.heroReady = true;
+        setHeroReady(true);
+      });
   }, []);
 
 

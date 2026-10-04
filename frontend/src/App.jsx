@@ -46,7 +46,6 @@ import AdminUsers from './pages/admin/AdminUsers';
 function PublicSite() {
   return (
     <>
-      <ScrollToTop />
       <SmoothScroll />
       <LogoIntro />
       <Navbar />
