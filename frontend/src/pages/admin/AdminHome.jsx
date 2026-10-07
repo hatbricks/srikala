@@ -1022,6 +1022,9 @@ export default function AdminHome() {
   const [error, setError] = useState('');
   const [savedKey, setSavedKey] = useState('');
   const storyFileInput = useRef(null);
+  const processVideoInput = useRef(null);
+  const processPosterInput = useRef(null);
+  const [processMediaBusy, setProcessMediaBusy] = useState(false);
 
   const defaultTickerContent = {
     bgColor: '#581e15',
@@ -1092,6 +1095,32 @@ export default function AdminHome() {
     if (!file) return;
     const dataUrl = await compressImageFile(file);
     updateField('story', 'image', dataUrl);
+  }
+
+  async function handleProcessVideo(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcessMediaBusy(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      updateField('process', 'videoUrl', dataUrl);
+    } finally {
+      setProcessMediaBusy(false);
+      e.target.value = '';
+    }
+  }
+
+  async function handleProcessPoster(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcessMediaBusy(true);
+    try {
+      const dataUrl = await compressImageFile(file, { maxDimension: 1920 });
+      updateField('process', 'posterUrl', dataUrl);
+    } finally {
+      setProcessMediaBusy(false);
+      e.target.value = '';
+    }
   }
 
   async function handleSave(key) {
@@ -1242,13 +1271,115 @@ export default function AdminHome() {
               )}
 
               {s.section_key === 'process' && (
-                <label className="field-label">
-                  Craft &amp; Weaving Process Steps
-                  <ProcessStepsEditor
-                    steps={draft.steps || []}
-                    onChange={(nextSteps) => updateField('process', 'steps', nextSteps)}
-                  />
-                </label>
+                <>
+                  <div className="process-media-controls" style={{
+                    background: '#fbf7f2',
+                    padding: '18px 20px',
+                    borderRadius: 12,
+                    border: '1px solid rgba(197, 139, 56, 0.22)',
+                    marginBottom: 16,
+                  }}>
+                    <strong style={{ display: 'block', fontSize: 14, color: 'var(--brand-primary)', marginBottom: 4 }}>
+                      Process Video &amp; Poster Media
+                    </strong>
+                    <p className="field-hint" style={{ marginBottom: 14 }}>
+                      Upload an MP4 craft video or enter a direct video URL. You can also upload a custom poster cover image.
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                      {/* Video Upload & URL */}
+                      <div>
+                        <label className="field-label" style={{ marginBottom: 8 }}>
+                          Craft Video File (MP4)
+                          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              disabled={processMediaBusy}
+                              onClick={() => processVideoInput.current?.click()}
+                            >
+                              {processMediaBusy ? 'Processing Video…' : 'Upload Video File (.mp4)'}
+                            </button>
+                            <input
+                              type="file"
+                              accept="video/mp4,video/webm"
+                              ref={processVideoInput}
+                              hidden
+                              onChange={handleProcessVideo}
+                            />
+                          </div>
+                        </label>
+                        <label className="field-label" style={{ marginTop: 8 }}>
+                          Or Video URL / Path
+                          <input
+                            type="text"
+                            value={draft.videoUrl || ''}
+                            placeholder="/videos/process-craft.mp4"
+                            onChange={(e) => updateField('process', 'videoUrl', e.target.value)}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Poster Upload & URL */}
+                      <div>
+                        <label className="field-label" style={{ marginBottom: 8 }}>
+                          Video Poster / Cover Image
+                          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              disabled={processMediaBusy}
+                              onClick={() => processPosterInput.current?.click()}
+                            >
+                              Upload Cover Photo
+                            </button>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              ref={processPosterInput}
+                              hidden
+                              onChange={handleProcessPoster}
+                            />
+                          </div>
+                        </label>
+                        <label className="field-label" style={{ marginTop: 8 }}>
+                          Or Poster URL / Path
+                          <input
+                            type="text"
+                            value={draft.posterUrl || ''}
+                            placeholder="/images/process-poster.jpg"
+                            onChange={(e) => updateField('process', 'posterUrl', e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Media Live Preview */}
+                    {draft.videoUrl && (
+                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(197, 139, 56, 0.18)' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-muted)', display: 'block', marginBottom: 6 }}>
+                          Live Video Preview
+                        </span>
+                        <div style={{ maxWidth: 360, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--brand-border)', background: '#000' }}>
+                          <video
+                            src={draft.videoUrl}
+                            poster={draft.posterUrl}
+                            controls
+                            style={{ width: '100%', display: 'block' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="field-label">
+                    Craft &amp; Weaving Process Steps
+                    <ProcessStepsEditor
+                      steps={draft.steps || []}
+                      onChange={(nextSteps) => updateField('process', 'steps', nextSteps)}
+                    />
+                  </label>
+                </>
               )}
 
               {(s.section_key === 'new_arrivals' || s.section_key === 'featured') && (

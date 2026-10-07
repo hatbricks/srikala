@@ -44,12 +44,13 @@ export default function ProcessSection({
   eyebrow = 'OUR PROCESS',
   heading = 'Process of a Thread to',
   headingAccent = 'Heirloom',
+  quote = '“Every Ravichandra saree passes through hands that have spent decades mastering their craft.”',
   videoUrl = '/videos/process-craft.mp4',
   posterUrl = '/images/process-poster.jpg',
   steps = PROCESS_STEPS,
 }) {
   const stepList = steps && steps.length > 0 ? steps : PROCESS_STEPS;
-  const [activeStep, setActiveStep] = useState(3); // Default to Step 04 (WEAVING PROCESS)
+  const [activeStep, setActiveStep] = useState(2); // Default to Step 03 (LOOM PREPARATION) as in reference screenshot
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef(null);
 
@@ -77,12 +78,13 @@ export default function ProcessSection({
   };
 
   const currentStep = stepList[activeStep] || stepList[0] || {};
+  const displayQuote = currentStep.quote || quote;
 
   return (
     <section className="process-section" id="process">
       <div className="container process-container">
         
-        {/* LEFT COLUMN: Header, Video & Artisan Quote */}
+        {/* LEFT COLUMN: Header, Video, Mobile Stepper & Artisan Quote */}
         <div className="process-left">
           <div className="process-head">
             {eyebrow && (
@@ -91,8 +93,12 @@ export default function ProcessSection({
               </TextReveal>
             )}
             <TextReveal as="h2" delay={0.06} direction="left" distance={28} className="process-title">
-              {heading} {headingAccent && <em>{headingAccent}</em>}
+              {heading} {headingAccent && <em className="process-title-accent">{headingAccent}</em>}
             </TextReveal>
+            {/* Mobile Quote directly below title */}
+            <p className="process-mobile-quote">
+              {displayQuote}
+            </p>
           </div>
 
           <ScrollReveal delay={0.12} className="process-video-card">
@@ -120,13 +126,44 @@ export default function ProcessSection({
               </button>
             </div>
 
-            <p className="process-quote">
-              {currentStep.quote}
+            {/* Desktop artisan quote below video */}
+            <p className="process-quote process-desktop-quote">
+              {displayQuote}
             </p>
           </ScrollReveal>
+
+          {/* MOBILE STEPPER & ACTIVE CARD (Visible only on mobile/tablet) */}
+          <div className="process-mobile-interactive">
+            {/* Horizontal timeline track with connected line and numbered circle pills */}
+            <div className="process-mobile-track" role="tablist" aria-label="Crafting Process Steps">
+              <div className="process-mobile-track-line" aria-hidden="true" />
+              {stepList.map((step, idx) => {
+                const isActive = idx === activeStep;
+                return (
+                  <button
+                    key={step.number || idx}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={`Step ${step.number}: ${step.title}`}
+                    className={`process-mobile-pill ${isActive ? 'active' : ''}`}
+                    onClick={() => handleStepClick(idx)}
+                  >
+                    {step.number}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active step detail card */}
+            <div className="process-mobile-card" role="tabpanel" key={activeStep}>
+              <h3 className="process-mobile-card-title">{currentStep.title}</h3>
+              <p className="process-mobile-card-desc">{currentStep.description}</p>
+            </div>
+          </div>
         </div>
 
-        {/* CENTER DIVIDER with dynamic active marker dot */}
+        {/* CENTER DIVIDER with dynamic active marker dot (Desktop only) */}
         <div className="process-divider" aria-hidden="true">
           <div
             className="divider-dot"
@@ -136,7 +173,7 @@ export default function ProcessSection({
           />
         </div>
 
-        {/* RIGHT COLUMN: Interactive Step Sequence */}
+        {/* RIGHT COLUMN: Interactive Step Sequence (Desktop only) */}
         <div className="process-right">
           <div className="process-steps-list" role="tablist" aria-label="Crafting Process Steps">
             {stepList.map((step, idx) => {
@@ -407,65 +444,256 @@ export default function ProcessSection({
           margin: 0;
         }
 
-        /* ===== RESPONSIVE BREAKPOINTS ===== */
-        @media (max-width: 980px) {
+        .process-mobile-quote {
+          display: none;
+        }
+
+        .process-mobile-interactive {
+          display: none;
+        }
+
+        .process-desktop-quote {
+          display: block;
+        }
+
+        /* ===== RESPONSIVE BREAKPOINTS (Mobile & Tablet UI) ===== */
+        @media (max-width: 860px) {
+          .process-section {
+            padding: 52px 0 64px;
+            background: #faf6f0;
+          }
+
           .process-container {
-            grid-template-columns: 1fr;
-            gap: 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0 20px;
+            max-width: 520px;
+            margin: 0 auto;
+          }
+
+          .process-left {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+          }
+
+          .process-head {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2px;
+          }
+
+          .process-eyebrow {
+            color: #8c3b30;
+            letter-spacing: 0.22em;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+          }
+
+          .process-title {
+            font-family: var(--font-display, 'Marcellus', serif);
+            font-size: 31px;
+            line-height: 1.2;
+            color: #2b1814;
+            font-weight: 400;
+            text-align: center;
+            letter-spacing: -0.01em;
+            margin: 0;
+          }
+
+          .process-title-accent {
+            display: block;
+            margin-top: 2px;
+            font-family: var(--font-script, 'Cormorant Garamond', Georgia, serif);
+            font-style: italic;
+            font-weight: 500;
+            font-size: 36px;
+            color: #2b1814;
+            letter-spacing: normal;
+          }
+
+          /* Mobile Quote right below the title */
+          .process-mobile-quote {
+            display: block;
+            margin: 12px auto 0;
+            font-family: var(--font-body, 'Poppins', sans-serif);
+            font-style: normal;
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #5a4540;
+            max-width: 390px;
+            text-align: center;
+            padding: 0 4px;
+            transition: opacity 0.25s ease;
+          }
+
+          .process-video-card {
+            margin-top: 8px;
+            width: 100%;
+          }
+
+          .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-height: none;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(43, 24, 20, 0.08);
+            background: #241410;
+          }
+
+          .video-toggle-badge {
+            bottom: 12px;
+            left: 12px;
+            padding: 6px 12px;
+            font-size: 11px;
+          }
+
+          /* Hide desktop components on mobile */
+          .process-desktop-quote {
+            display: none !important;
           }
 
           .process-divider {
-            display: none;
+            display: none !important;
           }
 
-          .process-title {
-            font-size: 34px;
+          .process-right {
+            display: none !important;
           }
 
-          .video-wrapper {
-            max-height: 380px;
+          /* Mobile Stepper & Timeline */
+          .process-mobile-interactive {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-top: 24px;
+            width: 100%;
           }
 
-          .process-step-item.active {
-            transform: none;
+          .process-mobile-track {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            width: 100%;
+          }
+
+          /* Horizontal connector line spanning behind numbered circle badges */
+          .process-mobile-track-line {
+            position: absolute;
+            top: 50%;
+            left: 22px;
+            right: 22px;
+            height: 1.5px;
+            background: #d8cec3;
+            transform: translateY(-50%);
+            z-index: 1;
+          }
+
+          .process-mobile-pill {
+            position: relative;
+            z-index: 2;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #d4c8bc;
+            color: #3b2a26;
+            font-family: var(--font-body, 'Poppins', sans-serif);
+            font-size: 13.5px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+            padding: 0;
+            outline: none;
+          }
+
+          .process-mobile-pill:focus-visible {
+            box-shadow: 0 0 0 2px #702024;
+          }
+
+          /* Active circle pill matching reference image (Step 03 highlighted in rich maroon) */
+          .process-mobile-pill.active {
+            background: #702024;
+            border-color: #702024;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(112, 32, 36, 0.35);
+            transform: scale(1.06);
+          }
+
+          /* Active Step Card at Bottom */
+          .process-mobile-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 22px 24px;
+            border: 1px solid rgba(220, 205, 190, 0.65);
+            box-shadow: 0 8px 24px rgba(43, 24, 20, 0.05);
+            text-align: left;
+            animation: fadeInProcessCard 0.25s ease;
+          }
+
+          .process-mobile-card-title {
+            font-family: var(--font-body, 'Poppins', sans-serif);
+            font-size: 13.5px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #2b1814;
+            margin: 0 0 8px;
+          }
+
+          .process-mobile-card-desc {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: #5e4640;
+            margin: 0;
           }
         }
 
-        @media (max-width: 600px) {
-          .process-section {
-            padding: 64px 0 72px;
+        @keyframes fadeInProcessCard {
+          from {
+            opacity: 0.6;
+            transform: translateY(3px);
           }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
+        @media (max-width: 380px) {
+          .process-mobile-pill {
+            width: 38px;
+            height: 38px;
+            font-size: 12px;
+          }
+          .process-mobile-track-line {
+            left: 18px;
+            right: 18px;
+          }
           .process-title {
             font-size: 27px;
           }
-
-          .video-wrapper {
-            border-radius: 16px;
-            aspect-ratio: 16 / 11;
+          .process-title-accent {
+            font-size: 31px;
           }
-
-          .process-step-item {
-            padding: 14px 16px;
-            gap: 14px;
-            border-radius: 16px;
-          }
-
-          .step-num {
-            font-size: 24px;
-            min-width: 30px;
-          }
-
-          .step-dash {
-            width: 20px;
-          }
-
-          .step-title {
-            font-size: 12px;
-          }
-
-          .step-desc {
-            font-size: 12.5px;
+          .process-mobile-card {
+            padding: 18px 20px;
           }
         }
       `}</style>
