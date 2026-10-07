@@ -25,14 +25,7 @@ const sectionLabels = {
 // Plain text/textarea fields per section. Sections with extra custom UI
 // (hero's media slides, story's photo) are handled separately below.
 const sectionFields = {
-  hero: [
-    { key: 'eyebrow', label: 'Small label above heading', type: 'text' },
-    { key: 'heading', label: 'Heading (line 1)', type: 'text' },
-    { key: 'heading2', label: 'Heading (script line 2)', type: 'text' },
-    { key: 'subheading', label: 'Subheading', type: 'textarea' },
-    { key: 'ctaLabel', label: 'Button text', type: 'text' },
-    { key: 'ctaLink', label: 'Button link', type: 'text' },
-  ],
+  hero: [],
   showcase: [
     { key: 'note', label: 'Italic note (left)', type: 'textarea' },
     { key: 'heading', label: 'Heading (right)', type: 'text' },
@@ -199,6 +192,25 @@ function readFileAsDataUrl(file) {
                     )}
                     <span className="slide-order-badge">{i + 1}</span>
                     <span className="slide-type-badge">{s.type}</span>
+                    {s.mobileUrl && (
+                      <span
+                        className="slide-mobile-badge"
+                        title="Has separate mobile portrait image"
+                        style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          right: 4,
+                          background: '#047857',
+                          color: '#fff',
+                          fontSize: '9px',
+                          padding: '1px 5px',
+                          borderRadius: '4px',
+                          fontWeight: 700,
+                        }}
+                      >
+                        📱 Mobile
+                      </span>
+                    )}
                   </div>
                   <div className="slide-summary">
                     <strong className="slide-heading-text">{s.heading || `Slide ${i + 1}`}</strong>
@@ -225,14 +237,85 @@ function readFileAsDataUrl(file) {
                         </select>
                       </label>
                       <label className="field-label">
-                        Media URL / Path (4K Video or Image)
+                        Desktop Media URL / Path (16:9 Landscape)
                         <input
                           type="text"
                           value={s.url || ''}
-                          placeholder="/videos/hero1.mp4 or https://..."
+                          placeholder="/images/hero-slide-1.jpg or /videos/hero1.mp4"
                           onChange={(e) => updateSlide(i, 'url', e.target.value)}
                         />
                       </label>
+                    </div>
+
+                    <div className="grid-2-col" style={{ marginTop: 6, marginBottom: 4 }}>
+                      <label className="field-label">
+                        Upload Desktop Photo (Replace)
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ fontSize: '12px' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBusy(true);
+                            try {
+                              const compressed = await compressImageFile(file, { maxDimension: 2000 });
+                              updateSlide(i, 'url', compressed);
+                            } finally {
+                              setBusy(false);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                      <label className="field-label">
+                        Mobile Media URL (Portrait image for phones ≤ 768px)
+                        <input
+                          type="text"
+                          value={s.mobileUrl || ''}
+                          placeholder="/images/hero-mobile-slide-1.jpg"
+                          onChange={(e) => updateSlide(i, 'mobileUrl', e.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid-2-col" style={{ marginTop: 4, marginBottom: 10 }}>
+                      <label className="field-label">
+                        Upload Mobile Photo (Replace)
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ fontSize: '12px' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setBusy(true);
+                            try {
+                              const compressed = await compressImageFile(file, { maxDimension: 1600 });
+                              updateSlide(i, 'mobileUrl', compressed);
+                            } finally {
+                              setBusy(false);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                      </label>
+                      {s.mobileUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 4 }}>
+                          <img
+                            src={s.mobileUrl}
+                            alt="Mobile preview"
+                            style={{ width: 44, height: 60, objectFit: 'cover', borderRadius: 4, border: '1px solid #d1d5db' }}
+                          />
+                          <span style={{ fontSize: '12px', color: '#047857', fontWeight: 500 }}>
+                            ✓ Active separate mobile portrait photo
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: '#6b7280', paddingTop: 14 }}>
+                          ℹ️ No separate mobile image set (uses desktop media)
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid-2-col">
@@ -250,21 +333,32 @@ function readFileAsDataUrl(file) {
                         <input
                           type="text"
                           value={s.heading || ''}
-                          placeholder="e.g. Kanchivaram Elegance"
+                          placeholder="e.g. Handwoven Heritage."
                           onChange={(e) => updateSlide(i, 'heading', e.target.value)}
                         />
                       </label>
                     </div>
 
-                    <label className="field-label">
-                      Small Left Text / Subtitle
-                      <textarea
-                        rows={2}
-                        value={s.subheading || ''}
-                        placeholder="e.g. Heirloom drape with temple-woven gold zari motifs."
-                        onChange={(e) => updateSlide(i, 'subheading', e.target.value)}
-                      />
-                    </label>
+                    <div className="grid-2-col">
+                      <label className="field-label">
+                        Heading Accent (Italic Line)
+                        <input
+                          type="text"
+                          value={s.headingAccent || ''}
+                          placeholder="e.g. Woven for Generations."
+                          onChange={(e) => updateSlide(i, 'headingAccent', e.target.value)}
+                        />
+                      </label>
+                      <label className="field-label">
+                        Small Left Text / Subtitle
+                        <textarea
+                          rows={2}
+                          value={s.subheading || ''}
+                          placeholder="e.g. Handwoven silk sarees created in limited existence..."
+                          onChange={(e) => updateSlide(i, 'subheading', e.target.value)}
+                        />
+                      </label>
+                    </div>
 
                     <div className="grid-2-col">
                       <label className="field-label">
@@ -1221,23 +1315,36 @@ export default function AdminHome() {
 
               {s.section_key === 'hero' && (
                 <>
-                  <label className="field-label">
-                    Banner photos &amp; videos — Desktop / PC view
+                  <div style={{ background: '#fcf8f2', border: '1px solid #ebd9c8', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#581e15', lineHeight: 1.5 }}>
+                      ✨ <strong>Hero Carousel Management:</strong> Edit the headings, italic accents, descriptions, CTA buttons, and media for each hero slide below. Each slide supports both a <strong>Desktop Landscape Image/Video</strong> and a separate <strong>Mobile Portrait Image (for phones)</strong>.
+                    </p>
+                  </div>
+
+                  <label className="field-label" style={{ fontWeight: 600, fontSize: '15px' }}>
+                    Hero Slides (Desktop &amp; Mobile Responsive)
                     <HeroSlidesEditor
                       slides={draft.slides || []}
                       onChange={(slides) => updateField('hero', 'slides', slides)}
-                      sizeHint="1920 × 1080px (landscape, 16:9) or similar wide crop"
+                      sizeHint="Desktop: 1920 × 1080px (16:9) | Mobile: 1080 × 1440px (portrait)"
                     />
                   </label>
 
-                  <label className="field-label">
-                    Banner photos &amp; videos — Mobile view
-                    <HeroSlidesEditor
-                      slides={draft.mobileSlides || []}
-                      onChange={(slides) => updateField('hero', 'mobileSlides', slides)}
-                      sizeHint="1080 × 1350px (portrait, 4:5) — a tall crop reads better on phones"
-                    />
-                  </label>
+                  <details style={{ marginTop: 14, border: '1px dashed #d1d5db', borderRadius: 8, padding: '10px 14px', background: '#fafafa' }}>
+                    <summary style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#4b5563' }}>
+                      📱 Optional: Dedicated Mobile Slider Override (Only if you need entirely different slides on mobile)
+                    </summary>
+                    <div style={{ marginTop: 12 }}>
+                      <p className="field-hint" style={{ marginTop: 0 }}>
+                        Note: If empty, mobile devices use the Mobile Portrait Images configured in the slides above.
+                      </p>
+                      <HeroSlidesEditor
+                        slides={draft.mobileSlides || []}
+                        onChange={(slides) => updateField('hero', 'mobileSlides', slides)}
+                        sizeHint="1080 × 1440px (portrait, tall crop for phones)"
+                      />
+                    </div>
+                  </details>
                 </>
               )}
 

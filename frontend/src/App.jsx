@@ -2,7 +2,6 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
-import LogoIntro from './components/LogoIntro';
 import RequireAuth from './components/RequireAuth';
 import ScrollToTop from './components/ScrollToTop';
 import SmoothScroll from './components/SmoothScroll';
@@ -47,7 +46,6 @@ function PublicSite() {
   return (
     <>
       <SmoothScroll />
-      <LogoIntro />
       <Navbar />
       <main>
         <Routes>

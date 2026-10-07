@@ -19,46 +19,51 @@ import BRAND from '../config/brand';
 
 const defaults = {
   hero: {
-    eyebrow: 'RAVICHANDRA TEXTILES',
-    heading: 'Timeless Elegance, Woven in',
-    heading2: 'Tradition',
-    subheading: 'Discover the best traditional sarees in Dharmavaram, featuring pure silk handlooms, rich temple borders, and heirloom bridal pattu crafted to perfection.',
-    ctaLabel: 'Explore Collection',
+    eyebrow: '',
+    heading: 'Handwoven Heritage.',
+    headingAccent: 'Woven for Generations.',
+    subheading: 'Handwoven silk sarees created in limited existence — crafted slowly, woven with heritage, and never mass produced.',
+    ctaLabel: 'Explore All Collections »',
     ctaLink: '/products',
     secondaryCtaLabel: 'Discover Ravichandra Textiles',
     secondaryCtaLink: '/about',
     slides: [
       {
-        id: 'hero-video-1',
-        type: 'video',
-        url: '/videos/hero1.mp4',
-        alt: 'Ravichandra Textiles Traditional Saree Showcase - 4K Video',
-        eyebrow: 'PURE HANDLOOM SILKS',
-        heading: 'Crafted with Devotion',
-        subheading: 'Experience authentic heirloom Dharmavaram weaves with pure zari threads.',
-        ctaLabel: 'Explore Collection',
+        id: 'hero-photo-1',
+        type: 'image',
+        url: '/images/hero-slide-1.jpg',
+        mobileUrl: '/images/hero-mobile-slide-1.jpg',
+        alt: 'Handwoven Heritage Saree - Ravichandra Textiles',
+        eyebrow: '',
+        heading: 'Handwoven Heritage.',
+        headingAccent: 'Woven for Generations.',
+        subheading: 'Handwoven silk sarees created in limited existence — crafted slowly, woven with heritage, and never mass produced.',
+        ctaLabel: 'Explore All Collections »',
         ctaLink: '/products',
       },
       {
-        id: 'hero-image-2',
+        id: 'hero-photo-2',
         type: 'image',
-        url: '/images/styles/kanchivaram.jpg',
-        alt: 'Ravichandra Textiles Dharmavaram Silk Saree',
+        url: '/images/hero-slide-2.jpg',
+        mobileUrl: '/images/hero-mobile-slide-2.jpg',
+        alt: 'Temple Traditions Dharmavaram Silk Saree',
         eyebrow: 'TEMPLE TRADITIONS',
-        heading: 'Dharmavaram & Kanchi Elegance',
-        subheading: 'Heirloom drape with temple-woven gold zari motifs.',
-        ctaLabel: 'Shop Dharmavaram',
+        heading: 'Temple Traditions.',
+        headingAccent: 'Woven in Sacred Zari.',
+        subheading: 'Authentic Dharmavaram & Kanchivaram silks, handpicked for divine celebrations and weddings.',
+        ctaLabel: 'Shop Dharmavaram »',
         ctaLink: '/products?category=kanjivaram',
       },
       {
-        id: 'hero-image-3',
+        id: 'hero-photo-3',
         type: 'image',
-        url: '/images/styles/banarasi.jpg',
-        alt: 'Ravichandra Textiles Banarasi Saree Showcase',
+        url: '/images/hero-slide-3.jpg',
+        alt: 'Royal Bridal Weaves - Dharmavaram Silk',
         eyebrow: 'ROYAL WEAVES',
-        heading: 'Banarasi & Pattu Splendor',
-        subheading: 'Brocade zari woven by master craftsmen with authentic silk mark.',
-        ctaLabel: 'Shop Collection',
+        heading: 'Royal Bridal Weaves.',
+        headingAccent: 'Heirloom for Lifetimes.',
+        subheading: 'Master artisan craftsmanship with pure mulberry silk and authentic silk mark certification.',
+        ctaLabel: 'Discover Bridal Pattu »',
         ctaLink: '/products?category=banarasi',
       },
     ],
@@ -424,11 +429,32 @@ export default function Home() {
       <style>{`
         .hero {
           position: relative;
-          background: #0f0406;
-          padding: 0;
+          background: #faf6f0;
+          padding-top: calc(72px + 22px);
+          padding-bottom: 26px;
+          padding-left: clamp(20px, 4vw, 48px);
+          padding-right: clamp(20px, 4vw, 48px);
         }
         .hero-visual {
           position: relative;
+          max-width: 1480px;
+          margin: 0 auto;
+        }
+        @media (max-width: 860px) {
+          .hero {
+            padding-top: calc(68px + 16px);
+            padding-bottom: 20px;
+            padding-left: 18px;
+            padding-right: 18px;
+          }
+        }
+        @media (max-width: 640px) {
+          .hero {
+            padding-top: calc(64px + 12px);
+            padding-bottom: 16px;
+            padding-left: 12px;
+            padding-right: 12px;
+          }
         }
         .hero-card-wrap {
           position: relative;
