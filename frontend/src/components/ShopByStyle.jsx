@@ -2,26 +2,42 @@ import { Link } from 'react-router-dom';
 import ScrollReveal from './ScrollReveal';
 import TextReveal from './TextReveal';
 
+const DEFAULT_COLLECTIONS = [
+  { id: 'heirloom', name: 'Heirloom Collection', image: '/images/styles/kanchivaram.jpg' },
+  { id: 'vintage', name: 'Vintage Collection', image: '/images/styles/banarasi.jpg' },
+  { id: 'wedding', name: 'Wedding Collection', image: 'https://images.unsplash.com/photo-1692992193981-d3d92fabd9cb?auto=format&fit=crop&w=800&q=80' },
+  { id: 'festive', name: 'Festive Collection', image: 'https://images.unsplash.com/photo-1610189012906-4c0aa9b9781e?auto=format&fit=crop&w=800&q=80' },
+  { id: 'office', name: 'Office Collection', image: 'https://images.unsplash.com/photo-1609748340041-f5d61e061ebc?auto=format&fit=crop&w=800&q=80' },
+];
+
 export default function ShopByStyle({
   categories = [],
   categoryIds = [],
+  items = [],
   heading = 'Shop by Style',
   eyebrow = '',
 }) {
-  const defaultIds = ['kanjivaram', 'banarasi', 'tussar', 'bridal', 'organza'];
-  const ids = categoryIds && categoryIds.length > 0 ? categoryIds : defaultIds;
-  const styleItems = ids
-    .map((id) => categories.find((c) => c.id === id))
-    .filter(Boolean);
+  // If items are passed directly from CMS or defaults
+  let displayedStyles = items && items.length > 0 ? items : null;
 
-  const displayedStyles = styleItems.length > 0 ? styleItems : categories.slice(0, 5);
+  if (!displayedStyles) {
+    if (categoryIds && categoryIds.length > 0) {
+      displayedStyles = categoryIds
+        .map((id) => categories.find((c) => c.id === id) || DEFAULT_COLLECTIONS.find((c) => c.id === id))
+        .filter(Boolean);
+    }
+  }
+
+  if (!displayedStyles || displayedStyles.length === 0) {
+    displayedStyles = DEFAULT_COLLECTIONS;
+  }
 
   if (displayedStyles.length === 0) return null;
 
   return (
     <section className="shop-by-style" id="shop-by-style">
       <div className="sparkle-bg sparkle-bg-style" aria-hidden="true">
-        <img src="/images/sparkle-bg.svg" alt="" />
+        <img src="/images/temple-bg.svg" alt="" />
       </div>
       <div className="container">
         <div className="shop-by-style-head">
@@ -77,7 +93,7 @@ export default function ShopByStyle({
         .sparkle-bg-style {
           top: 50%;
           left: -110px;
-          transform: translateY(-50%) rotate(22deg);
+          transform: translateY(-50%);
           width: 380px;
           opacity: 0.24;
           mix-blend-mode: multiply;

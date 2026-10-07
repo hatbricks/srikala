@@ -141,7 +141,7 @@ export default function ProductDetail() {
         }}
       />
       <div className="sparkle-bg sparkle-bg-detail" aria-hidden="true">
-        <img src="/images/sparkle-bg.svg" alt="" />
+        <img src="/images/temple-bg.svg" alt="" />
       </div>
       <div className="container detail-grid">
         <div className="detail-gallery">
@@ -287,7 +287,6 @@ export default function ProductDetail() {
           width: 360px;
           opacity: 0.24;
           mix-blend-mode: multiply;
-          transform: rotate(15deg);
         }
         .detail-grid {
           position: relative;

@@ -10,6 +10,8 @@ import Seo from '../components/Seo';
 import ShopByStyle from '../components/ShopByStyle';
 import TextReveal from '../components/TextReveal';
 import ScrollingTicker from '../components/ScrollingTicker';
+import ProcessSection from '../components/ProcessSection';
+import DifferenceSection from '../components/DifferenceSection';
 import { api } from '../data/api';
 import { getCategories, getProducts } from '../data/store';
 
@@ -73,10 +75,17 @@ const defaults = {
     ctaLink: '/products?sort=newest',
     productIds: [],
   },
+  process: {
+    eyebrow: 'OUR PROCESS',
+    heading: 'Process of a Thread to',
+    headingAccent: 'Heirloom',
+    videoUrl: '/videos/process-craft.mp4',
+    posterUrl: '/images/process-poster.jpg',
+  },
   shop_by_style: {
     eyebrow: '',
     heading: 'Shop by Style',
-    categoryIds: ['kanjivaram', 'banarasi', 'tussar', 'bridal', 'organza'],
+    categoryIds: ['heirloom', 'vintage', 'wedding', 'festive', 'office'],
   },
   recommended: {
     heading: 'Recommended For You',
@@ -115,6 +124,8 @@ const homeCache = {
   showcase: null,
   newArrivals: null,
   newArrivalsEnabled: true,
+  process: null,
+  processEnabled: true,
   shopByStyle: null,
   shopByStyleEnabled: true,
   recommended: null,
@@ -134,6 +145,8 @@ export default function Home() {
   const [showcase, setShowcase] = useState(() => homeCache.showcase || defaults.showcase);
   const [newArrivals, setNewArrivals] = useState(() => homeCache.newArrivals || defaults.new_arrivals);
   const [newArrivalsEnabled, setNewArrivalsEnabled] = useState(() => homeCache.newArrivalsEnabled);
+  const [processData, setProcessData] = useState(() => homeCache.process || defaults.process);
+  const [processEnabled, setProcessEnabled] = useState(() => homeCache.processEnabled ?? true);
   const [shopByStyle, setShopByStyle] = useState(() => homeCache.shopByStyle || defaults.shop_by_style);
   const [shopByStyleEnabled, setShopByStyleEnabled] = useState(() => homeCache.shopByStyleEnabled);
   const [recommended, setRecommended] = useState(() => homeCache.recommended || defaults.recommended);
@@ -229,6 +242,20 @@ export default function Home() {
           }
         }
 
+        const procSection = sections.find((s) => s.section_key === 'process');
+        if (procSection) {
+          const pr = { ...defaults.process, ...procSection.content };
+          const enabled = procSection.enabled !== false;
+          homeCache.process = pr;
+          homeCache.processEnabled = enabled;
+          setProcessData(pr);
+          setProcessEnabled(enabled);
+        } else if (sections.length > 0 && byKey.process) {
+          const pr = { ...defaults.process, ...byKey.process };
+          homeCache.process = pr;
+          setProcessData(pr);
+        }
+
         const styleSection = sections.find((s) => s.section_key === 'shop_by_style' || s.section_key === 'featured_styles');
         if (styleSection) {
           const sbs = { ...defaults.shop_by_style, ...styleSection.content };
@@ -308,10 +335,10 @@ export default function Home() {
 
       <section className="collections" id="collections">
         <div className="sparkle-bg sparkle-bg-a" aria-hidden="true">
-          <img src="/images/sparkle-bg.svg" alt="" />
+          <img src="/images/temple-bg.svg" alt="" />
         </div>
         <div className="sparkle-bg sparkle-bg-b" aria-hidden="true">
-          <img src="/images/sparkle-bg.svg" alt="" />
+          <img src="/images/temple-bg.svg" alt="" />
         </div>
         <div className="container">
           <ScrollReveal>
@@ -332,6 +359,17 @@ export default function Home() {
         />
       )}
 
+      {processEnabled && (
+        <ProcessSection
+          eyebrow={processData.eyebrow}
+          heading={processData.heading}
+          headingAccent={processData.headingAccent}
+          videoUrl={processData.videoUrl}
+          posterUrl={processData.posterUrl}
+          steps={processData.steps}
+        />
+      )}
+
       {shopByStyleEnabled && (
         <ShopByStyle
           categories={categories}
@@ -340,6 +378,8 @@ export default function Home() {
           eyebrow={shopByStyle.eyebrow}
         />
       )}
+
+      <DifferenceSection />
 
       {promo && (
         <section className="promo-banner">
@@ -358,7 +398,7 @@ export default function Home() {
 
       <section className="story">
         <div className="sparkle-bg sparkle-bg-story" aria-hidden="true">
-          <img src="/images/sparkle-bg.svg" alt="" />
+          <img src="/images/temple-bg.svg" alt="" />
         </div>
         <div className="container story-grid">
           <ScrollReveal as="div" className="story-image" y={0} duration={1.3}>
@@ -560,7 +600,7 @@ export default function Home() {
           width: 340px;
           opacity: 0.24;
           mix-blend-mode: multiply;
-          transform: rotate(180deg);
+          transform: scaleX(-1);
         }
 
         .promo-banner { background: var(--maroon-900); padding: 40px 0; }
@@ -587,7 +627,7 @@ export default function Home() {
         .sparkle-bg-story {
           top: 50%;
           right: -100px;
-          transform: translateY(-50%) rotate(45deg);
+          transform: translateY(-50%);
           width: 440px;
           opacity: 0.25;
           mix-blend-mode: multiply;

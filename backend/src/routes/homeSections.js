@@ -48,11 +48,14 @@ const DEFAULT_SORT_ORDERS = {
   promo_banner: 5,
   new_arrivals: 6,
   featured: 6,
-  shop_by_style: 7,
-  recommended: 8,
-  story: 9,
-  google_reviews: 10,
-  social_links: 11,
+  process: 7,
+  shop_by_style: 8,
+  recommended: 9,
+  story: 10,
+  google_reviews: 11,
+  about_hero: 13,
+  about_story: 14,
+  products_hero: 15,
 };
 
 router.put('/:key', requireAdmin, async (req, res) => {

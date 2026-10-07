@@ -13,6 +13,7 @@ const sectionLabels = {
   promo_banner: 'Promo Banner',
   new_arrivals: 'New Arrivals',
   featured: 'New Arrivals',
+  process: 'Craft & Weaving Process (Video & Steps)',
   shop_by_style: 'Shop by Style (Home Grid)',
   recommended: 'Recommended Sarees',
   shipping_settings: 'Shipping',
@@ -58,6 +59,13 @@ const sectionFields = {
     { key: 'subheading', label: 'Subheading description', type: 'textarea' },
     { key: 'ctaLabel', label: 'Button text', type: 'text' },
     { key: 'ctaLink', label: 'Button link', type: 'text' },
+  ],
+  process: [
+    { key: 'eyebrow', label: 'Eyebrow label (e.g. OUR PROCESS)', type: 'text' },
+    { key: 'heading', label: 'Main heading text (e.g. Process of a Thread to)', type: 'text' },
+    { key: 'headingAccent', label: 'Highlighted cursive accent word (e.g. Heirloom)', type: 'text' },
+    { key: 'videoUrl', label: 'Video path or direct URL (e.g. /videos/process-craft.mp4)', type: 'text' },
+    { key: 'posterUrl', label: 'Poster image URL (e.g. /images/process-poster.jpg)', type: 'text' },
   ],
   shop_by_style: [
     { key: 'eyebrow', label: 'Small label above heading', type: 'text' },
@@ -748,6 +756,134 @@ function GoogleReviewsEditor({ data = {}, onChange }) {
   );
 }
 
+function ProcessStepsEditor({ steps = [], onChange }) {
+  function updateStep(i, field, val) {
+    const next = [...steps];
+    next[i] = { ...next[i], [field]: val };
+    onChange(next);
+  }
+
+  function addStep() {
+    const num = String(steps.length + 1).padStart(2, '0');
+    const newStep = {
+      number: num,
+      title: 'NEW CRAFT STEP',
+      description: 'Detail the handcrafting technique here.',
+      quote: '“Artisan philosophy and heritage dedication.”',
+      time: steps.length * 2,
+    };
+    onChange([...steps, newStep]);
+  }
+
+  function moveStep(i, dir) {
+    const target = i + dir;
+    if (target < 0 || target >= steps.length) return;
+    const next = [...steps];
+    [next[i], next[target]] = [next[target], next[i]];
+    onChange(next);
+  }
+
+  function removeStep(i) {
+    onChange(steps.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div className="process-steps-editor" style={{ marginTop: 16 }}>
+      <p className="field-hint" style={{ marginBottom: 12 }}>
+        Manage the sequence of craft steps, numbers, descriptions, and artisan quotes shown alongside the video.
+      </p>
+
+      <div className="reviews-cards-list">
+        {steps.map((st, i) => (
+          <div className="review-edit-card" key={st.number || i} style={{ marginBottom: 12 }}>
+            <div className="review-edit-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  background: 'var(--brand-primary, #581e15)',
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}>
+                  {st.number || String(i + 1).padStart(2, '0')}
+                </span>
+                <strong style={{ fontSize: 14, color: 'var(--brand-text, #2c1810)' }}>
+                  {st.title || `Step ${i + 1}`}
+                </strong>
+              </div>
+              <div className="slide-header-actions">
+                <button type="button" className="btn-icon" disabled={i === 0} onClick={() => moveStep(i, -1)} title="Move up">↑</button>
+                <button type="button" className="btn-icon" disabled={i === steps.length - 1} onClick={() => moveStep(i, 1)} title="Move down">↓</button>
+                <button type="button" className="btn-icon btn-remove" onClick={() => removeStep(i)} title="Remove step">×</button>
+              </div>
+            </div>
+
+            <div className="grid-2-col" style={{ marginTop: 10 }}>
+              <label className="field-label">
+                Step Number (e.g. 01)
+                <input
+                  type="text"
+                  value={st.number || ''}
+                  onChange={(e) => updateStep(i, 'number', e.target.value)}
+                />
+              </label>
+              <label className="field-label">
+                Step Title
+                <input
+                  type="text"
+                  value={st.title || ''}
+                  placeholder="e.g. SILK SELECTION"
+                  onChange={(e) => updateStep(i, 'title', e.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="grid-2-col" style={{ marginTop: 8 }}>
+              <label className="field-label">
+                Video Seek Timestamp (seconds)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={st.time ?? 0}
+                  onChange={(e) => updateStep(i, 'time', Number(e.target.value))}
+                />
+              </label>
+              <label className="field-label">
+                Step Short Description
+                <input
+                  type="text"
+                  value={st.description || ''}
+                  onChange={(e) => updateStep(i, 'description', e.target.value)}
+                />
+              </label>
+            </div>
+
+            <label className="field-label" style={{ marginTop: 8 }}>
+              Artisan Quote (shown below video when this step is active)
+              <textarea
+                rows={2}
+                value={st.quote || ''}
+                placeholder="“Only the most resilient mulberry silk fibers are chosen...”"
+                onChange={(e) => updateStep(i, 'quote', e.target.value)}
+              />
+            </label>
+          </div>
+        ))}
+      </div>
+
+      <button type="button" className="btn btn-outline" onClick={addStep} style={{ marginTop: 10 }}>
+        + Add Process Step
+      </button>
+    </div>
+  );
+}
+
 // Search-and-select picker for curating which products show in the
 // "Featured Sarees" / "Recommended Sarees" home sections. Selection order
 // is the display order — reorder with the arrows on each chip.
@@ -1101,6 +1237,16 @@ export default function AdminHome() {
                   <GoogleReviewsEditor
                     data={draft}
                     onChange={(nextData) => setDrafts((prev) => ({ ...prev, google_reviews: nextData }))}
+                  />
+                </label>
+              )}
+
+              {s.section_key === 'process' && (
+                <label className="field-label">
+                  Craft &amp; Weaving Process Steps
+                  <ProcessStepsEditor
+                    steps={draft.steps || []}
+                    onChange={(nextSteps) => updateField('process', 'steps', nextSteps)}
                   />
                 </label>
               )}

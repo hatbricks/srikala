@@ -9,6 +9,7 @@ const PRODUCT_KEY = 'srikala_products';
 const img = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`;
 
 const seedCategories = [
+  { id: 'dharmavaram', name: 'Dharmavaram Pattu', image: '/images/styles/kanchivaram.jpg', tagline: 'Master handlooms directly from Dharmavaram' },
   { id: 'kanjivaram', name: 'Kanchivaram', image: '/images/styles/kanchivaram.jpg', tagline: 'Temple-woven silk, heirloom weight' },
   { id: 'banarasi', name: 'Banarasi', image: '/images/styles/banarasi.jpg', tagline: 'Brocade zari from the ghats' },
   { id: 'tussar', name: 'Tussar & Cotton', image: img('photo-1676696706907-0e04665b80bd'), tagline: 'Everyday drape, breathable weave' },
@@ -36,25 +37,26 @@ function read(key, seed) {
   try {
     let raw = localStorage.getItem(key);
     if (!raw && key.startsWith('srikala_')) {
-      // Gracefully migrate any legacy cached key
       const legacyKey = key.replace('srikala_', 'miladys_');
       raw = localStorage.getItem(legacyKey);
     }
     if (raw) {
       const parsed = JSON.parse(raw);
+      // If user had previously stored style collections as categories in local storage,
+      // heal and update back to traditional weaves (dharmavaram, kanjivaram, etc.)
       if (key === CATEGORY_KEY && Array.isArray(parsed)) {
-        let changed = false;
-        const merged = parsed.map((cat) => {
-          const s = seed.find((item) => item.id === cat.id);
-          if (s && (cat.image?.includes('photo-1618901185975') || cat.image?.includes('photo-1727430228383') || cat.name === 'Kanjivaram Silk')) {
-            changed = true;
-            return { ...cat, name: s.name, image: s.image };
-          }
-          return cat;
-        });
-        if (changed) {
-          localStorage.setItem(key, JSON.stringify(merged));
-          return merged;
+        const hasLegacyStyles = parsed.some((c) => c.id === 'heirloom' || c.id === 'vintage');
+        const hasTraditional = parsed.some((c) => c.id === 'dharmavaram' || c.id === 'kanjivaram');
+        if (hasLegacyStyles || !hasTraditional) {
+          localStorage.setItem(key, JSON.stringify(seed));
+          return seed;
+        }
+      }
+      if (key === PRODUCT_KEY && Array.isArray(parsed)) {
+        const hasLegacyCat = parsed.some((p) => p.category === 'heirloom' || p.category === 'vintage');
+        if (hasLegacyCat) {
+          localStorage.setItem(key, JSON.stringify(seed));
+          return seed;
         }
       }
       return parsed;

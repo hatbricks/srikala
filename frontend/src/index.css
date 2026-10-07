@@ -84,15 +84,13 @@ a { color: inherit; text-decoration: none; }
 
 button { font-family: inherit; cursor: pointer; }
 
-/* the navbar is fixed (overlaying), so page content needs matching top
-   space to clear it — except the home hero, which is designed to run
-   full-bleed behind the translucent navbar with no gap above it */
-main { padding-top: 100px; }
-.home { margin-top: -100px; }
+/* the navbar is fixed (overlaying) with height 72px on desktop and 62px on mobile */
+main { padding-top: 74px; }
+.home { margin-top: -74px; }
 .admin-main { padding-top: 0; }
 @media (max-width: 860px) {
-  main { padding-top: 84px; }
-  .home { margin-top: -84px; }
+  main { padding-top: 64px; }
+  .home { margin-top: -64px; }
 }
 
 .container {
@@ -189,8 +187,8 @@ section { padding: 88px 0; }
 }
 
 @media (max-width: 860px) {
-  main { padding-top: 76px; }
-  .home { margin-top: -76px; }
+  main { padding-top: 64px; }
+  .home { margin-top: -64px; }
   body { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
 }
 

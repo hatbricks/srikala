@@ -58,6 +58,7 @@ export default function AdminAbout() {
   const [error, setError] = useState('');
   const [savedKey, setSavedKey] = useState('');
   const storyFileInput = useRef(null);
+  const heroFileInput = useRef(null);
 
   useEffect(() => {
     api
@@ -74,6 +75,13 @@ export default function AdminAbout() {
 
   function updateField(key, field, value) {
     setDrafts((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  }
+
+  async function handleHeroImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await compressImageFile(file);
+    updateField('about_hero', 'image', dataUrl);
   }
 
   async function handleStoryImage(e) {
@@ -125,10 +133,10 @@ export default function AdminAbout() {
       <div className="section-list">
         <div className="section-card">
           <div className="section-card-head">
-            <h3>Header</h3>
+            <h3>Curved Hero Banner</h3>
           </div>
           <label className="field-label">
-            Small label above heading
+            Pill Badge text (e.g. ABOUT RAVICHANDRA TEXTILES)
             <input
               type="text"
               value={heroDraft.eyebrow || ''}
@@ -136,15 +144,33 @@ export default function AdminAbout() {
             />
           </label>
           <label className="field-label">
-            Heading
+            Main Title Heading
             <textarea
               rows={2}
               value={heroDraft.heading || ''}
               onChange={(e) => updateField('about_hero', 'heading', e.target.value)}
             />
           </label>
+          <label className="field-label">
+            Subtitle Description
+            <textarea
+              rows={3}
+              value={heroDraft.subtitle || ''}
+              placeholder="Woven slowly on traditional pit looms in Dharmavaram, honoring centuries of sacred weaving devotion..."
+              onChange={(e) => updateField('about_hero', 'subtitle', e.target.value)}
+            />
+          </label>
+          <label className="field-label">
+            Hero Artisan Banner Image
+            <input type="file" accept="image/*" ref={heroFileInput} onChange={handleHeroImage} />
+            {(heroDraft.image || '/images/about-hero-artisan.jpg') && (
+              <div className="story-preview" style={{ marginTop: 8, maxHeight: 180, overflow: 'hidden', borderRadius: 8 }}>
+                <img src={heroDraft.image || '/images/about-hero-artisan.jpg'} alt="Hero Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+          </label>
           <div className="section-card-foot">
-            <button className="btn btn-primary" onClick={() => handleSave('about_hero')}>Save</button>
+            <button className="btn btn-primary" onClick={() => handleSave('about_hero')}>Save Header</button>
             {savedKey === 'about_hero' && (
               <span className="saved-msg" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <CheckIcon width={13} height={13} /> Saved

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import RecommendedProducts from '../components/RecommendedProducts';
 import Seo from '../components/Seo';
@@ -78,6 +78,14 @@ export default function Products() {
     }
   }, [sortParam]);
 
+  const defaultHero = {
+    badge: 'Heritage Handlooms',
+    title: 'Our Collection',
+    description: "Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
+    image: '/images/collection-hero-artisan.jpg',
+  };
+  const [hero, setHero] = useState(() => productsPageCache.hero || defaultHero);
+
   useEffect(() => {
     api.getCategories()
       .then(({ categories }) => {
@@ -100,6 +108,16 @@ export default function Products() {
         productsPageCache.products = fallback;
         setProducts(fallback);
       });
+
+    api.getHomeSection('products_hero')
+      .then((res) => {
+        if (res?.section?.content) {
+          const merged = { ...defaultHero, ...res.section.content };
+          productsPageCache.hero = merged;
+          setHero(merged);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Compute dynamic max price from product catalog
@@ -223,8 +241,41 @@ export default function Products() {
       />
 
       <div className="sparkle-bg" aria-hidden="true">
-        <img src="/images/sparkle-bg.svg" alt="" />
+        <img src="/images/temple-bg.svg" alt="" />
       </div>
+
+      {/* --- Collection Hero Banner (Curved Header Editorial Layout) --- */}
+      <section className="products-hero-banner" aria-label="Our Collection">
+        <div className="container products-hero-container">
+          {/* Breadcrumb placed above the banner card */}
+          <nav className="hero-breadcrumb-top" aria-label="Breadcrumb">
+            <Link to="/">Home</Link>
+            <span className="crumb-sep">›</span>
+            <span className="crumb-current">All Collection</span>
+          </nav>
+
+          <div className="hero-curved-banner-card">
+            {/* Left Photographic Artisan Visual */}
+            <div className="hero-curved-photo-wrap">
+              <img
+                src={hero.image || '/images/collection-hero-artisan.jpg'}
+                alt="Ravichandra Textiles Pure Silk Dharmavaram Sarees Heritage"
+                className="hero-curved-img"
+              />
+              <div className="hero-curved-img-overlay" aria-hidden="true" />
+            </div>
+
+            {/* Right Arched Content Area */}
+            <div className="hero-curved-content">
+              <span className="hero-curved-badge">{hero.badge || 'Heritage Handlooms'}</span>
+              <h1 className="hero-curved-title">{hero.title || 'Our Collection'}</h1>
+              <p className="hero-curved-description">
+                {hero.description || defaultHero.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="container products-layout">
         {filtersOpen && (
@@ -497,13 +548,147 @@ export default function Products() {
           z-index: 0;
         }
 
+        /* --- Products Hero Banner Styling (Curved Header Editorial) --- */
+        .products-hero-banner {
+          position: relative;
+          z-index: 2;
+          padding: 10px 32px 0;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .products-hero-container {
+          max-width: var(--container, 1240px);
+          margin: 0 auto;
+          padding: 0;
+        }
+
+        .hero-breadcrumb-top {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-family: var(--font-body);
+          font-size: 13px;
+          color: var(--brand-muted, #735e59);
+          margin-bottom: 10px;
+        }
+
+        .hero-breadcrumb-top a {
+          color: var(--brand-muted, #735e59);
+          text-decoration: none;
+          transition: color 0.18s ease;
+        }
+
+        .hero-breadcrumb-top a:hover {
+          color: var(--brand-primary, #581e15);
+          text-decoration: underline;
+        }
+
+        .crumb-sep {
+          opacity: 0.6;
+          font-size: 13px;
+          line-height: 1;
+        }
+
+        .crumb-current {
+          font-weight: 600;
+          color: var(--brand-primary, #581e15);
+        }
+
+        /* Curved Banner Card: Left photo, right curved arch container */
+        .hero-curved-banner-card {
+          position: relative;
+          display: grid;
+          grid-template-columns: 1.15fr 1fr;
+          align-items: stretch;
+          min-height: 380px;
+          background: #d8cec4; /* Warm tactile earthen stone tone */
+          border-radius: 20px 190px 190px 20px; /* Signature curved arch on the right */
+          overflow: hidden;
+          box-shadow: 0 12px 36px rgba(44, 24, 16, 0.08);
+          border: 1px solid rgba(197, 139, 56, 0.28);
+        }
+
+        .hero-curved-photo-wrap {
+          position: relative;
+          height: 100%;
+          min-height: 380px;
+          overflow: hidden;
+        }
+
+        .hero-curved-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 20%;
+          display: block;
+        }
+
+        .hero-curved-img-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0.05) 0%,
+            rgba(216, 206, 196, 0.2) 65%,
+            rgba(216, 206, 196, 0.95) 100%
+          );
+          pointer-events: none;
+        }
+
+        .hero-curved-content {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: flex-start;
+          padding: 44px 56px 44px 20px;
+          z-index: 2;
+        }
+
+        .hero-curved-badge {
+          display: inline-block;
+          font-family: var(--font-body);
+          font-size: 11px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          font-weight: 600;
+          color: var(--brand-primary, #581e15);
+          background: rgba(255, 255, 255, 0.65);
+          backdrop-filter: blur(4px);
+          padding: 4px 14px;
+          border-radius: 999px;
+          margin-bottom: 14px;
+          border: 1px solid rgba(197, 139, 56, 0.25);
+        }
+
+        .hero-curved-title {
+          font-family: var(--font-display);
+          font-size: clamp(34px, 4vw, 54px);
+          font-weight: 500;
+          line-height: 1.1;
+          color: #2b1812;
+          margin: 0 0 16px;
+          letter-spacing: -0.01em;
+        }
+
+        .hero-curved-description {
+          font-family: var(--font-body);
+          font-size: clamp(13.5px, 1.15vw, 15px);
+          line-height: 1.65;
+          color: #4b362c;
+          margin: 0;
+          max-width: 440px;
+          font-weight: 400;
+        }
+
         .products-layout {
           position: relative;
           z-index: 1;
           display: grid;
           grid-template-columns: 280px 1fr;
           gap: 36px;
-          padding: 36px 32px 30px;
+          padding: 30px 32px 30px;
           align-items: flex-start;
           box-sizing: border-box;
         }
@@ -511,7 +696,7 @@ export default function Products() {
         /* --- Sidebar Styling --- */
         .sidebar {
           position: sticky;
-          top: 100px;
+          top: 96px;
           display: flex;
           flex-direction: column;
           background: #ffffff;
@@ -521,6 +706,24 @@ export default function Products() {
           box-shadow: 0 8px 24px rgba(45, 12, 17, 0.04);
           box-sizing: border-box;
           width: 100%;
+          max-height: calc(100vh - 120px);
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(197, 139, 56, 0.4) transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+          background-color: rgba(197, 139, 56, 0.35);
+          border-radius: 999px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+          background-color: var(--brand-primary, #581e15);
         }
 
         .sidebar-content-scroll {
@@ -902,9 +1105,47 @@ export default function Products() {
 
         /* --- Tablet & Mobile Responsive Viewports (Fits Any Mobile Perfectly) --- */
         @media (max-width: 980px) {
+          .products-hero-banner {
+            padding: 16px 18px 0;
+          }
+
+          .hero-curved-banner-card {
+            grid-template-columns: 1fr;
+            border-radius: 20px 20px 90px 20px;
+            min-height: auto;
+          }
+
+          .hero-curved-photo-wrap {
+            height: 280px;
+            min-height: 280px;
+          }
+
+          .hero-curved-img-overlay {
+            background: linear-gradient(
+              to bottom,
+              rgba(0, 0, 0, 0.05) 0%,
+              rgba(216, 206, 196, 0.4) 65%,
+              rgba(216, 206, 196, 1) 100%
+            );
+          }
+
+          .hero-curved-content {
+            padding: 30px 28px 36px;
+          }
+
+          .hero-curved-title {
+            font-size: 32px;
+            margin-bottom: 12px;
+          }
+
+          .hero-breadcrumb-top {
+            margin-bottom: 10px;
+            font-size: 12px;
+          }
+
           .products-layout {
             grid-template-columns: 1fr;
-            padding: 24px 18px 20px;
+            padding: 20px 18px 20px;
             gap: 20px;
             position: static;
           }
@@ -1065,8 +1306,41 @@ export default function Products() {
 
         /* Small Phones (iPhone SE, Galaxy S, 320px – 480px) */
         @media (max-width: 480px) {
+          .products-hero-banner {
+            padding: 12px 12px 0;
+          }
+
+          .hero-curved-banner-card {
+            border-radius: 16px 16px 60px 16px;
+          }
+
+          .hero-curved-photo-wrap {
+            height: 220px;
+            min-height: 220px;
+          }
+
+          .hero-curved-content {
+            padding: 22px 18px 26px;
+          }
+
+          .hero-curved-title {
+            font-size: 26px;
+            margin-bottom: 8px;
+          }
+
+          .hero-curved-description {
+            font-size: 13px;
+            line-height: 1.55;
+          }
+
+          .hero-breadcrumb-top {
+            font-size: 11px;
+            gap: 6px;
+            margin-bottom: 8px;
+          }
+
           .products-layout {
-            padding: 18px 12px 20px;
+            padding: 16px 12px 20px;
           }
 
           .page-head h1 {

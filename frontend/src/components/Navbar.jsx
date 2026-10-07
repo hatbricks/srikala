@@ -275,9 +275,12 @@ export default function Navbar() {
             <NavLink
               key={l.to}
               to={l.to}
-              end={l.to === '/'}
-              className={({ isActive }) => 'popover-link' + (isActive ? ' active' : '')}
-              onClick={() => setMenuOpen(false)}
+              end={l.end ?? (l.to === '/')}
+              className={({ isActive }) => 'popover-link' + (isActive && !l.to.includes('#') ? ' active' : '')}
+              onClick={(e) => {
+                handleNavLinkClick(e, l);
+                setMenuOpen(false);
+              }}
             >
               {l.label}
             </NavLink>
@@ -287,7 +290,7 @@ export default function Navbar() {
 
       <style>{`
         .navbar {
-          position: sticky;
+          position: fixed;
           top: 0;
           left: 0;
           right: 0;

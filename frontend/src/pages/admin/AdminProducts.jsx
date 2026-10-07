@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
-import { CloseIcon } from '../../components/admin/AdminIcons';
+import { CloseIcon, CheckIcon } from '../../components/admin/AdminIcons';
 
 const emptyForm = {
   name: '',
@@ -82,10 +82,48 @@ export default function AdminProducts() {
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [movingId, setMovingId] = useState(null);
 
+  const defaultHero = {
+    badge: 'HERITAGE HANDLOOMS',
+    title: 'Our Collection',
+    description: "Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
+    image: '/images/collection-hero-artisan.jpg',
+  };
+  const [heroDraft, setHeroDraft] = useState(defaultHero);
+  const [heroSaved, setHeroSaved] = useState(false);
+  const heroFileInput = useRef(null);
+
   useEffect(() => {
     refresh();
     api.getCategories().then(({ categories }) => setCategories(categories)).catch((err) => setError(err.message));
+    api.getHomeSection('products_hero')
+      .then((res) => {
+        if (res?.section?.content) setHeroDraft((h) => ({ ...h, ...res.section.content }));
+      })
+      .catch(() => {});
   }, []);
+
+  async function handleHeroImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await compressImageFile(file);
+    setHeroDraft((h) => ({ ...h, image: dataUrl }));
+  }
+
+  async function handleSaveHeroBanner() {
+    setError('');
+    try {
+      await api.updateHomeSection('products_hero', {
+        title: 'Products Page — Curved Hero Header',
+        enabled: true,
+        content: heroDraft,
+        sortOrder: 15,
+      });
+      setHeroSaved(true);
+      setTimeout(() => setHeroSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   function refresh() {
     // The admin list needs to see hidden products too (to unhide them),
@@ -360,6 +398,96 @@ export default function AdminProducts() {
       </div>
 
       {error && <p className="admin-error">{error}</p>}
+
+      {/* --- Products Page Curved Hero Banner CMS Card --- */}
+      <div className="section-card" style={{
+        background: 'var(--paper)',
+        borderRadius: 'var(--radius-md)',
+        padding: '24px 28px',
+        marginBottom: '28px',
+        border: '1px solid rgba(197, 139, 56, 0.22)',
+        boxShadow: '0 8px 24px rgba(44, 24, 16, 0.04)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--brand-primary)' }}>
+              Products Page Hero Banner
+            </h3>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-600)' }}>
+              Customize the curved editorial hero banner displayed at the top of the All Sarees / Products catalog page.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px 24px' }}>
+          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
+            Badge Text
+            <input
+              type="text"
+              value={heroDraft.badge || ''}
+              placeholder="e.g. HERITAGE HANDLOOMS"
+              style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14 }}
+              onChange={(e) => setHeroDraft((h) => ({ ...h, badge: e.target.value }))}
+            />
+          </label>
+
+          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
+            Header Title
+            <input
+              type="text"
+              value={heroDraft.title || ''}
+              placeholder="e.g. Our Collection"
+              style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14 }}
+              onChange={(e) => setHeroDraft((h) => ({ ...h, title: e.target.value }))}
+            />
+          </label>
+        </div>
+
+        <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)', marginTop: 14 }}>
+          Subtitle Description
+          <textarea
+            rows={2}
+            value={heroDraft.description || ''}
+            placeholder="Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully..."
+            style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14, resize: 'vertical' }}
+            onChange={(e) => setHeroDraft((h) => ({ ...h, description: e.target.value }))}
+          />
+        </label>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 14, alignItems: 'center' }}>
+          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
+            Banner Image
+            <input type="file" accept="image/*" ref={heroFileInput} onChange={handleHeroImageUpload} />
+            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink-600)' }}>
+              Upload any photo (master artisans, silk models) — auto-compressed and scaled into the curved banner.
+            </span>
+          </label>
+
+          {(heroDraft.image || '/images/collection-hero-artisan.jpg') && (
+            <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 110, borderRadius: '8px 45px 45px 8px', overflow: 'hidden', border: '1px solid rgba(197, 139, 56, 0.3)' }}>
+              <img
+                src={heroDraft.image || '/images/collection-hero-artisan.jpg'}
+                alt="Products Hero Preview"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <span style={{ position: 'absolute', bottom: 4, left: 6, fontSize: 10, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>
+                Curved Header Preview
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--brand-border)' }}>
+          <button type="button" className="btn btn-primary" onClick={handleSaveHeroBanner}>
+            Save Hero Banner
+          </button>
+          {heroSaved && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#2e7d32', fontWeight: 600, fontSize: 13 }}>
+              <CheckIcon width={14} height={14} /> Banner Saved
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="cms-layout">
         <form className="cms-form" onSubmit={handleSubmit}>

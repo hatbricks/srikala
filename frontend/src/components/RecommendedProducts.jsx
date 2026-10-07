@@ -24,7 +24,7 @@ export default function RecommendedProducts({ products = [], curatedIds = [], ex
   return (
     <section className="recommended">
       <div className="sparkle-bg sparkle-bg-rec" aria-hidden="true">
-        <img src="/images/sparkle-bg.svg" alt="" />
+        <img src="/images/temple-bg.svg" alt="" />
       </div>
       <div className="container">
         <TextReveal as="p" direction="fade" className="eyebrow">You might also like</TextReveal>
@@ -56,7 +56,6 @@ export default function RecommendedProducts({ products = [], curatedIds = [], ex
           width: 360px;
           opacity: 0.24;
           mix-blend-mode: multiply;
-          transform: rotate(-18deg);
         }
         .recommended h2 { font-size: 26px; margin: 8px 0 30px; }
         .recommended-grid {

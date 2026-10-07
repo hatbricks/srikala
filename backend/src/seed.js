@@ -5,12 +5,13 @@ import { pool, ensureSchema } from './db.js';
 const img = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=80`;
 
 const categories = [
-  { id: 'kanjivaram', name: 'Kanchivaram', image: '/images/styles/kanchivaram.jpg', tagline: 'Temple-woven silk, heirloom weight', sort: 1 },
-  { id: 'banarasi', name: 'Banarasi', image: '/images/styles/banarasi.jpg', tagline: 'Brocade zari from the ghats', sort: 2 },
-  { id: 'tussar', name: 'Tussar & Cotton', image: img('photo-1676696706907-0e04665b80bd'), tagline: 'Everyday drape, breathable weave', sort: 3 },
-  { id: 'bridal', name: 'Bridal Edit', image: img('photo-1692992193981-d3d92fabd9cb'), tagline: 'Curated for the big day', sort: 4 },
-  { id: 'organza', name: 'Organza', image: img('photo-1610189012906-4c0aa9b9781e'), tagline: 'Sheer, modern, festive', sort: 5 },
-  { id: 'linen', name: 'Linen', image: img('photo-1609748340041-f5d61e061ebc'), tagline: 'Light weaves for warm days', sort: 6 },
+  { id: 'dharmavaram', name: 'Dharmavaram Pattu', image: '/images/styles/kanchivaram.jpg', tagline: 'Master handlooms directly from Dharmavaram', sort: 1 },
+  { id: 'kanjivaram', name: 'Kanchivaram', image: '/images/styles/kanchivaram.jpg', tagline: 'Temple-woven silk, heirloom weight', sort: 2 },
+  { id: 'banarasi', name: 'Banarasi', image: '/images/styles/banarasi.jpg', tagline: 'Brocade zari from the ghats', sort: 3 },
+  { id: 'tussar', name: 'Tussar & Cotton', image: img('photo-1676696706907-0e04665b80bd'), tagline: 'Everyday drape, breathable weave', sort: 4 },
+  { id: 'bridal', name: 'Bridal Edit', image: img('photo-1692992193981-d3d92fabd9cb'), tagline: 'Curated for the big day', sort: 5 },
+  { id: 'organza', name: 'Organza', image: img('photo-1610189012906-4c0aa9b9781e'), tagline: 'Sheer, modern, festive', sort: 6 },
+  { id: 'linen', name: 'Linen', image: img('photo-1609748340041-f5d61e061ebc'), tagline: 'Light weaves for warm days', sort: 7 },
 ];
 
 const products = [
@@ -88,7 +89,7 @@ const homeSections = [
   } },
   { key: 'featured_categories', title: 'Shop by Category', sort: 3, content: {
     heading: 'Shop by category',
-    categoryIds: ['kanjivaram', 'banarasi', 'bridal', 'organza'],
+    categoryIds: ['heirloom', 'vintage', 'wedding', 'festive', 'office'],
   } },
   { key: 'promo_banner', title: 'Promo Banner', sort: 4, enabled: false, content: {
     heading: 'Festive edit is live',
@@ -106,7 +107,7 @@ const homeSections = [
   } },
   { key: 'shop_by_style', title: 'Shop by Style', sort: 4, content: {
     heading: 'Shop by Style',
-    categoryIds: ['kanjivaram', 'banarasi', 'tussar', 'bridal', 'organza'],
+    categoryIds: ['heirloom', 'vintage', 'wedding', 'festive', 'office'],
   } },
   { key: 'recommended', title: 'Recommended Sarees', sort: 5, content: {
     heading: 'Recommended For You',
@@ -139,8 +140,16 @@ const homeSections = [
     instagram: 'https://www.instagram.com/ravichandra_handlooms',
   } },
   { key: 'about_hero', title: 'About Page — Header', sort: 8, content: {
-    eyebrow: "Our Story",
-    heading: 'Best Traditional Sarees in Dharmavaram',
+    eyebrow: "ABOUT RAVICHANDRA TEXTILES",
+    heading: 'Curating Dharmavaram & Indian Heritage, Honoring Timeless Artistry',
+    subtitle: 'Woven slowly on traditional pit looms in Dharmavaram, honoring centuries of sacred weaving devotion and pure zari craftsmanship.',
+    image: '/images/about-hero-artisan.jpg',
+  } },
+  { key: 'products_hero', title: 'Products Page — Curved Hero Header', sort: 15, content: {
+    badge: 'HERITAGE HANDLOOMS',
+    title: 'Our Collection',
+    description: "Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
+    image: '/images/collection-hero-artisan.jpg',
   } },
   { key: 'about_story', title: 'About Page — Our Story', sort: 9, content: {
     heading: 'Our story',
