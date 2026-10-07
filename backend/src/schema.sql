@@ -116,6 +116,38 @@ VALUES (
 )
 ON CONFLICT (section_key) DO NOTHING;
 
+-- Default products page curved hero header
+INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
+VALUES (
+  'products_hero',
+  'Products Page — Curved Hero Header',
+  TRUE,
+  '{
+    "badge": "HERITAGE HANDLOOMS",
+    "title": "Our Collection",
+    "description": "Rooted in Andhra Pradesh weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
+    "image": "/images/collection-hero-artisan.jpg"
+  }'::jsonb,
+  15
+)
+ON CONFLICT (section_key) DO NOTHING;
+
+-- Default about page hero header
+INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
+VALUES (
+  'about_hero',
+  'About Page — Header',
+  TRUE,
+  '{
+    "eyebrow": "ABOUT RAVICHANDRA TEXTILES",
+    "heading": "Curating Dharmavaram & Indian Heritage, Honoring Timeless Artistry",
+    "subtitle": "Woven slowly on traditional pit looms in Dharmavaram, honoring centuries of sacred weaving devotion and pure zari craftsmanship.",
+    "image": "/images/about-hero-artisan.jpg"
+  }'::jsonb,
+  13
+)
+ON CONFLICT (section_key) DO NOTHING;
+
 -- Testimonials — short customer quotes used in two places: a general
 -- rotating band on the homepage (product_id NULL) and/or tied to a specific
 -- product's detail page. Backend-stored (not localStorage) so an admin's

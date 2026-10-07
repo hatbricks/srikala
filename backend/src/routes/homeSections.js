@@ -76,13 +76,98 @@ router.get('/all', requireAdmin, async (_req, res) => {
   res.json({ sections: rows.map(sanitizeHeroSection) });
 });
 
+const DEFAULT_SECTION_FALLBACKS = {
+  products_hero: {
+    title: 'Products Page — Curved Hero Header',
+    sort_order: 15,
+    enabled: true,
+    content: {
+      badge: 'HERITAGE HANDLOOMS',
+      title: 'Our Collection',
+      description: "Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
+      image: '/images/collection-hero-artisan.jpg',
+    },
+  },
+  about_hero: {
+    title: 'About Page — Header',
+    sort_order: 13,
+    enabled: true,
+    content: {
+      eyebrow: 'ABOUT RAVICHANDRA TEXTILES',
+      heading: 'Curating Dharmavaram & Indian Heritage, Honoring Timeless Artistry',
+      subtitle: 'Woven slowly on traditional pit looms in Dharmavaram, honoring centuries of sacred weaving devotion and pure zari craftsmanship.',
+      image: '/images/about-hero-artisan.jpg',
+    },
+  },
+  about_story: {
+    title: 'About Page — Our Story',
+    sort_order: 14,
+    enabled: true,
+    content: {
+      heading: 'Our story',
+      paragraphs: [
+        'Ravichandra Textiles celebrates the timeless beauty of Indian craftsmanship. We bring together thoughtfully selected Dharmavaram pure silk sarees that honour traditional artistry while fitting effortlessly into the modern wardrobe.',
+        'From pure temple-woven silks and intricate brocades to breathable everyday handlooms, each piece is chosen for its character, richness of weave, and fine craftsmanship.',
+        'Every saree that reaches you has been checked by hand for weave quality, zari luster and finish before it leaves our store.',
+      ],
+      image: 'https://images.unsplash.com/photo-1717585679395-bbe39b5fb6bc?auto=format&fit=crop&w=1600&q=80',
+      gallery: [],
+    },
+  },
+  social_links: {
+    title: 'Footer — Social & Contact Links',
+    sort_order: 20,
+    enabled: true,
+    content: {
+      whatsapp: '+918317551337',
+      facebook: 'https://www.facebook.com/ravichandrahandlooms',
+      twitter: 'https://twitter.com/ravichandratextiles',
+      instagram: 'https://www.instagram.com/ravichandra_handlooms',
+    },
+  },
+  shipping_settings: {
+    title: 'Shipping Settings',
+    sort_order: 5,
+    enabled: true,
+    content: {
+      fee: 100,
+      freeThreshold: 0,
+    },
+  },
+};
+
 // Public: a single section by key.
 router.get('/:key', async (req, res) => {
   const { rows } = await query(
     'SELECT * FROM home_sections WHERE section_key = $1 AND enabled = TRUE',
     [req.params.key]
   );
-  if (!rows[0]) return res.status(404).json({ error: 'Section not found.' });
+  if (!rows[0]) {
+    const fallback = DEFAULT_SECTION_FALLBACKS[req.params.key];
+    if (fallback) {
+      // Auto-insert in background so DB has it for next time
+      query(
+        `INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (section_key) DO NOTHING`,
+        [
+          req.params.key,
+          fallback.title,
+          fallback.enabled,
+          JSON.stringify(fallback.content),
+          fallback.sort_order,
+        ]
+      ).catch((err) => console.warn('Auto-seed fallback notice:', err?.message));
+
+      return res.json({
+        section: {
+          section_key: req.params.key,
+          ...fallback,
+        },
+      });
+    }
+    return res.status(404).json({ error: 'Section not found.' });
+  }
   res.json({ section: sanitizeHeroSection(rows[0]) });
 });
 

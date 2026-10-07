@@ -342,7 +342,7 @@ async function main() {
   for (const s of homeSections) {
     await pool.query(
       `INSERT INTO home_sections (section_key,title,enabled,content,sort_order) VALUES ($1,$2,$5,$3,$4)
-       ON CONFLICT (section_key) DO UPDATE SET title=$2, content=$3, sort_order=$4`,
+       ON CONFLICT (section_key) DO NOTHING`,
       [s.key, s.title, JSON.stringify(s.content), s.sort, s.enabled !== false]
     );
   }
