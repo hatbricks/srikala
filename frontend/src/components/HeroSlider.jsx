@@ -65,12 +65,16 @@ export default function HeroSlider({ slides: cmsSlides, mobileSlides: cmsMobileS
     ? cmsMobileSlides
     : cmsSlides;
 
+  const filteredCmsSlides = (Array.isArray(activeCmsSlides) && activeCmsSlides.length)
+    ? activeCmsSlides.filter((s) => s.type !== 'video' && !s.url?.endsWith?.('.mp4') && !s.src?.endsWith?.('.mp4'))
+    : [];
+
   const slides = stillLoading
     ? loadingSlides
-    : (Array.isArray(activeCmsSlides) && activeCmsSlides.length
-      ? activeCmsSlides.map((s, i) => ({
+    : (filteredCmsSlides.length
+      ? filteredCmsSlides.map((s, i) => ({
           id: s.id || `${i}-${s.url}`,
-          type: s.type || 'image',
+          type: 'image',
           src: (isMobile && (s.mobileUrl || s.mobileSrc)) ? (s.mobileUrl || s.mobileSrc) : (s.url || s.src),
           alt: s.alt || s.heading || 'Ravichandra Textiles Sarees',
           eyebrow: s.eyebrow,

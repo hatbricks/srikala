@@ -4,40 +4,86 @@ import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
+const defaultHeroSlides = [
+  {
+    id: 'hero-photo-1',
+    type: 'image',
+    url: '/images/hero-slide-1.jpg',
+    mobileUrl: '/images/hero-mobile-slide-1.jpg',
+    alt: 'Handwoven Heritage Saree - Ravichandra Textiles',
+    eyebrow: '',
+    heading: 'Handwoven Heritage.',
+    headingAccent: 'Woven for Generations.',
+    subheading: 'Handwoven silk sarees created in limited existence — crafted slowly, woven with heritage, and never mass produced.',
+    ctaLabel: 'Explore All Collections »',
+    ctaLink: '/products',
+  },
+  {
+    id: 'hero-photo-2',
+    type: 'image',
+    url: '/images/hero-slide-2.jpg',
+    mobileUrl: '/images/hero-mobile-slide-2.jpg',
+    alt: 'Temple Traditions Dharmavaram Silk Saree',
+    eyebrow: 'TEMPLE TRADITIONS',
+    heading: 'Temple Traditions.',
+    headingAccent: 'Woven in Sacred Zari.',
+    subheading: 'Authentic Dharmavaram & Kanchivaram silks, handpicked for divine celebrations and weddings.',
+    ctaLabel: 'Shop Dharmavaram »',
+    ctaLink: '/products?category=kanjivaram',
+  },
+  {
+    id: 'hero-photo-3',
+    type: 'image',
+    url: '/images/hero-slide-3.jpg',
+    alt: 'Royal Bridal Weaves - Dharmavaram Silk',
+    eyebrow: 'ROYAL WEAVES',
+    heading: 'Royal Bridal Weaves.',
+    headingAccent: 'Heirloom for Lifetimes.',
+    subheading: 'Master artisan craftsmanship with pure mulberry silk and authentic silk mark certification.',
+    ctaLabel: 'Discover Bridal Pattu »',
+    ctaLink: '/products?category=banarasi',
+  },
+];
+
+function sanitizeHeroSection(row) {
+  if (!row || row.section_key !== 'hero' || !row.content) return row;
+  let slides = Array.isArray(row.content.slides) ? row.content.slides : [];
+  slides = slides.filter((s) => s.type !== 'video' && !s.url?.endsWith?.('.mp4'));
+  if (!slides.length) {
+    slides = defaultHeroSlides;
+  }
+  return {
+    ...row,
+    content: {
+      ...row.content,
+      slides,
+    },
+  };
+}
+
 // Public: only enabled sections, in display order — this is what the home
 // screen renders from.
 router.get('/', async (_req, res) => {
   const { rows } = await query(
     'SELECT * FROM home_sections WHERE enabled = TRUE ORDER BY sort_order ASC'
   );
-  res.json({ sections: rows });
+  res.json({ sections: rows.map(sanitizeHeroSection) });
 });
 
 // Admin: every section including disabled ones, so the CMS can toggle them.
-// Must be registered BEFORE the public GET /:key below — Express matches
-// routes in registration order, and /:key matches any single path segment
-// including literally "all", which would otherwise shadow this admin
-// route entirely.
 router.get('/all', requireAdmin, async (_req, res) => {
   const { rows } = await query('SELECT * FROM home_sections ORDER BY sort_order ASC');
-  res.json({ sections: rows });
+  res.json({ sections: rows.map(sanitizeHeroSection) });
 });
 
-// Public: a single section by key. For anything that only needs ONE
-// section's content (e.g. the footer reading social_links) rather than
-// the whole home page — GET / returns every enabled section's full
-// content in one payload, which includes things like hero video (stored
-// raw, since video can't be resized the way photos are; easily several
-// MB). Footer.jsx renders on every page site-wide, so before this existed
-// it was fetching that entire payload — hero video included — on every
-// single page view, not just when someone visited Home.
+// Public: a single section by key.
 router.get('/:key', async (req, res) => {
   const { rows } = await query(
     'SELECT * FROM home_sections WHERE section_key = $1 AND enabled = TRUE',
     [req.params.key]
   );
   if (!rows[0]) return res.status(404).json({ error: 'Section not found.' });
-  res.json({ section: rows[0] });
+  res.json({ section: sanitizeHeroSection(rows[0]) });
 });
 
 const DEFAULT_SORT_ORDERS = {

@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { ensureSchema } from './db.js';
 import { attachUser } from './middleware/auth.js';
 
@@ -47,6 +49,13 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (!allowedOrigins.length) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (
+      origin.includes('ravichandratextiles.com') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
     console.warn(`[cors] rejected origin: ${origin} — allowed: ${allowedOrigins.join(', ')}`);
     callback(new Error('Not allowed by CORS'));
   },
@@ -63,8 +72,7 @@ app.use(attachUser);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-// Not under /api — sitemaps live at the domain root by convention, and the
-// frontend (Vercel) proxies /sitemap.xml to this exact path (see vercel.json).
+// Not under /api — sitemaps live at the domain root by convention
 app.use(sitemapRoutes);
 
 app.use('/api/auth', authRoutes);
@@ -82,6 +90,23 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Static frontend build layer (serves React SPA directly from server)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, '../../frontend/dist');
+
+app.use(express.static(distPath));
+
+// For SPA routing, redirect non-API GET requests to index.html
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path === '/sitemap.xml') {
+    return next();
+  }
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) next();
+  });
+});
 
 app.use((err, _req, res, _next) => {
   console.error(err);

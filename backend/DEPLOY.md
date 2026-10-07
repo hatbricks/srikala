@@ -157,96 +157,76 @@ pm2 restart srikala-api    # after deploying new code
 
 ---
 
-## 5. Nginx reverse proxy + SSL
+## 5. Nginx reverse proxy + SSL (Full Stack on VPS — No Vercel)
 
-The API runs on `localhost:4000`; Nginx sits in front on ports 80/443 and
-proxies to it, so you get a clean HTTPS URL instead of exposing the raw
-Node port.
+Both the frontend React SPA and the Express backend can be hosted directly on your VPS, eliminating the need for Vercel entirely.
 
-You'll need a domain (or subdomain, e.g. `api.yourdomain.com`) pointed at
-your VPS's IP via an A record first.
+### A. Point your Domain DNS directly to the VPS
+In your domain registrar (GoDaddy, Hostinger, Cloudflare, Namecheap, etc.):
+1. **A Record**: Host `@` (or `ravichandratextiles.com`) -> Point to your **VPS IP Address**
+2. **A Record** (or CNAME): Host `www` -> Point to your **VPS IP Address**
+3. **A Record**: Host `api` -> Point to your **VPS IP Address**
+4. Delete any old Vercel DNS records (e.g. `cname.vercel-dns.com` or `76.76.21.21`).
 
+### B. Build the Frontend on the VPS
 ```bash
-sudo apt install -y nginx
-sudo nano /etc/nginx/sites-available/srikala-api
+cd /var/www/srikala/frontend
+npm install
+npm run build
+# Creates optimized production files in /var/www/srikala/frontend/dist
 ```
 
-```nginx
-server {
-    listen 80;
-    server_name api.yourdomain.com;
-
-    # Uploaded product/CMS photos are stored as base64 in Postgres for now,
-    # so requests can be a few MB — match the 30mb limit already set in
-    # server/src/index.js.
-    client_max_body_size 30m;
-
-    location / {
-        proxy_pass http://localhost:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
+### C. Configure Nginx
+Copy the pre-configured Nginx file from the repository:
 ```bash
-sudo ln -s /etc/nginx/sites-available/srikala-api /etc/nginx/sites-enabled/
-sudo nginx -t          # check config syntax
+sudo cp /var/www/srikala/nginx-ravichandra.conf /etc/nginx/sites-available/ravichandra.conf
+sudo ln -sf /etc/nginx/sites-available/ravichandra.conf /etc/nginx/sites-enabled/
+sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Free SSL cert via Let's Encrypt:
-
+### D. Generate Free SSL Certificate (HTTPS)
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d api.yourdomain.com
+sudo certbot --nginx -d ravichandratextiles.com -d www.ravichandratextiles.com -d api.ravichandratextiles.com
 ```
 
-Certbot edits the Nginx config to add the HTTPS block and sets up
-auto-renewal. Confirm with:
-
-```bash
-curl https://api.yourdomain.com/api/health
-# should return: {"ok":true}
-```
+Certbot will automatically install the SSL certificates and configure automatic renewals.
 
 ---
 
-## 6. Point Vercel at the new API
+## 6. Removing Code / Project from Vercel
 
-In your Vercel project settings → **Environment Variables**, set:
+Once your domain's DNS is pointing to the VPS:
+1. Log into your [Vercel Dashboard](https://vercel.com).
+2. Go to your **Project Settings** → **Domains**.
+3. Remove `ravichandratextiles.com` and `www.ravichandratextiles.com` from Vercel so there is no conflict.
+4. Go to **Settings** → **Advanced** → **Delete Project** (or simply leave it disconnected / paused).
 
-```
-VITE_API_URL=https://api.yourdomain.com
-```
-
-Redeploy on Vercel (env var changes need a redeploy to take effect — Vercel
-usually prompts this automatically, or trigger it manually from the
-dashboard). Then double check `CLIENT_URL` in the VPS's `server/.env`
-matches your actual Vercel URL exactly (including `https://`, no trailing
-slash), since that's what CORS checks against.
+Your site is now 100% self-hosted on your own high-performance VPS.
 
 ---
 
-## 7. Deploying updates later
+## 7. Deploying updates on the VPS
+
+Whenever you push new changes to GitHub:
 
 ```bash
-cd /var/www/srikala/backend
-git pull                # or re-scp your changed files
-npm install              # only if package.json changed
-pm2 restart srikala-api
-```
+cd /var/www/srikala
 
-Schema changes (like the `images` column added for product galleries) apply
-automatically on the next boot — `ensureSchema()` runs `schema.sql` on every
-start, and every statement in it is `IF NOT EXISTS`, so it's safe to run
-repeatedly without wiping data.
+# 1. Pull latest changes
+git pull origin main
+
+# 2. Build frontend
+cd frontend
+npm install
+npm run build
+
+# 3. Restart API
+cd ../backend
+npm install
+pm2 restart ravichandra-api
+```
 
 ---
 
@@ -254,8 +234,9 @@ repeatedly without wiping data.
 
 - [ ] Changed the seeded admin password
 - [ ] Razorpay keys switched from Test to Live
-- [ ] Resend sending domain verified (not the shared `onboarding@resend.dev`)
-- [ ] `JWT_SECRET` is a real random value, not the placeholder
-- [ ] Postgres password is strong and not reused elsewhere
-- [ ] `ufw status` shows only SSH/80/443 open
-- [ ] Set up automated Postgres backups (`pg_dump` via cron is a fine start)
+- [ ] Resend sending domain verified
+- [ ] `JWT_SECRET` is a real random value
+- [ ] Postgres password is strong
+- [ ] Domain DNS points to VPS IP
+- [ ] SSL active on `ravichandratextiles.com`, `www.`, and `api.`
+
