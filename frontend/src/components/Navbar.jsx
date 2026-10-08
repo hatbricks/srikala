@@ -116,7 +116,16 @@ export default function Navbar() {
           </button>
         </div>
 
-        <Link to="/" className="brand-link" onClick={() => setMenuOpen(false)}>
+        <Link
+          to="/"
+          className="brand-link"
+          onClick={() => {
+            setMenuOpen(false);
+            if (location.pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        >
           <img
             id="navBrandLogo"
             src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight}
@@ -325,11 +334,16 @@ export default function Navbar() {
         .brand-link {
           display: flex;
           align-items: center;
-          transition: opacity 0.2s ease, transform 0.2s ease;
+          transition: opacity 0.2s ease;
         }
-        .brand-link:hover {
-          opacity: 0.92;
-          transform: scale(1.02);
+        @media (min-width: 861px) {
+          .brand-link {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+          }
+          .brand-link:hover {
+            opacity: 0.92;
+            transform: scale(1.02);
+          }
         }
         .brand-logo {
           height: 46px;
@@ -685,11 +699,14 @@ export default function Navbar() {
             display: flex;
             padding: 8px;
           }
-          .brand-link {
+          .brand-link,
+          .brand-link:hover,
+          .brand-link:focus,
+          .brand-link:active {
             position: absolute;
             left: 50%;
             top: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) !important;
             z-index: 1;
             display: flex;
             align-items: center;
@@ -697,6 +714,11 @@ export default function Navbar() {
             max-width: calc(100% - 120px);
             text-align: center;
             pointer-events: auto;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0 !important;
+          }
+          .brand-link:active {
+            opacity: 0.85;
           }
           .brand-logo {
             height: 38px;
@@ -729,7 +751,10 @@ export default function Navbar() {
 
         @media (max-width: 400px) {
           .navbar-inner { padding: 0 8px; }
-          .brand-link { max-width: calc(100% - 110px); }
+          .brand-link,
+          .brand-link:hover,
+          .brand-link:focus,
+          .brand-link:active { max-width: calc(100% - 110px); }
           .brand-logo { height: 32px; max-width: 145px; }
           .icon-btn { width: 34px; height: 34px; }
           .icon-btn svg { width: 19px; height: 19px; }
@@ -740,7 +765,10 @@ export default function Navbar() {
 
         @media (max-width: 350px) {
           .navbar-inner { padding: 0 6px; }
-          .brand-link { max-width: calc(100% - 95px); }
+          .brand-link,
+          .brand-link:hover,
+          .brand-link:focus,
+          .brand-link:active { max-width: calc(100% - 95px); }
           .brand-logo { height: 28px; max-width: 125px; }
           .icon-btn { width: 30px; height: 30px; }
           .icon-btn svg { width: 17px; height: 17px; }
