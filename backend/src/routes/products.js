@@ -90,37 +90,33 @@ router.get('/', async (req, res) => {
   });
 });
 
-// GET /api/products/admin/all — all products with full columns & all variants
+// GET /api/products/admin/all — all products with lightweight list columns (prevents multi-megabyte payloads)
 router.get('/admin/all', requireAdmin, async (_req, res) => {
-  const { rows } = await query('SELECT * FROM products ORDER BY created_at DESC');
+  const adminListColumns = `
+    id, name, category_id, price, mrp, stock, sku, short_description,
+    image, hover_image, active, created_at,
+    (SELECT COUNT(*) FROM product_variants WHERE product_id = products.id) AS variant_count
+  `;
+  const { rows } = await query(`SELECT ${adminListColumns} FROM products ORDER BY created_at DESC`);
   if (!rows.length) return res.json({ products: [] });
 
-  const productIds = rows.map((p) => p.id);
-  const { rows: variantRows } = await query(
-    `SELECT * FROM product_variants WHERE product_id = ANY($1) ORDER BY id ASC`,
-    [productIds]
-  );
-
-  const variantsByProduct = {};
-  for (const v of variantRows) {
-    if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-    variantsByProduct[v.product_id].push(v);
-  }
-
   res.json({
-    products: rows.map((p) => mapProduct(p, variantsByProduct[p.id] || [])),
+    products: rows.map((p) => mapProduct(p, [])),
   });
 });
 
-// GET /api/products/:id — single product with all active variants
+// GET /api/products/:id — single product with all variants (admins can view inactive products)
 router.get('/:id', async (req, res) => {
-  const { rows } = await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
+  const isAdmin = Boolean(req.user?.isAdmin);
+  const { rows } = isAdmin
+    ? await query('SELECT * FROM products WHERE id = $1', [req.params.id])
+    : await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
+
   if (!rows[0]) return res.status(404).json({ error: 'Product not found.' });
 
-  const { rows: variantRows } = await query(
-    'SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC',
-    [req.params.id]
-  );
+  const { rows: variantRows } = isAdmin
+    ? await query('SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC', [req.params.id])
+    : await query('SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC', [req.params.id]);
 
   res.json({ product: mapProduct(rows[0], variantRows) });
 });

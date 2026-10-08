@@ -80,6 +80,15 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS hover_image TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 
+-- Performance indexes for fast listing, admin searches, and scaling with large catalogs
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
+
 -- Home page CMS — every section on the home screen is a row here, keyed by
 -- a stable `section_key` (e.g. 'hero', 'promo_banner', 'featured_categories').
 -- `content` is free-form JSON so the admin panel can add fields per-section

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
@@ -81,6 +81,17 @@ export default function AdminProducts() {
   const galleryInput = useRef(null);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [movingId, setMovingId] = useState(null);
+
+  // Search, filter & pagination state for high-performance product management
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory, filterStatus]);
 
   const defaultHero = {
     badge: 'HERITAGE HANDLOOMS',
@@ -389,6 +400,42 @@ export default function AdminProducts() {
   const productsInCategory = form.category
     ? products.filter((p) => p.category === form.category && p.id !== editingId)
     : [];
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      if (filterCategory !== 'all' && p.category !== filterCategory) return false;
+      if (filterStatus === 'active' && p.active === false) return false;
+      if (filterStatus === 'hidden' && p.active !== false) return false;
+      if (filterStatus === 'low' && (p.stock === 0 || p.stock > 5)) return false;
+      if (filterStatus === 'out' && p.stock > 0) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesName = p.name?.toLowerCase().includes(q);
+        const matchesSku = p.sku?.toLowerCase().includes(q);
+        const cat = categoryName(p.category)?.toLowerCase();
+        const matchesCat = cat?.includes(q);
+        if (!matchesName && !matchesSku && !matchesCat) return false;
+      }
+      return true;
+    });
+  }, [products, filterCategory, filterStatus, searchQuery, categories]);
+
+  const statusCounts = useMemo(() => {
+    return {
+      all: products.length,
+      active: products.filter((p) => p.active !== false).length,
+      hidden: products.filter((p) => p.active === false).length,
+      low: products.filter((p) => p.stock > 0 && p.stock <= 5).length,
+      out: products.filter((p) => p.stock === 0).length,
+    };
+  }, [products]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredProducts.slice(start, start + PAGE_SIZE);
+  }, [filteredProducts, currentPage]);
 
   return (
     <div>
@@ -908,66 +955,199 @@ export default function AdminProducts() {
         </form>
 
         <div className="cms-list">
-          {products.length === 0 && <p className="empty">No products yet.</p>}
-          {products.map((p) => {
-            const hasDiscount = p.mrp > p.price;
-            const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
-            const hasHover = Boolean(p.hoverImage || p.hover_image);
-            return (
-              <div className={`cms-row ${p.active === false ? 'is-hidden' : ''}`} key={p.id}>
-                <div
-                  className="admin-row-thumb-container"
-                  title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
+          {/* --- Product List Filter & Search Toolbar --- */}
+          <div className="admin-product-toolbar">
+            <div className="admin-toolbar-top">
+              <div className="admin-search-wrapper">
+                <input
+                  type="text"
+                  className="admin-search-input"
+                  placeholder="🔍 Search sarees by title, SKU, category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="clear-search-btn"
+                    onClick={() => setSearchQuery('')}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              <select
+                className="admin-cat-filter"
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                aria-label="Filter by category"
+              >
+                <option value="all">All Categories ({products.length})</option>
+                {categories.map((c) => {
+                  const count = products.filter((p) => p.category === c.id).length;
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="admin-status-pills">
+              <button
+                type="button"
+                className={`status-pill ${filterStatus === 'all' ? 'is-active' : ''}`}
+                onClick={() => setFilterStatus('all')}
+              >
+                All <span>{statusCounts.all}</span>
+              </button>
+              <button
+                type="button"
+                className={`status-pill ${filterStatus === 'active' ? 'is-active' : ''}`}
+                onClick={() => setFilterStatus('active')}
+              >
+                Active <span>{statusCounts.active}</span>
+              </button>
+              <button
+                type="button"
+                className={`status-pill ${filterStatus === 'hidden' ? 'is-active' : ''}`}
+                onClick={() => setFilterStatus('hidden')}
+              >
+                Hidden <span>{statusCounts.hidden}</span>
+              </button>
+              <button
+                type="button"
+                className={`status-pill status-pill-warn ${filterStatus === 'low' ? 'is-active' : ''}`}
+                onClick={() => setFilterStatus('low')}
+              >
+                Low Stock <span>{statusCounts.low}</span>
+              </button>
+              <button
+                type="button"
+                className={`status-pill status-pill-danger ${filterStatus === 'out' ? 'is-active' : ''}`}
+                onClick={() => setFilterStatus('out')}
+              >
+                Out of Stock <span>{statusCounts.out}</span>
+              </button>
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="admin-empty-state">
+              <p className="empty">
+                {products.length === 0
+                  ? 'No products added yet. Use the form on the left to add your first saree.'
+                  : 'No sarees match your current search or filter criteria.'}
+              </p>
+              {(searchQuery || filterCategory !== 'all' || filterStatus !== 'all') && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  style={{ alignSelf: 'center', marginTop: 10 }}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterCategory('all');
+                    setFilterStatus('all');
+                  }}
                 >
-                  <img src={p.image} alt="" className="row-thumb-sq" />
-                  {hasHover && (
-                    <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
-                  )}
-                </div>
-                <div className="row-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <strong>{p.name}</strong>
+                  Reset Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            paginatedProducts.map((p) => {
+              const hasDiscount = p.mrp > p.price;
+              const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+              const hasHover = Boolean(p.hoverImage || p.hover_image);
+              return (
+                <div className={`cms-row ${p.active === false ? 'is-hidden' : ''}`} key={p.id}>
+                  <div
+                    className="admin-row-thumb-container"
+                    title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
+                  >
+                    <img src={p.image} alt="" className="row-thumb-sq" />
                     {hasHover && (
-                      <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
-                        Model Hover
-                      </span>
+                      <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
                     )}
                   </div>
-                  <span className="row-category">{categoryName(p.category)}</span>
-                  <span className="row-price-line">
-                    <span className="row-price">{formatINR(p.price)}</span>
-                    {hasDiscount && (
-                      <>
-                        <span className="row-mrp">{formatINR(p.mrp)}</span>
-                        <span className="row-discount">{discountPct}% off</span>
-                      </>
-                    )}
-                  </span>
+                  <div className="row-info">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <strong>{p.name}</strong>
+                      {hasHover && (
+                        <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
+                          Model Hover
+                        </span>
+                      )}
+                    </div>
+                    <span className="row-category">{categoryName(p.category)}</span>
+                    <span className="row-price-line">
+                      <span className="row-price">{formatINR(p.price)}</span>
+                      {hasDiscount && (
+                        <>
+                          <span className="row-mrp">{formatINR(p.mrp)}</span>
+                          <span className="row-discount">{discountPct}% off</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {p.active === false && <span className="hidden-badge">Hidden</span>}
+                  <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
+                  <div className="row-actions">
+                    <select
+                      className="row-move-select"
+                      value={p.category}
+                      disabled={movingId === p.id}
+                      onChange={(e) => handleMoveCategory(p, e.target.value)}
+                      aria-label={`Move ${p.name} to a different category`}
+                      title="Move to a different category"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => handleEdit(p)}>Edit</button>
+                    <button onClick={() => handleToggleActive(p)} disabled={movingId === p.id}>
+                      {p.active === false ? 'Show' : 'Hide'}
+                    </button>
+                    <button onClick={() => handleDelete(p.id)} className="danger">Delete</button>
+                  </div>
                 </div>
-                {p.active === false && <span className="hidden-badge">Hidden</span>}
-                <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
-                <div className="row-actions">
-                  <select
-                    className="row-move-select"
-                    value={p.category}
-                    disabled={movingId === p.id}
-                    onChange={(e) => handleMoveCategory(p, e.target.value)}
-                    aria-label={`Move ${p.name} to a different category`}
-                    title="Move to a different category"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => handleEdit(p)}>Edit</button>
-                  <button onClick={() => handleToggleActive(p)} disabled={movingId === p.id}>
-                    {p.active === false ? 'Show' : 'Hide'}
-                  </button>
-                  <button onClick={() => handleDelete(p.id)} className="danger">Delete</button>
-                </div>
+              );
+            })
+          )}
+
+          {/* --- Pagination Controls --- */}
+          {totalPages > 1 && (
+            <div className="admin-pagination-bar">
+              <span className="pagination-count-label">
+                Showing <strong>{((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, filteredProducts.length)}</strong> of <strong>{filteredProducts.length}</strong> products
+              </span>
+              <div className="pagination-nav-actions">
+                <button
+                  type="button"
+                  className="page-nav-btn"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((cp) => Math.max(1, cp - 1))}
+                >
+                  « Prev
+                </button>
+                <span className="page-indicator">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="page-nav-btn"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((cp) => Math.min(totalPages, cp + 1))}
+                >
+                  Next »
+                </button>
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1226,6 +1406,160 @@ export default function AdminProducts() {
         }
         .form-actions { display: flex; gap: 10px; }
         .form-actions .btn { padding: 11px 20px; font-size: 13px; }
+        /* Admin Product Filter & Search Toolbar */
+        .admin-product-toolbar {
+          background: var(--paper);
+          border-radius: var(--radius-md);
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          border: 1px solid var(--stone-200);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          margin-bottom: 6px;
+        }
+        .admin-toolbar-top {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+        .admin-search-wrapper {
+          position: relative;
+          flex: 1;
+        }
+        .admin-search-input {
+          width: 100%;
+          padding: 9px 32px 9px 12px;
+          border: 1px solid var(--stone-300);
+          border-radius: var(--radius-sm);
+          font-size: 13px;
+          font-family: var(--font-body);
+          background: #fff;
+          box-sizing: border-box;
+        }
+        .admin-search-input:focus {
+          outline: none;
+          border-color: var(--maroon-700, #581e15);
+        }
+        .clear-search-btn {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          font-size: 16px;
+          color: var(--ink-400);
+          cursor: pointer;
+          padding: 2px 6px;
+        }
+        .admin-cat-filter {
+          min-width: 170px;
+          padding: 9px 12px;
+          border: 1px solid var(--stone-300);
+          border-radius: var(--radius-sm);
+          font-size: 13px;
+          background: #fff;
+          font-family: var(--font-body);
+          cursor: pointer;
+        }
+        .admin-status-pills {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .status-pill {
+          background: var(--stone-100);
+          border: 1px solid var(--stone-200);
+          border-radius: 999px;
+          padding: 4px 12px;
+          font-size: 12px;
+          color: var(--ink-600);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+        }
+        .status-pill span {
+          background: rgba(0, 0, 0, 0.06);
+          padding: 1px 6px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+        }
+        .status-pill:hover {
+          background: var(--stone-200);
+        }
+        .status-pill.is-active {
+          background: var(--maroon-900, #42120b);
+          color: #fff;
+          border-color: var(--maroon-900, #42120b);
+        }
+        .status-pill.is-active span {
+          background: rgba(255, 255, 255, 0.25);
+          color: #fff;
+        }
+        .status-pill-warn.is-active {
+          background: #8a5a10;
+          border-color: #8a5a10;
+        }
+        .status-pill-danger.is-active {
+          background: #a13a3a;
+          border-color: #a13a3a;
+        }
+        .admin-empty-state {
+          background: var(--paper);
+          border-radius: var(--radius-md);
+          padding: 32px 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        /* Pagination Bar */
+        .admin-pagination-bar {
+          background: var(--paper);
+          border-radius: var(--radius-md);
+          padding: 12px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border: 1px solid var(--stone-200);
+          margin-top: 6px;
+        }
+        .pagination-count-label {
+          font-size: 12.5px;
+          color: var(--ink-600);
+        }
+        .pagination-nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .page-nav-btn {
+          background: var(--stone-100);
+          border: 1px solid var(--stone-300);
+          border-radius: var(--radius-sm);
+          padding: 5px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--ink-700);
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+        .page-nav-btn:hover:not(:disabled) {
+          background: var(--stone-200);
+        }
+        .page-nav-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .page-indicator {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--ink-700);
+        }
 
         .cms-list { display: flex; flex-direction: column; gap: 10px; }
         .cms-row {
