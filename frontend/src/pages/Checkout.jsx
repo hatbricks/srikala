@@ -438,16 +438,6 @@ export default function Checkout() {
             {shippingError && (
               <p className="shipping-error-nudge">{shippingError}</p>
             )}
-            {amountToFreeShipping > 0 && effectiveShippingFee > 0 && (
-              <p className="free-shipping-nudge">
-                Add {formatINR(amountToFreeShipping)} more to get free shipping.
-              </p>
-            )}
-            {isGstEnabled && !isExclusive && gstTaxAmount > 0 && (
-              <p className="tax-inclusive-nudge">
-                Includes ₹{gstTaxAmount.toLocaleString('en-IN')} ({gstRate}%) GST
-              </p>
-            )}
             <div className="summary-row total"><span>Total</span><span>{formatINR(total)}</span></div>
             {error && <p className="checkout-error">{error}</p>}
             <button
