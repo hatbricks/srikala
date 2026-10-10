@@ -57,6 +57,7 @@ export default function GoogleReviewsSection({ cmsData }) {
 
   const [reactions, setReactions] = useState({});
   const [copiedId, setCopiedId] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
 
   function handleHeartClick(e, id) {
     e.stopPropagation();
@@ -91,7 +92,13 @@ export default function GoogleReviewsSection({ cmsData }) {
       <div className="container">
         {/* Header with Google Badge */}
         <div className="google-reviews-head">
-          <div className="google-badge-brand">
+          <a
+            href={data.googleBusinessUrl || 'https://share.google/rLeQl6DO3cPtU5rql'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="google-badge-brand"
+            title="Rate Ravichandra Textiles on Google"
+          >
             <svg viewBox="0 0 24 24" width="26" height="26" className="google-icon" aria-hidden="true">
               <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
               <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
@@ -101,12 +108,37 @@ export default function GoogleReviewsSection({ cmsData }) {
             <div className="google-rating-info">
               <span className="google-title">Google Reviews</span>
               <div className="google-stars-row">
-                <span className="google-score">{data.averageRating || '4.9'}</span>
-                <span className="google-gold-stars">★★★★★</span>
-                <span className="google-count">({data.totalReviews || '150+'})</span>
+                <span className="google-rate-label">Rate us</span>
+                <div
+                  className="google-empty-stars-group"
+                  onMouseLeave={() => setHoverRating(0)}
+                  role="radiogroup"
+                  aria-label="Rate us on Google"
+                >
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`google-star-item ${hoverRating >= star ? 'is-active' : ''}`}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        window.open(data.googleBusinessUrl || 'https://share.google/rLeQl6DO3cPtU5rql', '_blank', 'noopener,noreferrer');
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      title={`Rate ${star} star on Google`}
+                      aria-label={`Rate ${star} star on Google`}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" className="empty-star-svg" aria-hidden="true">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </a>
 
           <div className="google-head-titles">
             <h2 className="section-title">{data.heading}</h2>
@@ -248,12 +280,22 @@ export default function GoogleReviewsSection({ cmsData }) {
           border-radius: 999px;
           border: 1px solid rgba(197, 139, 56, 0.28);
           box-shadow: 0 4px 14px rgba(184, 134, 11, 0.08);
+          text-decoration: none;
+          color: inherit;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .google-badge-brand:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(184, 134, 11, 0.14);
+          border-color: rgba(197, 139, 56, 0.45);
         }
 
         .google-rating-info {
           display: flex;
           flex-direction: column;
-          gap: 1px;
+          gap: 2px;
         }
 
         .google-title {
@@ -261,24 +303,61 @@ export default function GoogleReviewsSection({ cmsData }) {
           font-weight: 600;
           color: #2c1810;
           letter-spacing: 0.02em;
+          line-height: 1.2;
         }
 
         .google-stars-row {
           display: flex;
           align-items: center;
-          gap: 5px;
-          font-size: 11.5px;
+          gap: 7px;
+          font-size: 12px;
           color: #6e594d;
         }
 
-        .google-score {
-          font-weight: 700;
-          color: #2c1810;
+        .google-rate-label {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #8c7365;
+          letter-spacing: 0.01em;
+          transition: color 0.15s ease;
         }
 
-        .google-gold-stars {
-          color: #f59e0b;
-          letter-spacing: 1px;
+        .google-badge-brand:hover .google-rate-label {
+          color: #b87d2b;
+        }
+
+        .google-empty-stars-group {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+        }
+
+        .google-star-item {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          padding: 1px;
+          transition: transform 0.15s ease;
+        }
+
+        .google-star-item:hover {
+          transform: scale(1.15);
+        }
+
+        .empty-star-svg {
+          fill: transparent;
+          stroke: #9ca3af;
+          stroke-width: 1.8;
+          stroke-linejoin: round;
+          stroke-linecap: round;
+          transition: fill 0.15s ease, stroke 0.15s ease, filter 0.15s ease;
+        }
+
+        .google-star-item.is-active .empty-star-svg {
+          fill: #f59e0b;
+          stroke: #d97706;
+          filter: drop-shadow(0 1px 2px rgba(245, 158, 11, 0.4));
         }
 
         .google-head-titles {
