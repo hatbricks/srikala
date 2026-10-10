@@ -127,7 +127,9 @@ const homeSections = [
     productIds: [],
   } },
   { key: 'shipping_settings', title: 'Shipping', sort: 5, content: {
-    fee: 100,
+    feeSouth: 120,
+    feeNorth: 150,
+    fee: 120,
     // 0 = free-shipping tier turned off; otherwise orders at or above
     // this subtotal get free shipping instead of the flat fee above.
     freeThreshold: 0,

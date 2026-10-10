@@ -130,7 +130,9 @@ const DEFAULT_SECTION_FALLBACKS = {
     sort_order: 5,
     enabled: true,
     content: {
-      fee: 100,
+      feeSouth: 120,
+      feeNorth: 150,
+      fee: 120,
       freeThreshold: 0,
     },
   },

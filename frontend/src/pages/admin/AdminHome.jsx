@@ -68,7 +68,9 @@ const sectionFields = {
     { key: 'heading', label: 'Heading', type: 'text' },
   ],
   shipping_settings: [
-    { key: 'fee', label: 'Standard shipping fee (₹)', type: 'number' },
+    { key: 'feeSouth', label: 'South India Delivery Fee (₹) — PINs starting with 5 or 6 (AP, TS, KA, TN, KL)', type: 'number' },
+    { key: 'feeNorth', label: 'North & Rest of India Delivery Fee (₹) — PINs starting with 1, 2, 3, 4, 7, 8', type: 'number' },
+    { key: 'fee', label: 'Standard fallback fee (₹)', type: 'number' },
     { key: 'freeThreshold', label: 'Free shipping when order total is at least (₹) — set to 0 to turn off free shipping', type: 'number' },
   ],
   story: [

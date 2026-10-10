@@ -14,7 +14,7 @@ const defaultGstSettings = {
 };
 
 export default function AdminSettings() {
-  const [shipping, setShipping] = useState({ fee: 100, freeThreshold: 5000 });
+  const [shipping, setShipping] = useState({ feeSouth: 120, feeNorth: 150, fee: 120, freeThreshold: 0 });
   const [gst, setGst] = useState(defaultGstSettings);
   const [contact, setContact] = useState({ email: '', phone: '', whatsapp: '', address: '' });
   const [banner, setBanner] = useState({ text: 'Handcrafted Heirlooms • Free shipping on orders above ₹5,000', active: true });
@@ -32,7 +32,15 @@ export default function AdminSettings() {
   async function loadSettings() {
     try {
       const { settings } = await api.getSettings();
-      if (settings.shipping_settings) setShipping(settings.shipping_settings);
+      if (settings.shipping_settings) {
+        setShipping({
+          feeSouth: 120,
+          feeNorth: 150,
+          fee: 120,
+          freeThreshold: 0,
+          ...settings.shipping_settings,
+        });
+      }
       if (settings.gst_settings) setGst({ ...defaultGstSettings, ...settings.gst_settings });
       if (settings.contact_info) setContact(settings.contact_info);
       if (settings.announcement_banner) setBanner(settings.announcement_banner);
@@ -90,40 +98,62 @@ export default function AdminSettings() {
         <div className="settings-card">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <TruckIcon width={18} height={18} style={{ color: 'var(--maroon-900)', flexShrink: 0 }} />
-            Delivery &amp; Shipping Charges
+            Delivery &amp; Regional Shipping Charges
           </h3>
-          <p className="card-sub">Fallback courier fee and minimum purchase amount to qualify for free shipping.</p>
+          <p className="card-sub">Automatic pincode-based delivery rates and minimum order threshold for free shipping.</p>
 
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSave('shipping_settings', shipping);
+              handleSave('shipping_settings', {
+                ...shipping,
+                fee: shipping.feeSouth || 120,
+              });
             }}
           >
             <div className="form-row">
               <label>
-                Standard Delivery Fee (₹)
+                South India Delivery Fee (₹)
                 <input
                   type="number"
                   min="0"
-                  value={shipping.fee}
-                  onChange={(e) => setShipping({ ...shipping, fee: Number(e.target.value) })}
+                  value={shipping.feeSouth ?? 120}
+                  onChange={(e) => setShipping({ ...shipping, feeSouth: Number(e.target.value) })}
                   required
                 />
+                <span className="field-hint">PINs starting with 5 or 6 (AP, Telangana, Karnataka, Tamil Nadu, Kerala, Puducherry)</span>
               </label>
 
+              <label>
+                North &amp; Rest of India Delivery Fee (₹)
+                <input
+                  type="number"
+                  min="0"
+                  value={shipping.feeNorth ?? 150}
+                  onChange={(e) => setShipping({ ...shipping, feeNorth: Number(e.target.value) })}
+                  required
+                />
+                <span className="field-hint">All other Indian PINs (starting with 1, 2, 3, 4, 7, 8)</span>
+              </label>
+            </div>
+
+            <div className="form-row" style={{ marginTop: 12 }}>
               <label>
                 Free Shipping Threshold (₹)
                 <input
                   type="number"
                   min="0"
-                  value={shipping.freeThreshold}
+                  value={shipping.freeThreshold ?? 0}
                   onChange={(e) => setShipping({ ...shipping, freeThreshold: Number(e.target.value) })}
                   required
                 />
+                <span className="field-hint">Set to 0 to disable free delivery, or an amount (e.g. ₹5,000) to grant free shipping above it</span>
               </label>
             </div>
-            <p className="field-hint">Customers with bags above ₹{shipping.freeThreshold} receive 100% free delivery across India.</p>
+
+            <p className="field-hint" style={{ marginTop: 8 }}>
+              Delivery fee is dynamically decided at checkout from the customer's delivery pincode: ₹{shipping.feeSouth ?? 120} for South India, ₹{shipping.feeNorth ?? 150} for North &amp; Rest of India. It is never displayed in the Cart drawer.
+            </p>
 
             <button type="submit" className="btn btn-primary btn-sm">Save Shipping Rules</button>
           </form>

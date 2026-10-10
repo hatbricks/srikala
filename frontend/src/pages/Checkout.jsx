@@ -7,10 +7,11 @@ import { useCart } from '../context/CartContext';
 import { api } from '../data/api';
 import { formatINR } from '../data/store';
 import BRAND from '../config/brand';
+import { getZoneShippingFee } from '../utils/shippingZones';
 
 const emptyAddress = { name: '', mobile: '', line1: '', line2: '', city: '', state: '', pincode: '', country: 'India', isDefault: false };
 
-const DEFAULT_SHIPPING = { fee: 100, freeThreshold: 0 };
+const DEFAULT_SHIPPING = { feeSouth: 120, feeNorth: 150, fee: 120, freeThreshold: 0 };
 
 function loadRazorpayScript() {
   return new Promise((resolve, reject) => {
@@ -47,8 +48,17 @@ export default function Checkout() {
 
   const discount = coupon?.discount || 0;
   const netOrderAmount = Math.max(subtotal - discount, 0);
+
+  const selectedAddress = addresses.find((a) => a.id === selectedId);
+  const activePincode = (selectedAddress?.pincode || (showForm ? form.pincode : '')).trim();
+  const activeState = (selectedAddress?.state || (showForm ? form.state : '')).trim();
+  const hasValidPincode = /^[1-9][0-9]{5}$/.test(activePincode);
+  const localZone = hasValidPincode ? getZoneShippingFee(activePincode, activeState, shippingSettings) : null;
+
   const qualifiesForFreeShipping = shippingSettings.freeThreshold > 0 && subtotal >= shippingSettings.freeThreshold;
-  const effectiveShippingFee = shippingEstimate ? shippingEstimate.fee : (qualifiesForFreeShipping ? 0 : shippingSettings.fee);
+  const effectiveShippingFee = qualifiesForFreeShipping
+    ? 0
+    : (shippingEstimate ? shippingEstimate.fee : (localZone ? localZone.fee : 120));
   const amountToFreeShipping = shippingSettings.freeThreshold > 0 ? Math.max(shippingSettings.freeThreshold - subtotal, 0) : 0;
 
   // GST Calculation
@@ -92,15 +102,32 @@ export default function Checkout() {
   }
 
   useEffect(() => {
-    api.getHomeSection('shipping_settings').then(({ section }) => {
-      if (section?.content) {
-        const { fee, freeThreshold } = section.content;
-        setShippingSettings({
-          fee: Number.isFinite(fee) ? fee : DEFAULT_SHIPPING.fee,
-          freeThreshold: Number.isFinite(freeThreshold) ? freeThreshold : DEFAULT_SHIPPING.freeThreshold,
-        });
-      }
-    }).catch(() => {});
+    const applyShippingData = (data) => {
+      if (!data) return;
+      const { fee, feeSouth, feeNorth, freeThreshold } = data;
+      setShippingSettings({
+        feeSouth: Number.isFinite(feeSouth) ? feeSouth : 120,
+        feeNorth: Number.isFinite(feeNorth) ? feeNorth : 150,
+        fee: Number.isFinite(fee) ? fee : 120,
+        freeThreshold: Number.isFinite(freeThreshold) ? freeThreshold : DEFAULT_SHIPPING.freeThreshold,
+      });
+    };
+
+    api.getSetting('shipping_settings')
+      .then(({ value }) => {
+        if (value && (value.feeSouth != null || value.feeNorth != null || value.fee != null)) {
+          applyShippingData(value);
+        } else {
+          return api.getHomeSection('shipping_settings').then(({ section }) => {
+            applyShippingData(section?.content);
+          });
+        }
+      })
+      .catch(() => {
+        api.getHomeSection('shipping_settings').then(({ section }) => {
+          applyShippingData(section?.content);
+        }).catch(() => {});
+      });
 
     api.getSetting('gst_settings').then(({ value }) => {
       if (value) {
@@ -123,21 +150,26 @@ export default function Checkout() {
       .catch(() => setShowForm(true));
   }, [user]);
 
-  // Dynamically calculate shipping when address or cart changes
+  // Dynamically calculate shipping when address or form pincode changes
   useEffect(() => {
-    const address = addresses.find((a) => a.id === selectedId);
-    if (address?.pincode && /^[1-9][0-9]{5}$/.test(address.pincode) && items.length > 0) {
+    const pinToTest = (selectedAddress?.pincode || (showForm && form.pincode ? form.pincode : '')).trim();
+    const stateToTest = (selectedAddress?.state || (showForm && form.state ? form.state : '')).trim();
+
+    if (/^[1-9][0-9]{5}$/.test(pinToTest) && items.length > 0) {
       setCalculatingShipping(true);
       setShippingError('');
       api
         .calculateShipping({
-          pincode: address.pincode,
+          pincode: pinToTest,
+          state: stateToTest,
           items: items.map((i) => ({ productId: i.id, variantId: i.variantId, qty: i.qty })),
           subtotal,
         })
         .then((res) => {
           setShippingEstimate({
             fee: res.shippingFee,
+            zone: res.zone,
+            isSouthIndia: res.isSouthIndia,
             etd: res.estimatedDays,
             courierName: res.courierName,
             freeShipping: res.freeShipping,
@@ -148,7 +180,7 @@ export default function Checkout() {
         })
         .finally(() => setCalculatingShipping(false));
     }
-  }, [selectedId, addresses, items, subtotal]);
+  }, [selectedId, addresses, showForm, form.pincode, form.state, items, subtotal]);
 
   async function handleSaveAddress(e) {
     e.preventDefault();
@@ -383,9 +415,23 @@ export default function Checkout() {
               <div className="summary-row"><span>GST ({gstRate}%)</span><span>+{formatINR(gstTaxAmount)}</span></div>
             )}
             <div className="summary-row">
-              <span>Shipping {shippingEstimate?.courierName ? `(${shippingEstimate.courierName})` : ''}</span>
+              <span>
+                Shipping
+                {shippingEstimate?.zone
+                  ? ` (${shippingEstimate.zone})`
+                  : localZone?.zoneName
+                  ? ` (${localZone.zoneName})`
+                  : ''}
+              </span>
               <span>{calculatingShipping ? 'Calculating…' : effectiveShippingFee === 0 ? 'Free' : formatINR(effectiveShippingFee)}</span>
             </div>
+            {localZone && !qualifiesForFreeShipping && (
+              <p className="shipping-zone-badge">
+                {localZone.isSouth
+                  ? '📍 South India rate (₹120) applied'
+                  : '📍 North & Rest of India rate (₹150) applied'}
+              </p>
+            )}
             {shippingEstimate?.etd && (
               <p className="shipping-etd-nudge">Estimated delivery: {shippingEstimate.etd}</p>
             )}
@@ -522,6 +568,16 @@ export default function Checkout() {
 
         .summary-row { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--ink-600); margin-bottom: 12px; }
         .free-shipping-nudge { font-size: 11.5px; color: var(--gold-600); margin: -6px 0 12px; }
+        .shipping-zone-badge {
+          font-size: 11.5px;
+          color: var(--maroon-800, #581e15);
+          background: rgba(88, 30, 21, 0.05);
+          border: 1px solid rgba(88, 30, 21, 0.12);
+          padding: 4px 8px;
+          border-radius: 4px;
+          margin: -4px 0 10px;
+          line-height: 1.4;
+        }
         .tax-inclusive-nudge { font-size: 11.5px; color: var(--ink-400); margin: -4px 0 10px; font-style: italic; }
         .summary-row.total {
           font-size: 15px; font-weight: 600; color: var(--maroon-900);

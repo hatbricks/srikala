@@ -6,6 +6,7 @@ import { sendOrderConfirmationEmail, sendCancellationEmail } from '../lib/email.
 import { renderInvoice } from '../lib/invoice.js';
 import { findUsableCoupon, computeDiscount } from './coupons.js';
 import { findApplicableTier } from './cancellationPolicy.js';
+import { getZoneShippingFee } from '../lib/shippingZones.js';
 
 const router = Router();
 
@@ -14,14 +15,18 @@ async function getShippingSettings() {
   if (rows[0]?.value) {
     const s = rows[0].value;
     return {
-      fee: Number.isFinite(s.fee) ? s.fee : 100,
+      feeSouth: Number.isFinite(s.feeSouth) ? s.feeSouth : 120,
+      feeNorth: Number.isFinite(s.feeNorth) ? s.feeNorth : 150,
+      fee: Number.isFinite(s.fee) ? s.fee : 120,
       freeThreshold: Number.isFinite(s.freeThreshold) ? s.freeThreshold : 0,
     };
   }
   const { rows: sec } = await query("SELECT content FROM home_sections WHERE section_key = 'shipping_settings'");
   const content = sec[0]?.content || {};
   return {
-    fee: Number.isFinite(content.fee) ? content.fee : 100,
+    feeSouth: Number.isFinite(content.feeSouth) ? content.feeSouth : 120,
+    feeNorth: Number.isFinite(content.feeNorth) ? content.feeNorth : 150,
+    fee: Number.isFinite(content.fee) ? content.fee : 120,
     freeThreshold: Number.isFinite(content.freeThreshold) ? content.freeThreshold : 0,
   };
 }
@@ -139,13 +144,15 @@ router.post('/create', requireAuth, async (req, res) => {
     discount = computeDiscount(coupon, subtotal);
   }
 
-  // Shipping calculation
-  const { fee: defaultFee, freeThreshold } = await getShippingSettings();
-  let shippingFee = defaultFee;
-  if (freeThreshold > 0 && subtotal >= freeThreshold) {
+  // Shipping calculation based on destination address pincode
+  const shippingSettings = await getShippingSettings();
+  const destPincode = address?.pincode || '';
+  const destState = address?.state || '';
+  const zoneInfo = getZoneShippingFee(destPincode, destState, shippingSettings);
+
+  let shippingFee = zoneInfo.fee;
+  if (shippingSettings.freeThreshold > 0 && subtotal >= shippingSettings.freeThreshold) {
     shippingFee = 0;
-  } else if (Number.isFinite(clientShippingFee) && clientShippingFee >= 0) {
-    shippingFee = clientShippingFee;
   }
 
   // GST calculation

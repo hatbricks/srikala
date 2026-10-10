@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { query } from '../db.js';
+import { getZoneShippingFee } from '../lib/shippingZones.js';
 
 const router = Router();
 
@@ -7,7 +8,7 @@ const router = Router();
 // Calculates real package weight, checks free shipping threshold,
 // and returns delivery serviceability based on destination pincode and store settings.
 router.post('/calculate', async (req, res) => {
-  const { pincode, items = [], subtotal = 0 } = req.body || {};
+  const { pincode, state = '', items = [], subtotal = 0 } = req.body || {};
 
   const cleanPincode = String(pincode || '').trim();
   if (!cleanPincode || !/^[1-9][0-9]{5}$/.test(cleanPincode)) {
@@ -45,23 +46,29 @@ router.post('/calculate', async (req, res) => {
 
   // 2. Fetch shipping settings
   let freeThreshold = 0;
-  let standardFee = 100;
+  let shippingConfig = { feeSouth: 120, feeNorth: 150 };
 
   const { rows: settingRows } = await query("SELECT value FROM settings WHERE key = 'shipping_settings'");
   if (settingRows[0]?.value) {
     const s = settingRows[0].value;
     if (s.freeThreshold != null) freeThreshold = Number(s.freeThreshold);
-    if (s.fee != null) standardFee = Number(s.fee);
+    if (s.feeSouth != null) shippingConfig.feeSouth = Number(s.feeSouth);
+    if (s.feeNorth != null) shippingConfig.feeNorth = Number(s.feeNorth);
   } else {
     const { rows: sectionRows } = await query("SELECT content FROM home_sections WHERE section_key = 'shipping_settings'");
     if (sectionRows[0]?.content) {
       const s = sectionRows[0].content;
       if (s.freeThreshold != null) freeThreshold = Number(s.freeThreshold);
-      if (s.fee != null) standardFee = Number(s.fee);
+      if (s.feeSouth != null) shippingConfig.feeSouth = Number(s.feeSouth);
+      if (s.feeNorth != null) shippingConfig.feeNorth = Number(s.feeNorth);
     }
   }
 
-  // 3. Free shipping evaluation
+  // 3. Zone determination (South India = 120, North India = 150)
+  const zoneInfo = getZoneShippingFee(cleanPincode, state, shippingConfig);
+  const standardFee = zoneInfo.fee;
+
+  // 4. Free shipping evaluation
   const numSubtotal = Number(subtotal) || 0;
   const isFree = freeThreshold > 0 && numSubtotal >= freeThreshold;
   const determinedFee = isFree ? 0 : standardFee;
@@ -71,8 +78,10 @@ router.post('/calculate', async (req, res) => {
     freeShipping: isFree,
     shippingFee: determinedFee,
     originalRate: standardFee,
-    estimatedDays: '3-5 business days',
-    courierName: 'Insured Express Delivery',
+    zone: zoneInfo.zoneName,
+    isSouthIndia: zoneInfo.isSouth,
+    estimatedDays: zoneInfo.isSouth ? '2-4 business days' : '4-6 business days',
+    courierName: `${zoneInfo.zoneName} Express`,
     totalWeightGrams,
   });
 });
