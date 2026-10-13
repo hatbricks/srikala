@@ -1,4 +1,5 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -6,6 +7,7 @@ import RequireAuth from './components/RequireAuth';
 import ScrollToTop from './components/ScrollToTop';
 import SmoothScroll from './components/SmoothScroll';
 import WhatsAppButton from './components/WhatsAppButton';
+import ComingSoon from './components/ComingSoon';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { NavigationProvider } from './context/NavigationContext';
@@ -42,9 +44,76 @@ import AdminReviews from './pages/admin/AdminReviews';
 import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminUsers from './pages/admin/AdminUsers';
 
+// ============================================================================
+// TEMPORARY COMING SOON MODE
+// Set COMING_SOON_ACTIVE = false to remove the coming soon layout when ready!
+// ============================================================================
+const COMING_SOON_ACTIVE = true;
+
 function PublicSite() {
+  const [previewBypassed, setPreviewBypassed] = useState(() => {
+    return typeof window !== 'undefined' && sessionStorage.getItem('bypass_coming_soon') === '1';
+  });
+
+  const showComingSoon = COMING_SOON_ACTIVE && !previewBypassed;
+
   return (
     <>
+      {showComingSoon && (
+        <ComingSoon
+          onPreview={() => {
+            sessionStorage.setItem('bypass_coming_soon', '1');
+            setPreviewBypassed(true);
+          }}
+        />
+      )}
+
+      {COMING_SOON_ACTIVE && previewBypassed && (
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 99999,
+          background: '#581e15',
+          color: '#ffffff',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: '12.5px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+          gap: 12,
+          flexWrap: 'wrap',
+        }}>
+          <span>
+            🟡 <strong>Preview Mode Active:</strong> Storefront is currently in &ldquo;Coming Soon&rdquo; mode for visitors while items are being added.
+          </span>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Link to="/admin" style={{ color: '#fbdfa2', textDecoration: 'underline', fontWeight: 600 }}>
+              Admin Panel (Add Items) →
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem('bypass_coming_soon');
+                setPreviewBypassed(false);
+              }}
+              style={{
+                background: '#ffffff',
+                color: '#581e15',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '4px 12px',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Exit Preview (Show Coming Soon)
+            </button>
+          </div>
+        </div>
+      )}
+
       <SmoothScroll />
       <Navbar />
       <main>
