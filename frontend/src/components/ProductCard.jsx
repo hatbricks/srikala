@@ -4,31 +4,55 @@ import { formatINR } from '../data/store';
 import { useCart } from '../context/CartContext';
 
 export default function ProductCard({ product, hidePrice = false, isNew = false }) {
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
-  const outOfStock = product.stock === 0;
+
+  const activeVariant = selectedVariant || (variants.length > 0 ? variants[0] : null);
+  const displayPrice = activeVariant?.price != null && activeVariant.price !== ''
+    ? Number(activeVariant.price)
+    : Number(product.price);
+  const displayMrp = activeVariant?.mrp != null && activeVariant.mrp !== ''
+    ? Number(activeVariant.mrp)
+    : Number(product.mrp || product.price);
+  const outOfStock = activeVariant ? Number(activeVariant.stock) <= 0 : product.stock === 0;
   const showNewBadge = (isNew || product.isNew) && !outOfStock;
-  const discount = product.mrp > product.price
-    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+  const discount = displayMrp > displayPrice
+    ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100)
     : 0;
 
   function handleQuickAdd(e) {
     e.preventDefault();
     e.stopPropagation();
     if (outOfStock) return;
-    addItem(product, 1);
+    addItem(product, 1, activeVariant);
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
   }
 
-  const hoverImg = product.hoverImage || product.hover_image;
+  function handleSelectVariant(e, v) {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedVariant(v);
+  }
+
+  const variantPrimaryImg = activeVariant?.images?.[0] || null;
+  const variantSecondImg = activeVariant?.images?.[1] || null;
+  const displayImage = variantPrimaryImg || product.image;
+  const hoverImg = selectedVariant
+    ? variantSecondImg
+    : (variantSecondImg || product.hoverImage || product.hover_image);
+  const detailUrl = activeVariant?.id
+    ? `/products/${product.id}?variant=${encodeURIComponent(activeVariant.id)}`
+    : `/products/${product.id}`;
 
   return (
-    <Link to={`/products/${product.id}`} className={`product-card ${outOfStock ? 'is-out' : ''}`}>
+    <Link to={detailUrl} className={`product-card ${outOfStock ? 'is-out' : ''}`}>
       <div className="product-image-wrap">
         <div className={`product-image ${hoverImg ? 'has-hover-image' : ''}`}>
           <img
-            src={product.image}
+            src={displayImage}
             alt={product.name}
             className="product-img product-img-primary"
             loading="lazy"
@@ -65,10 +89,35 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
           <span className="product-category">{product.category.replace(/-/g, ' ')}</span>
         )}
         <h3 className="product-name">{product.name}</h3>
+        {variants.length > 0 && (
+          <div className="card-swatches" role="group" aria-label="Available colors">
+            {variants.map((v, idx) => {
+              const vName = v.colorName || v.color_name || `Color ${idx + 1}`;
+              const vCode = v.colorCode || v.color_code || '#8B0000';
+              const isSelected = activeVariant ? (activeVariant.id ? activeVariant.id === v.id : activeVariant === v) : idx === 0;
+              return (
+                <button
+                  key={v.id || idx}
+                  type="button"
+                  className={`card-swatch-dot ${isSelected ? 'active' : ''}`}
+                  style={{ backgroundColor: vCode }}
+                  title={vName}
+                  aria-label={`Preview ${vName}`}
+                  onClick={(e) => handleSelectVariant(e, v)}
+                />
+              );
+            })}
+            {activeVariant && (
+              <span className="card-swatch-name">
+                {activeVariant.colorName || activeVariant.color_name}
+              </span>
+            )}
+          </div>
+        )}
         {!hidePrice && (
           <div className="product-price">
-            <span className="price">{formatINR(product.price)}</span>
-            {product.mrp > product.price && <span className="mrp">{formatINR(product.mrp)}</span>}
+            <span className="price">{formatINR(displayPrice)}</span>
+            {displayMrp > displayPrice && <span className="mrp">{formatINR(displayMrp)}</span>}
           </div>
         )}
       </div>
@@ -228,6 +277,33 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
         }
         .product-card:hover .product-name {
           color: var(--brand-secondary);
+        }
+        .card-swatches {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin: 2px 0 7px;
+        }
+        .card-swatch-dot {
+          width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          border: 1.5px solid rgba(0, 0, 0, 0.2);
+          padding: 0;
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .card-swatch-dot:hover {
+          transform: scale(1.15);
+        }
+        .card-swatch-dot.active {
+          box-shadow: 0 0 0 1.5px #fff, 0 0 0 3px var(--brand-primary);
+        }
+        .card-swatch-name {
+          font-size: 11px;
+          color: var(--brand-muted);
+          margin-left: 2px;
         }
         .product-price {
           display: flex;

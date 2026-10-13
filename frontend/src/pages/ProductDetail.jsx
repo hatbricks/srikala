@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import RecommendedProducts from '../components/RecommendedProducts';
 import ProductReviews from '../components/ProductReviews';
 import CancellationPolicyCard from '../components/CancellationPolicyCard';
@@ -12,6 +12,8 @@ import BRAND from '../config/brand';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestedVariantId = searchParams.get('variant');
   const [product, setProduct] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [qty, setQty] = useState(1);
@@ -58,11 +60,12 @@ export default function ProductDetail() {
         if (!active) return;
         setProduct(product);
         if (product.variants?.length > 0) {
-          const firstInStock = product.variants.find((v) => v.stock > 0) || product.variants[0];
-          setSelectedVariant(firstInStock);
-          if (firstInStock.images?.length > 0) {
-            setActiveImage(firstInStock.images[0]);
-          }
+          const fromParam = requestedVariantId
+            ? product.variants.find((v) => String(v.id) === String(requestedVariantId))
+            : null;
+          const initialVariant = fromParam || product.variants.find((v) => v.stock > 0) || product.variants[0];
+          setSelectedVariant(initialVariant);
+          setActiveImage(initialVariant.images?.[0] || null);
         }
       })
       .catch(() => {
@@ -75,7 +78,7 @@ export default function ProductDetail() {
       });
 
     return () => { active = false; };
-  }, [id]);
+  }, [id, requestedVariantId]);
 
   if (notFound) {
     return (
@@ -97,16 +100,22 @@ export default function ProductDetail() {
     return <div className="detail-page" style={{ minHeight: '100vh' }} />;
   }
 
-  const currentPrice = selectedVariant?.price != null ? Number(selectedVariant.price) : Number(product.price);
-  const currentMrp = selectedVariant?.mrp != null ? Number(selectedVariant.mrp) : Number(product.mrp || product.price);
+  const currentPrice = selectedVariant?.price != null && selectedVariant.price !== ''
+    ? Number(selectedVariant.price)
+    : Number(product.price);
+  const currentMrp = selectedVariant?.mrp != null && selectedVariant.mrp !== ''
+    ? Number(selectedVariant.mrp)
+    : Number(product.mrp || product.price);
   const currentStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
   const outOfStock = currentStock <= 0;
 
-  // Cover image plus any gallery photos, plus selected variant images if available
-  const variantImgs = selectedVariant?.images || [];
+  // If the selected color variant has its own uploaded saree photos, show those photos for this color;
+  // otherwise fall back to the base product gallery.
+  const variantImgs = Array.isArray(selectedVariant?.images) ? selectedVariant.images.filter(Boolean) : [];
   const baseGallery = [product.image, product.hoverImage || product.hover_image, ...(product.images || [])].filter(Boolean);
-  const gallery = [...variantImgs, ...baseGallery].filter((src, i, arr) => src && arr.indexOf(src) === i);
-  const mainImage = activeImage || gallery[0];
+  const rawGallery = variantImgs.length > 0 ? variantImgs : baseGallery;
+  const gallery = rawGallery.filter((src, i, arr) => src && arr.indexOf(src) === i);
+  const mainImage = (activeImage && gallery.includes(activeImage)) ? activeImage : (gallery[0] || product.image);
   const ogImage = mainImage?.startsWith('http') ? mainImage : undefined;
 
   function handleAdd() {
@@ -146,7 +155,7 @@ export default function ProductDetail() {
       <div className="container detail-grid">
         <div className="detail-gallery">
           <div className="detail-image">
-            <img src={mainImage} alt={product.name} />
+            <img src={mainImage} alt={`${product.name}${selectedVariant ? ` - ${selectedVariant.colorName || selectedVariant.color_name || ''}` : ''}`} />
           </div>
           {gallery.length > 1 && (
             <div className="detail-thumbs">
@@ -187,26 +196,37 @@ export default function ProductDetail() {
           {product.variants?.length > 0 && (
             <div className="variants-section">
               <p className="variant-label">
-                Color: <strong>{selectedVariant?.color_name || 'Select a color'}</strong>
+                Color: <strong>{selectedVariant?.colorName || selectedVariant?.color_name || 'Select a color'}</strong>
               </p>
               <div className="color-swatches-row">
-                {product.variants.map((v) => {
-                  const isSelected = selectedVariant?.id === v.id;
-                  const vOutOfStock = v.stock === 0;
+                {product.variants.map((v, idx) => {
+                  const vName = v.colorName || v.color_name || `Color ${idx + 1}`;
+                  const vCode = v.colorCode || v.color_code || '#8B0000';
+                  const vThumb = Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : null;
+                  const isSelected = selectedVariant ? (selectedVariant.id ? selectedVariant.id === v.id : selectedVariant === v) : false;
+                  const vOutOfStock = Number(v.stock) <= 0;
                   return (
                     <button
-                      key={v.id}
+                      key={v.id || idx}
                       type="button"
                       className={`color-swatch-btn ${isSelected ? 'selected' : ''} ${vOutOfStock ? 'is-out' : ''}`}
                       onClick={() => {
                         setSelectedVariant(v);
-                        if (v.images?.length > 0) setActiveImage(v.images[0]);
+                        setActiveImage(v.images?.[0] || null);
+                        setAdded(false);
                         setQty(1);
                       }}
-                      title={`${v.color_name}${vOutOfStock ? ' (Out of stock)' : ''}`}
+                      title={`${vName}${vOutOfStock ? ' (Out of stock)' : ''}`}
                     >
-                      <span className="swatch-circle" style={{ backgroundColor: v.color_code || '#8B0000' }} />
-                      <span className="swatch-name">{v.color_name}</span>
+                      {vThumb ? (
+                        <span className="swatch-thumb-wrap">
+                          <img src={vThumb} alt={vName} className="swatch-thumb-img" />
+                          <span className="swatch-corner-dot" style={{ backgroundColor: vCode }} />
+                        </span>
+                      ) : (
+                        <span className="swatch-circle" style={{ backgroundColor: vCode }} />
+                      )}
+                      <span className="swatch-name">{vName}</span>
                       {vOutOfStock && <span className="out-tag">Sold Out</span>}
                     </button>
                   );
@@ -365,8 +385,32 @@ export default function ProductDetail() {
           box-shadow: 0 0 0 1px var(--maroon-900);
         }
         .color-swatch-btn.is-out { opacity: 0.55; }
-        .swatch-circle { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-        .swatch-name { font-size: 12.5px; color: var(--ink-800); }
+        .swatch-circle { width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+        .swatch-thumb-wrap {
+          position: relative;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 1px solid rgba(0,0,0,0.18);
+          flex-shrink: 0;
+        }
+        .swatch-thumb-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .swatch-corner-dot {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          border: 1px solid #fff;
+        }
+        .swatch-name { font-size: 12.5px; color: var(--ink-800); font-weight: 500; }
         .out-tag { font-size: 10px; color: #a13a3a; font-weight: 600; }
 
         .desc { font-size: 14.5px; line-height: 1.8; color: var(--ink-600); max-width: 480px; margin-bottom: 20px; }
