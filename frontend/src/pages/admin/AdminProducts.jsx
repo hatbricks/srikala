@@ -1217,67 +1217,99 @@ export default function AdminProducts() {
             const hasHover = Boolean(p.hoverImage || p.hover_image);
             return (
               <div className={`cms-row ${p.active === false ? 'is-hidden' : ''}`} key={p.id}>
-                <div
-                  className="admin-row-thumb-container"
-                  title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
-                >
-                  <img src={p.image} alt="" className="row-thumb-sq" />
-                  {hasHover && (
-                    <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
-                  )}
-                </div>
-                <div className="row-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <strong>{p.name}</strong>
+                {/* Main info section */}
+                <div className="cms-row-main">
+                  <div
+                    className="admin-row-thumb-container"
+                    title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
+                  >
+                    <img src={p.image} alt="" className="row-thumb-sq" />
                     {hasHover && (
-                      <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
-                        Model Hover
-                      </span>
-                    )}
-                    {p.variants?.length > 0 && (
-                      <span className="row-variants-badge" title={p.variants.map((v) => v.colorName || v.color_name).join(', ')}>
-                        {p.variants.slice(0, 4).map((v, idx) => (
-                          <span
-                            key={idx}
-                            className="row-variant-dot"
-                            style={{ backgroundColor: v.colorCode || v.color_code || '#8B0000' }}
-                          />
-                        ))}
-                        {p.variants.length} {p.variants.length === 1 ? 'Color' : 'Colors'}
-                      </span>
+                      <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
                     )}
                   </div>
-                  <span className="row-category">{categoryName(p.category)}</span>
-                  <span className="row-price-line">
-                    <span className="row-price">{formatINR(p.price)}</span>
-                    {hasDiscount && (
-                      <>
-                        <span className="row-mrp">{formatINR(p.mrp)}</span>
-                        <span className="row-discount">{discountPct}% off</span>
-                      </>
-                    )}
-                  </span>
+
+                  <div className="row-info">
+                    <div className="row-title-line">
+                      <strong className="row-product-name">{p.name}</strong>
+                      {hasHover && (
+                        <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
+                          Model Hover
+                        </span>
+                      )}
+                      {p.variants?.length > 0 && (
+                        <span className="row-variants-badge" title={p.variants.map((v) => v.colorName || v.color_name).join(', ')}>
+                          {p.variants.slice(0, 4).map((v, idx) => (
+                            <span
+                              key={idx}
+                              className="row-variant-dot"
+                              style={{ backgroundColor: v.colorCode || v.color_code || '#8B0000' }}
+                            />
+                          ))}
+                          {p.variants.length} {p.variants.length === 1 ? 'Color' : 'Colors'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="row-meta-line">
+                      <span className="row-category">{categoryName(p.category)}</span>
+                      <span className="row-meta-sep">•</span>
+                      <span className="row-price-line">
+                        <span className="row-price">{formatINR(p.price)}</span>
+                        {hasDiscount && (
+                          <>
+                            <span className="row-mrp">{formatINR(p.mrp)}</span>
+                            <span className="row-discount">{discountPct}% off</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="row-status-badges">
+                    {p.active === false && <span className="hidden-badge">Hidden</span>}
+                    <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
+                  </div>
                 </div>
-                {p.active === false && <span className="hidden-badge">Hidden</span>}
-                <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
-                <div className="row-actions">
-                  <select
-                    className="row-move-select"
-                    value={p.category}
-                    disabled={movingId === p.id}
-                    onChange={(e) => handleMoveCategory(p, e.target.value)}
-                    aria-label={`Move ${p.name} to a different category`}
-                    title="Move to a different category"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <button onClick={() => handleEdit(p)}>Edit</button>
-                  <button onClick={() => handleToggleActive(p)} disabled={movingId === p.id}>
-                    {p.active === false ? 'Show' : 'Hide'}
-                  </button>
-                  <button onClick={() => handleDelete(p.id)} className="danger">Delete</button>
+
+                {/* Bottom actions bar */}
+                <div className="row-actions-bar">
+                  <div className="row-move-wrap">
+                    <span className="row-move-label">Category:</span>
+                    <select
+                      className="row-move-select"
+                      value={p.category}
+                      disabled={movingId === p.id}
+                      onChange={(e) => handleMoveCategory(p, e.target.value)}
+                      aria-label={`Move ${p.name} to a different category`}
+                      title="Move to a different category"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="row-action-btns">
+                    <button type="button" className="btn-row-action edit-btn" onClick={() => handleEdit(p)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-row-action toggle-btn"
+                      onClick={() => handleToggleActive(p)}
+                      disabled={movingId === p.id}
+                    >
+                      {p.active === false ? 'Show' : 'Hide'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-row-action delete-btn"
+                      onClick={() => handleDelete(p.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1809,23 +1841,39 @@ export default function AdminProducts() {
         .form-actions { display: flex; gap: 10px; }
         .form-actions .btn { padding: 11px 20px; font-size: 13px; }
 
-        .cms-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+        .cms-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
         .cms-row {
           background: var(--paper);
           border-radius: var(--radius-md);
           padding: 14px 16px;
           display: flex;
-          align-items: center;
+          flex-direction: column;
+          gap: 12px;
+          min-width: 0;
+          border: 1px solid var(--stone-200);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .cms-row:hover {
+          border-color: var(--stone-300);
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .cms-row-main {
+          display: flex;
+          align-items: flex-start;
           gap: 14px;
           min-width: 0;
+          width: 100%;
         }
+
         .admin-row-thumb-container {
           position: relative;
-          width: 52px;
-          height: 52px;
+          width: 56px;
+          height: 56px;
           border-radius: var(--radius-sm);
           overflow: hidden;
-          flex: 0 0 52px;
+          flex: 0 0 56px;
           background: var(--stone-100);
           box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
           cursor: pointer;
@@ -1845,28 +1893,53 @@ export default function AdminProducts() {
         .admin-row-thumb-container:hover .row-thumb-hover {
           opacity: 1;
         }
+
+        .row-info {
+          flex: 1 1 auto;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .row-title-line {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .row-product-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--ink-900);
+          word-break: break-word;
+          line-height: 1.35;
+        }
+
         .row-hover-badge {
           font-size: 9.5px;
           font-weight: 600;
           color: #581e15;
           background: #fdf2ea;
           border: 1px solid rgba(88, 30, 21, 0.22);
-          padding: 1px 5px;
+          padding: 1px 6px;
           border-radius: 4px;
           letter-spacing: 0.03em;
           text-transform: uppercase;
+          white-space: nowrap;
         }
         .row-variants-badge {
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          font-size: 10px;
+          font-size: 10.5px;
           font-weight: 600;
           color: var(--ink-700);
           background: var(--stone-100);
           border: 1px solid var(--stone-200);
-          padding: 1px 7px;
+          padding: 1px 8px;
           border-radius: 999px;
+          white-space: nowrap;
         }
         .row-variant-dot {
           width: 8px;
@@ -1874,52 +1947,158 @@ export default function AdminProducts() {
           border-radius: 50%;
           border: 1px solid rgba(0, 0, 0, 0.2);
           display: inline-block;
+          flex-shrink: 0;
         }
-        .row-thumb-sq { width: 52px; height: 52px; border-radius: var(--radius-sm); object-fit: cover; flex: 0 0 auto; }
-        .row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-        .row-info strong { font-size: 13.5px; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .row-category { font-size: 11.5px; color: var(--ink-400); }
-        .row-price-line { display: flex; align-items: baseline; gap: 8px; }
-        .row-price { font-size: 13px; font-weight: 600; color: var(--maroon-900); }
-        .row-mrp { font-size: 11.5px; color: var(--ink-400); text-decoration: line-through; }
-        .row-discount { font-size: 11px; color: #3c7a3c; font-weight: 600; }
 
+        .row-meta-line {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          flex-wrap: wrap;
+        }
+        .row-category {
+          color: var(--ink-500);
+          font-weight: 500;
+        }
+        .row-meta-sep {
+          color: var(--stone-400);
+          font-size: 10px;
+        }
+        .row-price-line {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 6px;
+        }
+        .row-price {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--maroon-900);
+        }
+        .row-mrp {
+          font-size: 11.5px;
+          color: var(--ink-400);
+          text-decoration: line-through;
+        }
+        .row-discount {
+          font-size: 10.5px;
+          color: #2e7d32;
+          font-weight: 600;
+          background: #e8f5e9;
+          padding: 1px 5px;
+          border-radius: 4px;
+        }
+
+        .row-status-badges {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 5px;
+          flex: 0 0 auto;
+          margin-left: auto;
+        }
         .stock-badge {
           font-size: 11px;
           font-weight: 600;
-          padding: 5px 11px;
+          padding: 4px 10px;
           border-radius: 999px;
           white-space: nowrap;
-          flex: 0 0 auto;
+          display: inline-block;
         }
-        .stock-ok { background: #e8f2e6; color: #3c7a3c; }
-        .stock-low { background: #fbeacb; color: #8a5a10; }
-        .stock-out { background: #f6e3e3; color: #a13a3a; }
+        .stock-ok { background: #e8f2e6; color: #2e7d32; }
+        .stock-low { background: #fef3d6; color: #8a5a10; }
+        .stock-out { background: #fee2e2; color: #b91c1c; }
 
-        .row-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-        .row-actions button { background: none; border: none; font-size: 12.5px; color: var(--maroon-900); }
-        .row-actions .danger { color: #a13a3a; }
-        .cms-row.is-hidden { opacity: 0.55; }
         .hidden-badge {
-          font-size: 10.5px;
+          font-size: 10px;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.04em;
-          color: var(--ink-400);
+          color: var(--ink-500);
           background: var(--stone-100);
+          border: 1px solid var(--stone-200);
           border-radius: 999px;
-          padding: 3px 9px;
-          flex: 0 0 auto;
+          padding: 2px 7px;
+          white-space: nowrap;
+        }
+
+        /* Actions row */
+        .row-actions-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding-top: 10px;
+          border-top: 1px solid var(--stone-100);
+          width: 100%;
+          box-sizing: border-box;
+          flex-wrap: wrap;
+        }
+
+        .row-move-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .row-move-label {
+          font-size: 11px;
+          color: var(--ink-400);
+          font-weight: 500;
         }
         .row-move-select {
           font-size: 11.5px;
-          padding: 6px 8px;
+          padding: 5px 8px;
           border-radius: var(--radius-sm);
           border: 1px solid var(--stone-200);
           background: var(--paper);
-          color: var(--ink-600);
-          max-width: 130px;
+          color: var(--ink-700);
+          max-width: 160px;
+          cursor: pointer;
         }
+        .row-move-select:hover {
+          border-color: var(--stone-400);
+        }
+
+        .row-action-btns {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .btn-row-action {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          color: var(--maroon-900);
+          padding: 5px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-row-action:hover {
+          background: var(--stone-100);
+          color: var(--ink-900);
+        }
+        .btn-row-action.edit-btn:hover {
+          background: #fbf1e8;
+          border-color: rgba(184, 125, 43, 0.35);
+          color: #8c5d1e;
+        }
+        .btn-row-action.delete-btn {
+          color: #b91c1c;
+          border-color: #fee2e2;
+          background: #fef2f2;
+        }
+        .btn-row-action.delete-btn:hover {
+          background: #fee2e2;
+          border-color: #fca5a5;
+          color: #991b1b;
+        }
+
+        .cms-row.is-hidden { opacity: 0.65; }
         .empty { color: var(--ink-400); font-size: 13.5px; }
 
         @media (max-width: 1080px) {
@@ -1954,60 +2133,33 @@ export default function AdminProducts() {
             justify-content: center;
           }
 
-          .cms-row {
-            display: grid;
-            grid-template-columns: 52px 1fr auto;
-            grid-template-areas:
-              "thumb info badge"
-              "actions actions actions";
-            gap: 10px 12px;
-            align-items: center;
-            padding: 14px;
-            box-sizing: border-box;
-          }
           .photo-inputs-grid { grid-template-columns: 1fr; }
-          .admin-row-thumb-container,
-          .row-thumb-sq {
-            grid-area: thumb;
+
+          .cms-row {
+            padding: 12px 14px;
+            gap: 10px;
           }
-          .row-info {
-            grid-area: info;
-            min-width: 0;
+          .row-actions-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
           }
-          .stock-badge {
-            grid-area: badge;
-            align-self: flex-start;
-          }
-          .hidden-badge {
-            margin-right: 4px;
-          }
-          .row-actions {
-            grid-area: actions;
-            display: flex;
-            align-items: center;
+          .row-move-wrap {
             justify-content: space-between;
-            gap: 6px;
-            padding-top: 10px;
-            border-top: 1px solid var(--stone-100);
-            width: 100%;
-            box-sizing: border-box;
           }
           .row-move-select {
             flex: 1;
             max-width: none;
-            font-size: 12px;
-            padding: 6px 8px;
           }
-          .row-actions button {
-            padding: 7px 11px;
-            background: var(--stone-100);
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
+          .row-action-btns {
+            width: 100%;
+            display: flex;
+            gap: 6px;
           }
-          .row-actions .danger {
-            background: #fdf2f2;
+          .btn-row-action {
+            flex: 1;
+            padding: 7px 10px;
+            font-size: 12px;
           }
         }
 
@@ -2018,26 +2170,21 @@ export default function AdminProducts() {
           .variant-fields-grid label:last-child {
             grid-column: span 1;
           }
-          .cms-row {
-            grid-template-columns: 46px 1fr;
-            grid-template-areas:
-              "thumb info"
-              "badge badge"
-              "actions actions";
+
+          .cms-row-main {
+            gap: 10px;
+          }
+          .admin-row-thumb-container {
+            width: 46px;
+            height: 46px;
+            flex: 0 0 46px;
+          }
+          .row-status-badges {
+            align-self: flex-start;
           }
           .stock-badge {
-            justify-self: flex-start;
-          }
-          .row-actions {
-            flex-wrap: wrap;
-          }
-          .row-move-select {
-            width: 100%;
-            margin-bottom: 4px;
-          }
-          .row-actions button {
-            flex: 1;
-            text-align: center;
+            font-size: 10px;
+            padding: 3px 7px;
           }
         }
       `}</style>
