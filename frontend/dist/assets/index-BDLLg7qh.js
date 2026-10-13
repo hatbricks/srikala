@@ -811,7 +811,7 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
             transition: none;
           }
         }
-      `})]}):null}function Yr(){let[e,t]=(0,x.useState)(!1);function n(){navigator.clipboard&&(navigator.clipboard.writeText(`+91 83175 51337`),t(!0),setTimeout(()=>t(!1),2e3))}return(0,L.jsxs)(`div`,{className:`coming-soon-wrapper`,children:[(0,L.jsxs)(`div`,{className:`cs-bg-art`,"aria-hidden":`true`,children:[(0,L.jsx)(`div`,{className:`cs-glow-a`}),(0,L.jsx)(`div`,{className:`cs-glow-b`}),(0,L.jsx)(`div`,{className:`cs-motif-pattern`})]}),(0,L.jsxs)(`div`,{className:`cs-container`,children:[(0,L.jsxs)(`header`,{className:`cs-header`,children:[(0,L.jsx)(F,{to:`/`,className:`cs-logo-link`,children:(0,L.jsx)(`img`,{src:B.assets.logoHorizontal||B.assets.logoLight,alt:B.name,className:`cs-logo-img`,width:`240`,height:`52`})}),(0,L.jsxs)(`a`,{href:`https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20inquire%20about%20your%20saree%20collections.`,target:`_blank`,rel:`noopener noreferrer`,className:`cs-header-wa-btn`,children:[(0,L.jsx)(`svg`,{viewBox:`0 0 24 24`,width:`16`,height:`16`,fill:`currentColor`,children:(0,L.jsx)(`path`,{d:`M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z`})}),(0,L.jsx)(`span`,{children:`WhatsApp Us`})]})]}),(0,L.jsxs)(`main`,{className:`cs-main-card`,children:[(0,L.jsxs)(`div`,{className:`cs-pill-badge`,children:[(0,L.jsx)(`span`,{className:`cs-sparkle`,children:`✦`}),(0,L.jsx)(`span`,{children:`HANDWOVEN HERITAGE IN THE MAKING`}),(0,L.jsx)(`span`,{className:`cs-sparkle`,children:`✦`})]}),(0,L.jsxs)(`h1`,{className:`cs-title`,children:[`Our Grand Online Boutique `,(0,L.jsx)(`br`,{className:`cs-br-desktop`}),(0,L.jsx)(`span`,{className:`cs-title-accent`,children:`Is Coming Soon`})]}),(0,L.jsx)(`p`,{className:`cs-description`,children:`We are currently cataloging our exclusive Dharmavaram handloom pure silk sarees, sacred temple border weaves, and royal bridal pattu collections. Our online store will be fully live for orders in a few days.`}),(0,L.jsxs)(`div`,{className:`cs-pillars-row`,children:[(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`🏛️`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`Direct from Dharmavaram Looms`})]}),(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`🪡`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`100% Pure Certified Mulberry Silk`})]}),(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`✨`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`Authentic Gold Zari Craftsmanship`})]})]}),(0,L.jsxs)(`div`,{className:`cs-actions-grid`,children:[(0,L.jsxs)(`div`,{className:`cs-action-card cs-card-wa`,children:[(0,L.jsx)(`div`,{className:`cs-card-icon-wrap wa-icon-wrap`,children:(0,L.jsx)(`svg`,{viewBox:`0 0 24 24`,width:`22`,height:`22`,fill:`currentColor`,children:(0,L.jsx)(`path`,{d:`M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z`})})}),(0,L.jsxs)(`div`,{className:`cs-card-body`,children:[(0,L.jsx)(`h3`,{children:`Order via WhatsApp Shopping`}),(0,L.jsx)(`p`,{children:`Can't wait? Browse sarees via WhatsApp and order directly with free shipping.`}),(0,L.jsx)(`a`,{href:`https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20view%20sarees%20via%20WhatsApp.`,target:`_blank`,rel:`noopener noreferrer`,className:`cs-btn cs-btn-wa`,children:`Chat with Us (+91 83175 51337) →`})]})]}),(0,L.jsxs)(`div`,{className:`cs-action-card cs-card-store`,children:[(0,L.jsx)(`div`,{className:`cs-card-icon-wrap store-icon-wrap`,children:(0,L.jsxs)(`svg`,{viewBox:`0 0 24 24`,width:`22`,height:`22`,fill:`none`,stroke:`currentColor`,strokeWidth:`2`,strokeLinecap:`round`,strokeLinejoin:`round`,children:[(0,L.jsx)(`path`,{d:`M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z`}),(0,L.jsx)(`circle`,{cx:`12`,cy:`10`,r:`3`})]})}),(0,L.jsxs)(`div`,{className:`cs-card-body`,children:[(0,L.jsx)(`h3`,{children:`Visit Our Physical Flagship Store`}),(0,L.jsx)(`p`,{children:`10-28, Kpt street, near Punjab National Bank, Dharmavaram, Andhra Pradesh - 515671`}),(0,L.jsxs)(`div`,{className:`cs-store-timing`,children:[(0,L.jsx)(`span`,{children:`⏰ Open Daily: 10:00 AM – 10:00 PM`}),(0,L.jsx)(`button`,{type:`button`,onClick:n,className:`cs-copy-phone-btn`,children:e?`✓ Number Copied`:`📞 Call +91 83175 51337`})]})]})]})]})]}),(0,L.jsx)(`footer`,{className:`cs-footer`,children:(0,L.jsxs)(`p`,{className:`cs-footer-copy`,children:[`© `,new Date().getFullYear(),` Ravichandra Textiles. Handwoven in Dharmavaram.`]})})]}),(0,L.jsx)(`style`,{children:`
+      `})]}):null}function Yr({onPreview:e}){let[t,n]=(0,x.useState)(!1);function r(){navigator.clipboard&&(navigator.clipboard.writeText(`+91 83175 51337`),n(!0),setTimeout(()=>n(!1),2e3))}return(0,L.jsxs)(`div`,{className:`coming-soon-wrapper`,children:[(0,L.jsxs)(`div`,{className:`cs-bg-art`,"aria-hidden":`true`,children:[(0,L.jsx)(`div`,{className:`cs-glow-a`}),(0,L.jsx)(`div`,{className:`cs-glow-b`}),(0,L.jsx)(`div`,{className:`cs-motif-pattern`})]}),(0,L.jsxs)(`div`,{className:`cs-container`,children:[(0,L.jsxs)(`header`,{className:`cs-header`,children:[(0,L.jsx)(F,{to:`/`,className:`cs-logo-link`,children:(0,L.jsx)(`img`,{src:B.assets.logoHorizontal||B.assets.logoLight,alt:B.name,className:`cs-logo-img`,width:`240`,height:`52`})}),(0,L.jsxs)(`div`,{className:`cs-header-actions`,children:[e&&(0,L.jsxs)(`button`,{type:`button`,onClick:e,className:`cs-header-see-site-btn`,title:`See live website`,children:[(0,L.jsxs)(`svg`,{viewBox:`0 0 24 24`,width:`15`,height:`15`,fill:`none`,stroke:`currentColor`,strokeWidth:`2`,strokeLinecap:`round`,strokeLinejoin:`round`,children:[(0,L.jsx)(`path`,{d:`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`}),(0,L.jsx)(`circle`,{cx:`12`,cy:`12`,r:`3`})]}),(0,L.jsx)(`span`,{children:`See Website`})]}),(0,L.jsxs)(`a`,{href:`https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20inquire%20about%20your%20saree%20collections.`,target:`_blank`,rel:`noopener noreferrer`,className:`cs-header-wa-btn`,children:[(0,L.jsx)(`svg`,{viewBox:`0 0 24 24`,width:`16`,height:`16`,fill:`currentColor`,children:(0,L.jsx)(`path`,{d:`M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z`})}),(0,L.jsx)(`span`,{children:`WhatsApp Us`})]})]})]}),(0,L.jsxs)(`main`,{className:`cs-main-card`,children:[(0,L.jsxs)(`div`,{className:`cs-pill-badge`,children:[(0,L.jsx)(`span`,{className:`cs-sparkle`,children:`✦`}),(0,L.jsx)(`span`,{children:`HANDWOVEN HERITAGE IN THE MAKING`}),(0,L.jsx)(`span`,{className:`cs-sparkle`,children:`✦`})]}),(0,L.jsxs)(`h1`,{className:`cs-title`,children:[`Our Grand Online Boutique `,(0,L.jsx)(`br`,{className:`cs-br-desktop`}),(0,L.jsx)(`span`,{className:`cs-title-accent`,children:`Is Coming Soon`})]}),(0,L.jsx)(`p`,{className:`cs-description`,children:`We are currently cataloging our exclusive Dharmavaram handloom pure silk sarees, sacred temple border weaves, and royal bridal pattu collections. Our online store will be fully live for orders in a few days.`}),(0,L.jsxs)(`div`,{className:`cs-pillars-row`,children:[(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`🏛️`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`Direct from Dharmavaram Looms`})]}),(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`🪡`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`100% Pure Certified Mulberry Silk`})]}),(0,L.jsxs)(`div`,{className:`cs-pillar-item`,children:[(0,L.jsx)(`span`,{className:`cs-pillar-icon`,children:`✨`}),(0,L.jsx)(`span`,{className:`cs-pillar-text`,children:`Authentic Gold Zari Craftsmanship`})]})]}),(0,L.jsxs)(`div`,{className:`cs-actions-grid`,children:[(0,L.jsxs)(`div`,{className:`cs-action-card cs-card-wa`,children:[(0,L.jsx)(`div`,{className:`cs-card-icon-wrap wa-icon-wrap`,children:(0,L.jsx)(`svg`,{viewBox:`0 0 24 24`,width:`22`,height:`22`,fill:`currentColor`,children:(0,L.jsx)(`path`,{d:`M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z`})})}),(0,L.jsxs)(`div`,{className:`cs-card-body`,children:[(0,L.jsx)(`h3`,{children:`Order via WhatsApp Shopping`}),(0,L.jsx)(`p`,{children:`Can't wait? Browse sarees via WhatsApp and order directly with free shipping.`}),(0,L.jsx)(`a`,{href:`https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20view%20sarees%20via%20WhatsApp.`,target:`_blank`,rel:`noopener noreferrer`,className:`cs-btn cs-btn-wa`,children:`Chat with Us (+91 83175 51337) →`})]})]}),(0,L.jsxs)(`div`,{className:`cs-action-card cs-card-store`,children:[(0,L.jsx)(`div`,{className:`cs-card-icon-wrap store-icon-wrap`,children:(0,L.jsxs)(`svg`,{viewBox:`0 0 24 24`,width:`22`,height:`22`,fill:`none`,stroke:`currentColor`,strokeWidth:`2`,strokeLinecap:`round`,strokeLinejoin:`round`,children:[(0,L.jsx)(`path`,{d:`M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z`}),(0,L.jsx)(`circle`,{cx:`12`,cy:`10`,r:`3`})]})}),(0,L.jsxs)(`div`,{className:`cs-card-body`,children:[(0,L.jsx)(`h3`,{children:`Visit Our Physical Flagship Store`}),(0,L.jsx)(`p`,{children:`10-28, Kpt street, near Punjab National Bank, Dharmavaram, Andhra Pradesh - 515671`}),(0,L.jsxs)(`div`,{className:`cs-store-timing`,children:[(0,L.jsx)(`span`,{children:`⏰ Open Daily: 10:00 AM – 10:00 PM`}),(0,L.jsx)(`button`,{type:`button`,onClick:r,className:`cs-copy-phone-btn`,children:t?`✓ Number Copied`:`📞 Call +91 83175 51337`})]})]})]})]})]}),(0,L.jsxs)(`footer`,{className:`cs-footer`,children:[(0,L.jsxs)(`p`,{className:`cs-footer-copy`,children:[`© `,new Date().getFullYear(),` Ravichandra Textiles. Handwoven in Dharmavaram.`]}),e&&(0,L.jsx)(`button`,{type:`button`,onClick:e,className:`cs-footer-see-site-btn`,children:(0,L.jsx)(`span`,{children:`See Live Website →`})})]})]}),(0,L.jsx)(`style`,{children:`
         .coming-soon-wrapper {
           position: fixed;
           inset: 0;
@@ -884,6 +884,36 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
           width: auto;
           object-fit: contain;
           filter: drop-shadow(0 2px 4px rgba(44, 24, 16, 0.1));
+        }
+
+        .cs-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .cs-header-see-site-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #FFFFFF;
+          color: #581e15;
+          border: 1.5px solid rgba(88, 30, 21, 0.35);
+          padding: 6.5px 15px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(44, 24, 16, 0.05);
+          transition: all 0.15s ease;
+        }
+
+        .cs-header-see-site-btn:hover {
+          background: #581e15;
+          color: #FFFFFF !important;
+          border-color: #581e15;
+          box-shadow: 0 4px 12px rgba(88, 30, 21, 0.2);
+          transform: translateY(-1px);
         }
 
         .cs-header-wa-btn {
@@ -1095,16 +1125,39 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
         .cs-footer {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
           text-align: center;
           padding-top: 24px;
           border-top: 1px solid rgba(184, 125, 43, 0.2);
+          flex-wrap: wrap;
+          gap: 12px;
         }
 
         .cs-footer-copy {
           font-size: 12.5px;
           color: #8c7365;
           margin: 0;
+        }
+
+        .cs-footer-see-site-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #FFFFFF;
+          color: #581e15;
+          border: 1px solid rgba(184, 125, 43, 0.35);
+          padding: 6px 16px;
+          border-radius: 999px;
+          font-size: 12.5px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .cs-footer-see-site-btn:hover {
+          background: #581e15;
+          color: #FFFFFF;
+          border-color: #581e15;
         }
 
         @media (max-width: 768px) {
@@ -1115,9 +1168,16 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
             padding-bottom: 18px;
             gap: 12px;
           }
+          .cs-header-actions {
+            gap: 8px;
+          }
           .cs-logo-img {
             height: 38px;
-            max-width: 190px;
+            max-width: 170px;
+          }
+          .cs-header-see-site-btn {
+            padding: 5px 12px;
+            font-size: 12px;
           }
           .cs-header-wa-btn {
             padding: 6px 13px;
@@ -1163,9 +1223,21 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
           .cs-header {
             padding-bottom: 14px;
           }
+          .cs-header-actions {
+            gap: 6px;
+          }
           .cs-logo-img {
             height: 32px;
-            max-width: 160px;
+            max-width: 140px;
+          }
+          .cs-header-see-site-btn {
+            padding: 5px 9px;
+            font-size: 11px;
+            gap: 4px;
+          }
+          .cs-header-see-site-btn svg {
+            width: 13px;
+            height: 13px;
           }
           .cs-header-wa-btn {
             padding: 5px 10px;
@@ -1232,7 +1304,15 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
             font-size: 12px;
           }
           .cs-footer {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             padding-top: 18px;
+            gap: 10px;
+          }
+          .cs-footer-see-site-btn {
+            font-size: 12px;
+            padding: 7px 14px;
           }
           .cs-footer-copy {
             font-size: 11px;
@@ -1242,7 +1322,11 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
         @media (max-width: 360px) {
           .cs-logo-img {
             height: 28px;
-            max-width: 135px;
+            max-width: 120px;
+          }
+          .cs-header-see-site-btn {
+            padding: 4px 7px;
+            font-size: 10px;
           }
           .cs-title {
             font-size: 22px;
@@ -12938,7 +13022,7 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
         .status-pill.created, .status-pill.pending { background: #fff3e0; color: #e65100; }
         .status-pill.failed, .status-pill.cancelled { background: #ffebee; color: #c62828; }
         .btn-xs { padding: 4px 8px; font-size: 11px; }
-      `})]})}function zo(){let[e,t]=(0,x.useState)(()=>typeof window<`u`&&sessionStorage.getItem(`bypass_coming_soon`)===`1`);return(0,L.jsxs)(L.Fragment,{children:[!e&&(0,L.jsx)(Yr,{onPreview:()=>{sessionStorage.setItem(`bypass_coming_soon`,`1`),t(!0)}}),e&&(0,L.jsxs)(`div`,{style:{position:`sticky`,top:0,zIndex:99999,background:`#581e15`,color:`#ffffff`,padding:`8px 16px`,display:`flex`,alignItems:`center`,justifyContent:`space-between`,fontSize:`12.5px`,boxShadow:`0 2px 10px rgba(0,0,0,0.25)`,gap:12,flexWrap:`wrap`},children:[(0,L.jsxs)(`span`,{children:[`🟡 `,(0,L.jsx)(`strong`,{children:`Preview Mode Active:`}),` Storefront is currently in “Coming Soon” mode for visitors while items are being added.`]}),(0,L.jsxs)(`div`,{style:{display:`flex`,gap:10,alignItems:`center`},children:[(0,L.jsx)(F,{to:`/admin`,style:{color:`#fbdfa2`,textDecoration:`underline`,fontWeight:600},children:`Admin Panel (Add Items) →`}),(0,L.jsx)(`button`,{type:`button`,onClick:()=>{sessionStorage.removeItem(`bypass_coming_soon`),t(!1)},style:{background:`#ffffff`,color:`#581e15`,border:`none`,borderRadius:`999px`,padding:`4px 12px`,fontSize:`11.5px`,fontWeight:700,cursor:`pointer`},children:`Exit Preview (Show Coming Soon)`})]})]}),(0,L.jsx)(Kr,{}),(0,L.jsx)(yr,{}),(0,L.jsx)(`main`,{children:(0,L.jsxs)(Ht,{children:[(0,L.jsx)(P,{path:`/`,element:(0,L.jsx)(Ni,{})}),(0,L.jsx)(P,{path:`/about`,element:(0,L.jsx)(Fi,{})}),(0,L.jsx)(P,{path:`/products`,element:(0,L.jsx)(Bi,{})}),(0,L.jsx)(P,{path:`/products/:id`,element:(0,L.jsx)(Gi,{})}),(0,L.jsx)(P,{path:`/orders`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(Zi,{})})}),(0,L.jsx)(P,{path:`/contact`,element:(0,L.jsx)(Qi,{})}),(0,L.jsx)(P,{path:`/cart`,element:(0,L.jsx)($i,{})}),(0,L.jsx)(P,{path:`/checkout`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(aa,{})})}),(0,L.jsx)(P,{path:`/profile`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(la,{})})}),(0,L.jsx)(P,{path:`/login`,element:(0,L.jsx)(ma,{})}),(0,L.jsx)(P,{path:`/forgot-password`,element:(0,L.jsx)(ha,{})}),(0,L.jsx)(P,{path:`/reset-password`,element:(0,L.jsx)(ga,{})}),(0,L.jsx)(P,{path:`/complete-profile`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(va,{})})}),(0,L.jsx)(P,{path:`/privacy-policy`,element:(0,L.jsx)(ya,{})}),(0,L.jsx)(P,{path:`/returns-and-cancellation`,element:(0,L.jsx)(ba,{})}),(0,L.jsx)(P,{path:`/return-cancellation-policy`,element:(0,L.jsx)(ba,{})}),(0,L.jsx)(P,{path:`/user-guide`,element:(0,L.jsx)(xa,{})}),(0,L.jsx)(P,{path:`/silk-guide`,element:(0,L.jsx)(xa,{})}),(0,L.jsx)(P,{path:`*`,element:(0,L.jsx)(Sa,{})})]})}),(0,L.jsx)(wr,{}),(0,L.jsx)(xr,{}),(0,L.jsx)(Jr,{})]})}function Bo(){return lt().pathname.startsWith(`/admin`)?(0,L.jsxs)(dr,{children:[(0,L.jsx)(Er,{}),(0,L.jsx)(Ht,{children:(0,L.jsxs)(P,{path:`/admin`,element:(0,L.jsx)(eo,{}),children:[(0,L.jsx)(P,{index:!0,element:(0,L.jsx)(to,{})}),(0,L.jsx)(P,{path:`home`,element:(0,L.jsx)(uo,{})}),(0,L.jsx)(P,{path:`about`,element:(0,L.jsx)(po,{})}),(0,L.jsx)(P,{path:`categories`,element:(0,L.jsx)(yo,{})}),(0,L.jsx)(P,{path:`products`,element:(0,L.jsx)(Eo,{})}),(0,L.jsx)(P,{path:`orders`,element:(0,L.jsx)(ko,{})}),(0,L.jsx)(P,{path:`users`,element:(0,L.jsx)(Ro,{})}),(0,L.jsx)(P,{path:`returns`,element:(0,L.jsx)(Ao,{})}),(0,L.jsx)(P,{path:`pickup-locations`,element:(0,L.jsx)(Mo,{})}),(0,L.jsx)(P,{path:`coupons`,element:(0,L.jsx)(ho,{})}),(0,L.jsx)(P,{path:`cancellation-policy`,element:(0,L.jsx)(_o,{})}),(0,L.jsx)(P,{path:`settings`,element:(0,L.jsx)(Po,{})}),(0,L.jsx)(P,{path:`reviews`,element:(0,L.jsx)(Fo,{})}),(0,L.jsx)(P,{path:`testimonials`,element:(0,L.jsx)(Lo,{})}),(0,L.jsx)(P,{path:`*`,element:(0,L.jsx)(to,{})})]})})]}):(0,L.jsx)(dr,{children:(0,L.jsx)(rr,{children:(0,L.jsx)(gr,{children:(0,L.jsx)(zo,{})})})})}var Vo=class extends x.Component{constructor(e){super(e),this.state={hasError:!1}}static getDerivedStateFromError(){return{hasError:!0}}componentDidCatch(e,t){console.error(`[ErrorBoundary] caught a render error:`,e,t?.componentStack)}handleReload=()=>{window.location.href=`/`};render(){return this.state.hasError?(0,L.jsxs)(`div`,{className:`error-boundary-page`,children:[(0,L.jsxs)(`div`,{className:`container`,children:[(0,L.jsx)(`p`,{className:`eyebrow`,children:`Something went wrong`}),(0,L.jsx)(`h1`,{children:`This page hit a snag`}),(0,L.jsx)(`p`,{className:`error-boundary-sub`,children:`Sorry about that — something unexpected happened while loading this page. Try going back to the homepage, or refresh and try again.`}),(0,L.jsx)(`button`,{type:`button`,className:`btn btn-primary`,onClick:this.handleReload,children:`Back to Home`})]}),(0,L.jsx)(`style`,{children:`
+      `})]})}function zo(){let[e,t]=(0,x.useState)(()=>typeof window<`u`&&sessionStorage.getItem(`bypass_coming_soon`)===`1`);return(0,L.jsxs)(L.Fragment,{children:[!e&&(0,L.jsx)(Yr,{onPreview:()=>{sessionStorage.setItem(`bypass_coming_soon`,`1`),t(!0)}}),e&&(0,L.jsxs)(`div`,{style:{position:`sticky`,top:0,zIndex:99999,background:`#581e15`,color:`#ffffff`,padding:`8px 16px`,display:`flex`,alignItems:`center`,justifyContent:`space-between`,fontSize:`12.5px`,boxShadow:`0 2px 10px rgba(0,0,0,0.25)`,gap:12,flexWrap:`wrap`},children:[(0,L.jsxs)(`span`,{children:[`🟡 `,(0,L.jsx)(`strong`,{children:`Preview Mode Active:`}),` Storefront is currently in “Coming Soon” mode for visitors while items are being added.`]}),(0,L.jsx)(`div`,{children:(0,L.jsx)(`button`,{type:`button`,onClick:()=>{sessionStorage.removeItem(`bypass_coming_soon`),t(!1)},style:{background:`#ffffff`,color:`#581e15`,border:`none`,borderRadius:`999px`,padding:`4px 12px`,fontSize:`11.5px`,fontWeight:700,cursor:`pointer`},children:`Exit Preview (Show Coming Soon)`})})]}),(0,L.jsx)(Kr,{}),(0,L.jsx)(yr,{}),(0,L.jsx)(`main`,{children:(0,L.jsxs)(Ht,{children:[(0,L.jsx)(P,{path:`/`,element:(0,L.jsx)(Ni,{})}),(0,L.jsx)(P,{path:`/about`,element:(0,L.jsx)(Fi,{})}),(0,L.jsx)(P,{path:`/products`,element:(0,L.jsx)(Bi,{})}),(0,L.jsx)(P,{path:`/products/:id`,element:(0,L.jsx)(Gi,{})}),(0,L.jsx)(P,{path:`/orders`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(Zi,{})})}),(0,L.jsx)(P,{path:`/contact`,element:(0,L.jsx)(Qi,{})}),(0,L.jsx)(P,{path:`/cart`,element:(0,L.jsx)($i,{})}),(0,L.jsx)(P,{path:`/checkout`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(aa,{})})}),(0,L.jsx)(P,{path:`/profile`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(la,{})})}),(0,L.jsx)(P,{path:`/login`,element:(0,L.jsx)(ma,{})}),(0,L.jsx)(P,{path:`/forgot-password`,element:(0,L.jsx)(ha,{})}),(0,L.jsx)(P,{path:`/reset-password`,element:(0,L.jsx)(ga,{})}),(0,L.jsx)(P,{path:`/complete-profile`,element:(0,L.jsx)(Tr,{children:(0,L.jsx)(va,{})})}),(0,L.jsx)(P,{path:`/privacy-policy`,element:(0,L.jsx)(ya,{})}),(0,L.jsx)(P,{path:`/returns-and-cancellation`,element:(0,L.jsx)(ba,{})}),(0,L.jsx)(P,{path:`/return-cancellation-policy`,element:(0,L.jsx)(ba,{})}),(0,L.jsx)(P,{path:`/user-guide`,element:(0,L.jsx)(xa,{})}),(0,L.jsx)(P,{path:`/silk-guide`,element:(0,L.jsx)(xa,{})}),(0,L.jsx)(P,{path:`*`,element:(0,L.jsx)(Sa,{})})]})}),(0,L.jsx)(wr,{}),(0,L.jsx)(xr,{}),(0,L.jsx)(Jr,{})]})}function Bo(){return lt().pathname.startsWith(`/admin`)?(0,L.jsxs)(dr,{children:[(0,L.jsx)(Er,{}),(0,L.jsx)(Ht,{children:(0,L.jsxs)(P,{path:`/admin`,element:(0,L.jsx)(eo,{}),children:[(0,L.jsx)(P,{index:!0,element:(0,L.jsx)(to,{})}),(0,L.jsx)(P,{path:`home`,element:(0,L.jsx)(uo,{})}),(0,L.jsx)(P,{path:`about`,element:(0,L.jsx)(po,{})}),(0,L.jsx)(P,{path:`categories`,element:(0,L.jsx)(yo,{})}),(0,L.jsx)(P,{path:`products`,element:(0,L.jsx)(Eo,{})}),(0,L.jsx)(P,{path:`orders`,element:(0,L.jsx)(ko,{})}),(0,L.jsx)(P,{path:`users`,element:(0,L.jsx)(Ro,{})}),(0,L.jsx)(P,{path:`returns`,element:(0,L.jsx)(Ao,{})}),(0,L.jsx)(P,{path:`pickup-locations`,element:(0,L.jsx)(Mo,{})}),(0,L.jsx)(P,{path:`coupons`,element:(0,L.jsx)(ho,{})}),(0,L.jsx)(P,{path:`cancellation-policy`,element:(0,L.jsx)(_o,{})}),(0,L.jsx)(P,{path:`settings`,element:(0,L.jsx)(Po,{})}),(0,L.jsx)(P,{path:`reviews`,element:(0,L.jsx)(Fo,{})}),(0,L.jsx)(P,{path:`testimonials`,element:(0,L.jsx)(Lo,{})}),(0,L.jsx)(P,{path:`*`,element:(0,L.jsx)(to,{})})]})})]}):(0,L.jsx)(dr,{children:(0,L.jsx)(rr,{children:(0,L.jsx)(gr,{children:(0,L.jsx)(zo,{})})})})}var Vo=class extends x.Component{constructor(e){super(e),this.state={hasError:!1}}static getDerivedStateFromError(){return{hasError:!0}}componentDidCatch(e,t){console.error(`[ErrorBoundary] caught a render error:`,e,t?.componentStack)}handleReload=()=>{window.location.href=`/`};render(){return this.state.hasError?(0,L.jsxs)(`div`,{className:`error-boundary-page`,children:[(0,L.jsxs)(`div`,{className:`container`,children:[(0,L.jsx)(`p`,{className:`eyebrow`,children:`Something went wrong`}),(0,L.jsx)(`h1`,{children:`This page hit a snag`}),(0,L.jsx)(`p`,{className:`error-boundary-sub`,children:`Sorry about that — something unexpected happened while loading this page. Try going back to the homepage, or refresh and try again.`}),(0,L.jsx)(`button`,{type:`button`,className:`btn btn-primary`,onClick:this.handleReload,children:`Back to Home`})]}),(0,L.jsx)(`style`,{children:`
             .error-boundary-page {
               min-height: 60vh;
               display: flex;

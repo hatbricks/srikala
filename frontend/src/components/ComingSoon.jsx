@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BRAND from '../config/brand';
 
-export default function ComingSoon() {
+export default function ComingSoon({ onPreview }) {
   const [copied, setCopied] = useState(false);
 
   function copyPhone() {
@@ -34,17 +34,33 @@ export default function ComingSoon() {
               height="52"
             />
           </Link>
-          <a
-            href="https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20inquire%20about%20your%20saree%20collections."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cs-header-wa-btn"
-          >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
-            </svg>
-            <span>WhatsApp Us</span>
-          </a>
+          <div className="cs-header-actions">
+            {onPreview && (
+              <button
+                type="button"
+                onClick={onPreview}
+                className="cs-header-see-site-btn"
+                title="See live website"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>See Website</span>
+              </button>
+            )}
+            <a
+              href="https://wa.me/918317551337?text=Hello%20Ravichandra%20Textiles,%20I%20would%20like%20to%20inquire%20about%20your%20saree%20collections."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cs-header-wa-btn"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
+              </svg>
+              <span>WhatsApp Us</span>
+            </a>
+          </div>
         </header>
 
         {/* Hero Card */}
@@ -130,6 +146,15 @@ export default function ComingSoon() {
           <p className="cs-footer-copy">
             © {new Date().getFullYear()} Ravichandra Textiles. Handwoven in Dharmavaram.
           </p>
+          {onPreview && (
+            <button
+              type="button"
+              onClick={onPreview}
+              className="cs-footer-see-site-btn"
+            >
+              <span>See Live Website →</span>
+            </button>
+          )}
         </footer>
       </div>
 
@@ -206,6 +231,36 @@ export default function ComingSoon() {
           width: auto;
           object-fit: contain;
           filter: drop-shadow(0 2px 4px rgba(44, 24, 16, 0.1));
+        }
+
+        .cs-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .cs-header-see-site-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #FFFFFF;
+          color: #581e15;
+          border: 1.5px solid rgba(88, 30, 21, 0.35);
+          padding: 6.5px 15px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(44, 24, 16, 0.05);
+          transition: all 0.15s ease;
+        }
+
+        .cs-header-see-site-btn:hover {
+          background: #581e15;
+          color: #FFFFFF !important;
+          border-color: #581e15;
+          box-shadow: 0 4px 12px rgba(88, 30, 21, 0.2);
+          transform: translateY(-1px);
         }
 
         .cs-header-wa-btn {
@@ -417,16 +472,39 @@ export default function ComingSoon() {
         .cs-footer {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
           text-align: center;
           padding-top: 24px;
           border-top: 1px solid rgba(184, 125, 43, 0.2);
+          flex-wrap: wrap;
+          gap: 12px;
         }
 
         .cs-footer-copy {
           font-size: 12.5px;
           color: #8c7365;
           margin: 0;
+        }
+
+        .cs-footer-see-site-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #FFFFFF;
+          color: #581e15;
+          border: 1px solid rgba(184, 125, 43, 0.35);
+          padding: 6px 16px;
+          border-radius: 999px;
+          font-size: 12.5px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .cs-footer-see-site-btn:hover {
+          background: #581e15;
+          color: #FFFFFF;
+          border-color: #581e15;
         }
 
         @media (max-width: 768px) {
@@ -437,9 +515,16 @@ export default function ComingSoon() {
             padding-bottom: 18px;
             gap: 12px;
           }
+          .cs-header-actions {
+            gap: 8px;
+          }
           .cs-logo-img {
             height: 38px;
-            max-width: 190px;
+            max-width: 170px;
+          }
+          .cs-header-see-site-btn {
+            padding: 5px 12px;
+            font-size: 12px;
           }
           .cs-header-wa-btn {
             padding: 6px 13px;
@@ -485,9 +570,21 @@ export default function ComingSoon() {
           .cs-header {
             padding-bottom: 14px;
           }
+          .cs-header-actions {
+            gap: 6px;
+          }
           .cs-logo-img {
             height: 32px;
-            max-width: 160px;
+            max-width: 140px;
+          }
+          .cs-header-see-site-btn {
+            padding: 5px 9px;
+            font-size: 11px;
+            gap: 4px;
+          }
+          .cs-header-see-site-btn svg {
+            width: 13px;
+            height: 13px;
           }
           .cs-header-wa-btn {
             padding: 5px 10px;
@@ -554,7 +651,15 @@ export default function ComingSoon() {
             font-size: 12px;
           }
           .cs-footer {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             padding-top: 18px;
+            gap: 10px;
+          }
+          .cs-footer-see-site-btn {
+            font-size: 12px;
+            padding: 7px 14px;
           }
           .cs-footer-copy {
             font-size: 11px;
@@ -564,7 +669,11 @@ export default function ComingSoon() {
         @media (max-width: 360px) {
           .cs-logo-img {
             height: 28px;
-            max-width: 135px;
+            max-width: 120px;
+          }
+          .cs-header-see-site-btn {
+            padding: 4px 7px;
+            font-size: 10px;
           }
           .cs-title {
             font-size: 22px;

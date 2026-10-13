@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, useLocation, Link } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -87,10 +87,7 @@ function PublicSite() {
           <span>
             🟡 <strong>Preview Mode Active:</strong> Storefront is currently in &ldquo;Coming Soon&rdquo; mode for visitors while items are being added.
           </span>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <Link to="/admin" style={{ color: '#fbdfa2', textDecoration: 'underline', fontWeight: 600 }}>
-              Admin Panel (Add Items) →
-            </Link>
+          <div>
             <button
               type="button"
               onClick={() => {
