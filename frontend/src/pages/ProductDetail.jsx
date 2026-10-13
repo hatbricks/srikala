@@ -109,9 +109,15 @@ export default function ProductDetail() {
   const currentStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
   const outOfStock = currentStock <= 0;
 
-  // If the selected color variant has its own uploaded saree photos, show those photos for this color;
+  // If the selected color variant has its own uploaded saree photos / hover photo, show those photos for this color;
   // otherwise fall back to the base product gallery.
-  const variantImgs = Array.isArray(selectedVariant?.images) ? selectedVariant.images.filter(Boolean) : [];
+  const rawVariantImgs = Array.isArray(selectedVariant?.images) ? selectedVariant.images.filter(Boolean) : [];
+  const variantHover = selectedVariant?.hoverImage || selectedVariant?.hover_image || '';
+  const variantImgs = [
+    rawVariantImgs[0],
+    variantHover,
+    ...rawVariantImgs.slice(1),
+  ].filter(Boolean);
   const baseGallery = [product.image, product.hoverImage || product.hover_image, ...(product.images || [])].filter(Boolean);
   const rawGallery = variantImgs.length > 0 ? variantImgs : baseGallery;
   const gallery = rawGallery.filter((src, i, arr) => src && arr.indexOf(src) === i);

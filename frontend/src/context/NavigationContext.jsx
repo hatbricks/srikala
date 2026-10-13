@@ -57,6 +57,9 @@ export function NavigationProvider({ children }) {
   }, [location.pathname, location.search, navType]);
 
   const goBack = (fallback) => {
+    if (typeof window !== 'undefined') {
+      window.__rtRestoreScroll = true;
+    }
     const stack = stackRef.current;
     if (stack.length > 1) {
       navigate(-1);
@@ -81,10 +84,13 @@ export function useNavigationStack() {
   if (!ctx) {
     return {
       goBack: (fallback = '/') => {
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-          window.history.back();
-        } else if (typeof window !== 'undefined') {
-          window.location.href = fallback;
+        if (typeof window !== 'undefined') {
+          window.__rtRestoreScroll = true;
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            window.location.href = fallback;
+          }
         }
       },
     };

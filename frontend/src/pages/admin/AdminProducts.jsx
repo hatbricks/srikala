@@ -215,6 +215,7 @@ export default function AdminProducts() {
   }
 
   const [variantImgBusy, setVariantImgBusy] = useState(null);
+  const [variantHoverBusy, setVariantHoverBusy] = useState(null);
 
   function addVariant() {
     setForm((f) => ({
@@ -230,6 +231,7 @@ export default function AdminProducts() {
           mrp: f.mrp || '',
           weightGrams: f.weightGrams || 500,
           images: [],
+          hoverImage: '',
           active: true,
         },
       ],
@@ -240,6 +242,66 @@ export default function AdminProducts() {
     setForm((f) => {
       const next = [...(f.variants || [])];
       next[index] = { ...next[index], [field]: value };
+      return { ...f, variants: next };
+    });
+  }
+
+  async function handleVariantMainImage(index, e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVariantImgBusy(index);
+    try {
+      const dataUrl = await compressImageFile(file);
+      setForm((f) => {
+        const next = [...(f.variants || [])];
+        const currentImgs = Array.isArray(next[index]?.images) ? [...next[index].images] : [];
+        if (currentImgs.length > 0) {
+          currentImgs[0] = dataUrl;
+        } else {
+          currentImgs.push(dataUrl);
+        }
+        next[index] = { ...next[index], images: currentImgs };
+        return {
+          ...f,
+          image: f.image || dataUrl,
+          variants: next,
+        };
+      });
+    } catch {
+      setError('Could not read the color main image file.');
+    } finally {
+      setVariantImgBusy(null);
+      e.target.value = '';
+    }
+  }
+
+  async function handleVariantHoverImage(index, e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVariantHoverBusy(index);
+    try {
+      const dataUrl = await compressImageFile(file);
+      setForm((f) => {
+        const next = [...(f.variants || [])];
+        next[index] = { ...next[index], hoverImage: dataUrl };
+        return {
+          ...f,
+          hoverImage: f.hoverImage || dataUrl,
+          variants: next,
+        };
+      });
+    } catch {
+      setError('Could not read the color hover image file.');
+    } finally {
+      setVariantHoverBusy(null);
+      e.target.value = '';
+    }
+  }
+
+  function removeVariantHoverImage(index) {
+    setForm((f) => {
+      const next = [...(f.variants || [])];
+      next[index] = { ...next[index], hoverImage: '' };
       return { ...f, variants: next };
     });
   }
@@ -310,6 +372,7 @@ export default function AdminProducts() {
       mrp: v.mrp ?? '',
       weightGrams: v.weightGrams ?? v.weight_grams ?? 500,
       images: Array.isArray(v.images) ? v.images : [],
+      hoverImage: v.hoverImage ?? v.hover_image ?? '',
       active: v.active !== false,
     }));
   }
@@ -320,6 +383,9 @@ export default function AdminProducts() {
     setError('');
 
     const firstVariantImg = (form.variants || []).find((v) => Array.isArray(v.images) && v.images.length > 0)?.images?.[0];
+    const firstVariantHover = (form.variants || []).find((v) => v.hoverImage || v.hover_image)?.hoverImage
+      || (form.variants || []).find((v) => v.hoverImage || v.hover_image)?.hover_image
+      || '';
 
     const payload = {
       name: form.name,
@@ -342,7 +408,7 @@ export default function AdminProducts() {
       seoDescription: form.seoDescription,
       slug: form.slug,
       image: form.image || firstVariantImg || 'https://images.unsplash.com/photo-1717585679395-bbe39b5fb6bc?auto=format&fit=crop&w=800&q=80',
-      hoverImage: form.hoverImage || '',
+      hoverImage: form.hoverImage || firstVariantHover || '',
       images: form.images || [],
       active: form.active !== false,
       variants: (form.variants || []).map((v) => ({
@@ -350,6 +416,7 @@ export default function AdminProducts() {
         colorName: v.colorName ?? v.color_name ?? '',
         colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
         images: Array.isArray(v.images) ? v.images : [],
+        hoverImage: v.hoverImage ?? v.hover_image ?? '',
       })),
     };
 
@@ -859,51 +926,130 @@ export default function AdminProducts() {
                               className="variant-dot-inline"
                               style={{ backgroundColor: v.colorCode || '#8B0000' }}
                             />
-                            Saree Photos ({v.colorName || `Color #${i + 1}`})
+                            Photos for {v.colorName || `Color #${i + 1}`}
                           </span>
-                          <label className="variant-upload-btn">
-                            {variantImgBusy === i ? 'Uploading…' : '+ Upload Color Photos'}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              hidden
-                              disabled={variantImgBusy === i}
-                              onChange={(e) => handleVariantImages(i, e)}
-                            />
-                          </label>
                         </div>
 
-                        {vImgs.length > 0 ? (
-                          <div className="variant-thumbs-row">
-                            {vImgs.map((src, imgIdx) => (
-                              <div
-                                key={imgIdx}
-                                className={`variant-thumb-item ${imgIdx === 0 ? 'is-primary' : ''}`}
-                                title={imgIdx === 0 ? 'Primary photo for this color' : 'Click to make primary photo'}
-                                onClick={() => setVariantPrimaryImage(i, imgIdx)}
-                              >
-                                <img src={src} alt={`${v.colorName || 'Variant'} ${imgIdx + 1}`} />
-                                {imgIdx === 0 && <span className="variant-primary-tag">Main</span>}
+                        <div className="variant-dual-photos">
+                          {/* Slot 1: Main Saree Photo for this color */}
+                          <div className="variant-photo-slot">
+                            <div className="variant-slot-top">
+                              <span className="variant-slot-title">Main Saree Photo</span>
+                              <label className="variant-upload-btn">
+                                {variantImgBusy === i ? 'Uploading…' : vImgs[0] ? 'Change' : '+ Upload'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  hidden
+                                  disabled={variantImgBusy === i}
+                                  onChange={(e) => handleVariantMainImage(i, e)}
+                                />
+                              </label>
+                            </div>
+                            {vImgs[0] ? (
+                              <div className="variant-slot-preview">
+                                <img src={vImgs[0]} alt={`${v.colorName || 'Color'} Main`} />
+                                <span className="variant-slot-badge badge-main">Main View</span>
                                 <button
                                   type="button"
                                   className="variant-thumb-remove"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeVariantImage(i, imgIdx);
-                                  }}
-                                  aria-label="Remove color photo"
+                                  onClick={() => removeVariantImage(i, 0)}
+                                  title="Remove main photo"
                                 >
                                   <CloseIcon width={10} height={10} />
                                 </button>
                               </div>
-                            ))}
+                            ) : (
+                              <div className="variant-slot-empty">
+                                No main photo yet
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <p className="variant-photos-empty">
-                            Upload saree photo(s) for <strong>{v.colorName || 'this color'}</strong> so shoppers see this exact color when they click its swatch.
-                          </p>
-                        )}
+
+                          {/* Slot 2: Separate Hover Photo (Model Wearing) for this color */}
+                          <div className="variant-photo-slot">
+                            <div className="variant-slot-top">
+                              <span className="variant-slot-title">Hover Photo (Model)</span>
+                              <label className="variant-upload-btn">
+                                {variantHoverBusy === i ? 'Uploading…' : (v.hoverImage || v.hover_image) ? 'Change' : '+ Upload'}
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  hidden
+                                  disabled={variantHoverBusy === i}
+                                  onChange={(e) => handleVariantHoverImage(i, e)}
+                                />
+                              </label>
+                            </div>
+                            {(v.hoverImage || v.hover_image) ? (
+                              <div className="variant-slot-preview">
+                                <img src={v.hoverImage || v.hover_image} alt={`${v.colorName || 'Color'} Hover`} />
+                                <span className="variant-slot-badge badge-hover">Hover / Model</span>
+                                <button
+                                  type="button"
+                                  className="variant-thumb-remove"
+                                  onClick={() => removeVariantHoverImage(i)}
+                                  title="Remove hover photo"
+                                >
+                                  <CloseIcon width={10} height={10} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="variant-slot-empty">
+                                Optional hover model photo
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Optional extra gallery angles for this specific color */}
+                        <div className="variant-extra-gallery">
+                          <div className="variant-photos-head">
+                            <span className="field-hint" style={{ fontSize: 11 }}>
+                              Extra gallery angles for {v.colorName || `Color #${i + 1}`} (optional)
+                            </span>
+                            <label className="variant-upload-btn">
+                              {variantImgBusy === i ? 'Uploading…' : '+ Extra Photos'}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                hidden
+                                disabled={variantImgBusy === i}
+                                onChange={(e) => handleVariantImages(i, e)}
+                              />
+                            </label>
+                          </div>
+
+                          {vImgs.length > 1 && (
+                            <div className="variant-thumbs-row">
+                              {vImgs.slice(1).map((src, extraIdx) => {
+                                const actualIdx = extraIdx + 1;
+                                return (
+                                  <div
+                                    key={actualIdx}
+                                    className="variant-thumb-item"
+                                    title="Click to make main photo for this color"
+                                    onClick={() => setVariantPrimaryImage(i, actualIdx)}
+                                  >
+                                    <img src={src} alt={`${v.colorName || 'Variant'} extra ${actualIdx}`} />
+                                    <button
+                                      type="button"
+                                      className="variant-thumb-remove"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeVariantImage(i, actualIdx);
+                                      }}
+                                      aria-label="Remove color photo"
+                                    >
+                                      <CloseIcon width={10} height={10} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -913,53 +1059,79 @@ export default function AdminProducts() {
           </div>
 
           <div className="form-section">
-            <p className="section-label">Photos &amp; Hover Preview</p>
-            
-            <div className="photo-inputs-grid">
-              <div className="photo-input-card">
-                <label>
-                  <span className="photo-field-title">Main Saree Photo</span>
-                  <span className="field-hint">Initial storefront photo (saree flat lay / folded).</span>
-                  <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
-                </label>
-                {form.image ? (
-                  <div className="preview-thumb-card">
-                    <img src={form.image} alt="Main Saree Preview" />
-                    <span className="preview-chip chip-primary">Default Saree View</span>
-                  </div>
-                ) : (
-                  <div className="preview-empty-slot">
-                    <span>No main photo selected</span>
-                  </div>
-                )}
-              </div>
+            <p className="section-label">
+              {form.variants?.length > 0 ? 'Default Fallback Photo & Shared Gallery' : 'Photos & Hover Preview'}
+            </p>
+            {form.variants?.length > 0 ? (
+              <>
+                <p className="field-hint" style={{ marginTop: -6 }}>
+                  Each color variant above has its own <strong>Main Saree Photo</strong> and <strong>Hover Photo (Model Wearing)</strong>. The first color&apos;s photos are used automatically as the default product card preview unless you override the fallback cover photo below.
+                </p>
+                <div className="photo-input-card">
+                  <label>
+                    <span className="photo-field-title">Fallback Cover Photo (Optional when using Color Variants)</span>
+                    <span className="field-hint">Automatically uses your first color variant&apos;s Main Photo if left empty.</span>
+                    <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
+                  </label>
+                  {form.image ? (
+                    <div className="preview-thumb-card">
+                      <img src={form.image} alt="Main Saree Preview" />
+                      <span className="preview-chip chip-primary">Default Saree View</span>
+                    </div>
+                  ) : (
+                    <div className="preview-empty-slot">
+                      <span>Uses 1st color variant&apos;s main photo automatically</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="photo-inputs-grid">
+                <div className="photo-input-card">
+                  <label>
+                    <span className="photo-field-title">Main Saree Photo</span>
+                    <span className="field-hint">Initial storefront photo (saree flat lay / folded).</span>
+                    <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
+                  </label>
+                  {form.image ? (
+                    <div className="preview-thumb-card">
+                      <img src={form.image} alt="Main Saree Preview" />
+                      <span className="preview-chip chip-primary">Default Saree View</span>
+                    </div>
+                  ) : (
+                    <div className="preview-empty-slot">
+                      <span>No main photo selected</span>
+                    </div>
+                  )}
+                </div>
 
-              <div className="photo-input-card">
-                <label>
-                  <span className="photo-field-title">Hover Photo (Model Wearing Saree)</span>
-                  <span className="field-hint">Revealed when shopper hovers over the product card.</span>
-                  <input type="file" accept="image/*" ref={hoverFileInput} onChange={handleHoverImage} />
-                </label>
-                {form.hoverImage ? (
-                  <div className="preview-thumb-card">
-                    <img src={form.hoverImage} alt="Hover Model Preview" />
-                    <span className="preview-chip chip-model">Hover / Wearing View</span>
-                    <button
-                      type="button"
-                      className="photo-clear-btn"
-                      onClick={removeHoverImage}
-                      title="Remove hover model photo"
-                    >
-                      <CloseIcon width={12} height={12} /> Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className="preview-empty-slot">
-                    <span>Optional · Fallbacks to main photo on hover</span>
-                  </div>
-                )}
+                <div className="photo-input-card">
+                  <label>
+                    <span className="photo-field-title">Hover Photo (Model Wearing Saree)</span>
+                    <span className="field-hint">Revealed when shopper hovers over the product card.</span>
+                    <input type="file" accept="image/*" ref={hoverFileInput} onChange={handleHoverImage} />
+                  </label>
+                  {form.hoverImage ? (
+                    <div className="preview-thumb-card">
+                      <img src={form.hoverImage} alt="Hover Model Preview" />
+                      <span className="preview-chip chip-model">Hover / Wearing View</span>
+                      <button
+                        type="button"
+                        className="photo-clear-btn"
+                        onClick={removeHoverImage}
+                        title="Remove hover model photo"
+                      >
+                        <CloseIcon width={12} height={12} /> Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="preview-empty-slot">
+                      <span>Optional · Fallbacks to main photo on hover</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <label style={{ marginTop: 10 }}>
               Gallery photos
@@ -1299,7 +1471,7 @@ export default function AdminProducts() {
           padding: 10px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
           min-width: 0;
         }
         .variant-photos-head {
@@ -1324,19 +1496,107 @@ export default function AdminProducts() {
           border: 1px solid rgba(0, 0, 0, 0.2);
           flex-shrink: 0;
         }
+        .variant-dual-photos {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 8px;
+          min-width: 0;
+        }
+        .variant-photo-slot {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          border-radius: 6px;
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+        }
+        .variant-slot-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 4px;
+        }
+        .variant-slot-title {
+          font-size: 10.5px;
+          font-weight: 600;
+          color: var(--ink-700);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .variant-slot-preview {
+          position: relative;
+          width: 100%;
+          height: 100px;
+          border-radius: 5px;
+          overflow: hidden;
+          border: 1px solid var(--stone-200);
+          background: #fbf7f2;
+        }
+        .variant-slot-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top center;
+          display: block;
+        }
+        .variant-slot-badge {
+          position: absolute;
+          bottom: 4px;
+          left: 4px;
+          font-size: 8.5px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          padding: 2px 5px;
+          border-radius: 3px;
+        }
+        .badge-main {
+          background: rgba(32, 8, 11, 0.8);
+          color: #ffffff;
+        }
+        .badge-hover {
+          background: rgba(88, 30, 21, 0.9);
+          color: #fbdba2;
+          border: 1px solid rgba(251, 219, 162, 0.35);
+        }
+        .variant-slot-empty {
+          height: 60px;
+          border: 1px dashed var(--stone-300);
+          border-radius: 5px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          font-size: 10px;
+          color: var(--ink-400);
+          padding: 6px;
+          background: rgba(255, 255, 255, 0.65);
+        }
+        .variant-extra-gallery {
+          padding-top: 6px;
+          border-top: 1px solid var(--stone-100);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
         .variant-upload-btn {
           display: inline-flex !important;
           flex-direction: row !important;
           align-items: center;
           gap: 4px;
-          font-size: 11px !important;
+          font-size: 10.5px !important;
           font-weight: 600;
           color: var(--maroon-900) !important;
           background: #fdf6f5;
           border: 1px solid rgba(88, 30, 21, 0.25);
-          padding: 4px 10px;
+          padding: 3px 8px;
           border-radius: 999px;
           cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
           transition: all 0.15s ease;
         }
         .variant-upload-btn:hover {
@@ -1350,8 +1610,8 @@ export default function AdminProducts() {
         }
         .variant-thumb-item {
           position: relative;
-          width: 56px;
-          height: 68px;
+          width: 52px;
+          height: 64px;
           border-radius: 6px;
           overflow: hidden;
           border: 1.5px solid var(--stone-200);

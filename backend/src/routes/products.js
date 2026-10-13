@@ -61,6 +61,8 @@ function mapVariant(v) {
     weightGrams: v.weight_grams != null ? Number(v.weight_grams) : null,
     weight_grams: v.weight_grams != null ? Number(v.weight_grams) : null,
     images: Array.isArray(v.images) ? v.images : [],
+    hoverImage: v.hover_image || '',
+    hover_image: v.hover_image || '',
     active: v.active ?? true,
     createdAt: v.created_at,
   };
@@ -83,7 +85,7 @@ router.get('/', async (req, res) => {
 
   const productIds = rows.map((p) => p.id);
   const { rows: variantRows } = await query(
-    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, active
+    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
      FROM product_variants
      WHERE product_id = ANY($1) AND active = true
      ORDER BY id ASC`,
@@ -223,8 +225,8 @@ router.post('/', requireAdmin, async (req, res) => {
         if (!v.colorName?.trim()) continue;
         const vResult = await client.query(
           `INSERT INTO product_variants (
-             product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, active
-           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10) RETURNING *`,
+             product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11) RETURNING *`,
           [
             id,
             v.colorName.trim(),
@@ -235,6 +237,7 @@ router.post('/', requireAdmin, async (req, res) => {
             Number(v.stock) || 0,
             v.weightGrams != null ? Number(v.weightGrams) : null,
             JSON.stringify(Array.isArray(v.images) ? v.images : []),
+            v.hoverImage ?? v.hover_image ?? '',
             v.active !== false,
           ]
         );
@@ -367,8 +370,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
           await client.query(
             `UPDATE product_variants SET
                color_name = $1, color_code = $2, sku = $3, price = $4, mrp = $5, stock = $6,
-               weight_grams = $7, images = $8::jsonb, active = $9, updated_at = now()
-             WHERE id = $10 AND product_id = $11`,
+               weight_grams = $7, images = $8::jsonb, hover_image = $9, active = $10, updated_at = now()
+             WHERE id = $11 AND product_id = $12`,
             [
               v.colorName.trim(),
               v.colorCode || '',
@@ -378,6 +381,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
               Number(v.stock) || 0,
               v.weightGrams != null ? Number(v.weightGrams) : null,
               JSON.stringify(Array.isArray(v.images) ? v.images : []),
+              v.hoverImage ?? v.hover_image ?? '',
               v.active !== false,
               v.id,
               req.params.id,
@@ -386,8 +390,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
         } else {
           await client.query(
             `INSERT INTO product_variants (
-               product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, active
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)`,
+               product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)`,
             [
               req.params.id,
               v.colorName.trim(),
@@ -398,6 +402,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
               Number(v.stock) || 0,
               v.weightGrams != null ? Number(v.weightGrams) : null,
               JSON.stringify(Array.isArray(v.images) ? v.images : []),
+              v.hoverImage ?? v.hover_image ?? '',
               v.active !== false,
             ]
           );

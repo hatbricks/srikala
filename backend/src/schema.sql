@@ -80,15 +80,6 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS hover_image TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 
--- Performance indexes for fast listing, admin searches, and scaling with large catalogs
-CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
-CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
-CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(product_id);
-CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
-
 -- Home page CMS — every section on the home screen is a row here, keyed by
 -- a stable `section_key` (e.g. 'hero', 'promo_banner', 'featured_categories').
 -- `content` is free-form JSON so the admin panel can add fields per-section
@@ -122,38 +113,6 @@ VALUES (
     ]
   }'::jsonb,
   2
-)
-ON CONFLICT (section_key) DO NOTHING;
-
--- Default products page curved hero header
-INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
-VALUES (
-  'products_hero',
-  'Products Page — Curved Hero Header',
-  TRUE,
-  '{
-    "badge": "HERITAGE HANDLOOMS",
-    "title": "Our Collection",
-    "description": "Rooted in Andhra Pradesh weaving heritage, our sarees are crafted slowly, thoughtfully, and meant to be treasured for a lifetime.",
-    "image": "/images/collection-hero-artisan.jpg"
-  }'::jsonb,
-  15
-)
-ON CONFLICT (section_key) DO NOTHING;
-
--- Default about page hero header
-INSERT INTO home_sections (section_key, title, enabled, content, sort_order)
-VALUES (
-  'about_hero',
-  'About Page — Header',
-  TRUE,
-  '{
-    "eyebrow": "ABOUT RAVICHANDRA TEXTILES",
-    "heading": "Curating Dharmavaram & Indian Heritage, Honoring Timeless Artistry",
-    "subtitle": "Woven slowly on traditional pit looms in Dharmavaram, honoring centuries of sacred weaving devotion and pure zari craftsmanship.",
-    "image": "/images/about-hero-artisan.jpg"
-  }'::jsonb,
-  13
 )
 ON CONFLICT (section_key) DO NOTHING;
 
@@ -325,10 +284,12 @@ CREATE TABLE IF NOT EXISTS product_variants (
   stock        INTEGER NOT NULL DEFAULT 0,
   weight_grams INTEGER,
   images       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  hover_image  TEXT NOT NULL DEFAULT '',
   active       BOOLEAN NOT NULL DEFAULT TRUE,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS hover_image TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(product_id);
 
 -- Shiprocket pickup locations

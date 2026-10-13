@@ -49,6 +49,9 @@ export default function SmoothScroll() {
   const location = useLocation();
   const navType = useNavigationType();
   const isRestoringRef = useRef(false);
+  const isRouteChangingRef = useRef(false);
+  const restoringTargetYRef = useRef(0);
+  const activeLocationRef = useRef(location);
 
   // The browser has its own automatic scroll-restoration behavior for history
   // navigations which can fight with client routing. Setting this to 'manual'
@@ -68,16 +71,15 @@ export default function SmoothScroll() {
     if (prefersReducedMotion) return undefined;
 
     const lenis = new Lenis({
-      duration: 1.7, // slower, longer glide than Lenis's ~1.1s default
-      easing: (t) => 1 - Math.pow(1 - t, 4), // ease-out quart: gentler deceleration
+      duration: 1.7,
+      easing: (t) => 1 - Math.pow(1 - t, 4),
       smoothWheel: true,
       wheelMultiplier: 0.85,
-      syncTouch: false, // native touch scroll on mobile — no interference there
+      syncTouch: false,
       touchMultiplier: 1,
     });
     lenisRef.current = lenis;
 
-    // Sync Lenis's internal scroll target with current window scroll immediately
     lenis.scrollTo(window.scrollY, { immediate: true });
 
     let rafId;
@@ -94,45 +96,49 @@ export default function SmoothScroll() {
     };
   }, []);
 
-  // Track the user's scroll position as they browse
+  // Track the user's scroll position while browsing the current route.
+  // IMPORTANT: Do NOT record scroll inside a route-cleanup effect because
+  // React runs the next route's useLayoutEffect (which resets scrollY to 0)
+  // BEFORE running the previous route's useEffect cleanup!
   useEffect(() => {
-    let ticking = false;
+    activeLocationRef.current = location;
+    const unlockTimer = setTimeout(() => {
+      isRouteChangingRef.current = false;
+    }, 120);
 
     const recordCurrentPosition = () => {
-      // Don't overwrite saved position during active restoration passes
-      if (isRestoringRef.current) return;
+      if (isRestoringRef.current || isRouteChangingRef.current) return;
       const y = window.scrollY || document.documentElement.scrollTop || 0;
-      saveScrollPosition(location, y);
+      saveScrollPosition(activeLocationRef.current, y);
     };
 
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          recordCurrentPosition();
-          ticking = false;
-        });
-        ticking = true;
-      }
+    // Capture exact scroll position on pointerdown/touchstart BEFORE any link click navigates
+    const handlePreClick = () => {
+      recordCurrentPosition();
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', recordCurrentPosition, { passive: true });
+    window.addEventListener('pointerdown', handlePreClick, { capture: true, passive: true });
+    window.addEventListener('touchstart', handlePreClick, { capture: true, passive: true });
 
     return () => {
-      // Capture the exact position right before leaving this route
-      recordCurrentPosition();
-      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(unlockTimer);
+      window.removeEventListener('scroll', recordCurrentPosition);
+      window.removeEventListener('pointerdown', handlePreClick, { capture: true });
+      window.removeEventListener('touchstart', handlePreClick, { capture: true });
     };
   }, [location.pathname, location.search, location.key]);
 
   // Handle route change synchronously before paint (useLayoutEffect):
-  // - On POP (back navigation): restore the saved scroll position so the user
-  //   returns to the exact section (e.g. Recommended / New Arrivals on Home)
+  // - On POP or explicit goBack (__rtRestoreScroll): restore saved scroll position
   // - On PUSH (forward navigation): reset scroll to top (0)
-  // - On hash link: scroll smoothly to target element
   useLayoutEffect(() => {
+    isRouteChangingRef.current = true;
+
     if (location.hash) {
       const targetEl = document.querySelector(location.hash);
       if (targetEl) {
+        restoringTargetYRef.current = 0;
         if (lenisRef.current) {
           lenisRef.current.scrollTo(targetEl, { immediate: true });
         } else {
@@ -142,8 +148,17 @@ export default function SmoothScroll() {
       }
     }
 
-    if (navType === 'POP') {
+    const isBackNav =
+      navType === 'POP' ||
+      (typeof window !== 'undefined' && Boolean(window.__rtRestoreScroll));
+
+    if (typeof window !== 'undefined' && window.__rtRestoreScroll) {
+      window.__rtRestoreScroll = false;
+    }
+
+    if (isBackNav) {
       const savedY = getSavedScrollPosition(location);
+      restoringTargetYRef.current = savedY;
       if (savedY > 0) {
         isRestoringRef.current = true;
         document.documentElement.scrollTop = savedY;
@@ -153,6 +168,7 @@ export default function SmoothScroll() {
           lenisRef.current.scrollTo(savedY, { immediate: true });
         }
       } else {
+        isRestoringRef.current = false;
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
         window.scrollTo(0, 0);
@@ -161,31 +177,22 @@ export default function SmoothScroll() {
         }
       }
     } else if (navType === 'PUSH') {
-      // Forward navigation to a new page: start cleanly at top
+      restoringTargetYRef.current = 0;
+      isRestoringRef.current = false;
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
       window.scrollTo(0, 0);
       if (lenisRef.current) {
         lenisRef.current.scrollTo(0, { immediate: true });
       }
-      saveScrollPosition(location, 0);
     }
   }, [location.pathname, location.search, location.hash, navType]);
 
-  // Secondary verification loop on POP navigation:
-  // In single-page apps, dynamic content (catalogs, async sections, images)
-  // may finish rendering a few milliseconds after the initial paint.
-  // If the document height was temporarily shorter than savedY, the browser
-  // clamps scrollY. This verification loop re-applies savedY as the DOM
-  // settles, but immediately yields if the user touches the screen or scrolls.
+  // Secondary verification loop on back navigation:
+  // Re-applies savedY as async sections / images settle, yielding immediately on user input.
   useEffect(() => {
-    if (navType !== 'POP' || location.hash) {
-      isRestoringRef.current = false;
-      return undefined;
-    }
-
-    const savedY = getSavedScrollPosition(location);
-    if (!savedY || savedY <= 0) {
+    const savedY = restoringTargetYRef.current;
+    if (!savedY || savedY <= 0 || location.hash) {
       isRestoringRef.current = false;
       return undefined;
     }
@@ -194,17 +201,17 @@ export default function SmoothScroll() {
     const cancelRestoration = () => {
       userInteracted = true;
       isRestoringRef.current = false;
+      restoringTargetYRef.current = 0;
     };
 
     window.addEventListener('wheel', cancelRestoration, { passive: true, once: true });
-    window.addEventListener('touchstart', cancelRestoration, { passive: true, once: true });
-    window.addEventListener('pointerdown', cancelRestoration, { passive: true, once: true });
+    window.addEventListener('touchmove', cancelRestoration, { passive: true, once: true });
     window.addEventListener('keydown', cancelRestoration, { passive: true, once: true });
 
     const applyVerifiedScroll = () => {
       if (userInteracted) return;
       const currentY = window.scrollY || document.documentElement.scrollTop || 0;
-      if (Math.abs(currentY - savedY) > 8) {
+      if (Math.abs(currentY - savedY) > 6) {
         document.documentElement.scrollTop = savedY;
         document.body.scrollTop = savedY;
         window.scrollTo(0, savedY);
@@ -214,13 +221,14 @@ export default function SmoothScroll() {
       }
     };
 
-    const timers = [20, 60, 150, 300, 600, 1000].map((ms) =>
+    const timers = [16, 50, 120, 260, 500, 900].map((ms) =>
       setTimeout(applyVerifiedScroll, ms),
     );
 
     const endTimer = setTimeout(() => {
       isRestoringRef.current = false;
-    }, 1100);
+      restoringTargetYRef.current = 0;
+    }, 950);
 
     return () => {
       userInteracted = true;
@@ -228,8 +236,7 @@ export default function SmoothScroll() {
       timers.forEach(clearTimeout);
       clearTimeout(endTimer);
       window.removeEventListener('wheel', cancelRestoration);
-      window.removeEventListener('touchstart', cancelRestoration);
-      window.removeEventListener('pointerdown', cancelRestoration);
+      window.removeEventListener('touchmove', cancelRestoration);
       window.removeEventListener('keydown', cancelRestoration);
     };
   }, [location.pathname, location.search, location.hash, navType]);

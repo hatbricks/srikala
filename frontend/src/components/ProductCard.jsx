@@ -38,11 +38,11 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
   }
 
   const variantPrimaryImg = activeVariant?.images?.[0] || null;
-  const variantSecondImg = activeVariant?.images?.[1] || null;
+  const variantHoverImg = activeVariant?.hoverImage || activeVariant?.hover_image || activeVariant?.images?.[1] || null;
   const displayImage = variantPrimaryImg || product.image;
-  const hoverImg = selectedVariant
-    ? variantSecondImg
-    : (variantSecondImg || product.hoverImage || product.hover_image);
+  const hoverImg = activeVariant
+    ? (variantHoverImg || (!selectedVariant ? (product.hoverImage || product.hover_image) : null))
+    : (product.hoverImage || product.hover_image);
   const detailUrl = activeVariant?.id
     ? `/products/${product.id}?variant=${encodeURIComponent(activeVariant.id)}`
     : `/products/${product.id}`;

@@ -3,6 +3,7 @@ import { useSearchParams, useLocation, Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import RecommendedProducts from '../components/RecommendedProducts';
 import Seo from '../components/Seo';
+import { useNavigationStack } from '../context/NavigationContext';
 import { api } from '../data/api';
 import { getCategories, getProducts, formatINR } from '../data/store';
 import BRAND from '../config/brand';
@@ -199,17 +200,19 @@ export default function Products() {
     return sorted;
   }, [products, activeCategory, searchTerm, selectedColor, priceRange, sort]);
 
+  const { goBack } = useNavigationStack();
+
   function setCategory(id) {
     const next = new URLSearchParams(searchParams);
     if (id === 'all') next.delete('category');
     else next.set('category', id);
-    setSearchParams(next);
+    setSearchParams(next, { replace: true });
   }
 
   function clearSearch() {
     const next = new URLSearchParams(searchParams);
     next.delete('search');
-    setSearchParams(next);
+    setSearchParams(next, { replace: true });
   }
 
   function resetAllFilters() {
@@ -249,7 +252,24 @@ export default function Products() {
         <div className="container products-hero-container">
           {/* Breadcrumb placed above the banner card */}
           <nav className="hero-breadcrumb-top" aria-label="Breadcrumb">
-            <Link to="/">Home</Link>
+            <button
+              type="button"
+              className="crumb-back-btn"
+              onClick={() => goBack('/')}
+              aria-label="Go back to previous page"
+            >
+              ← Back
+            </button>
+            <span className="crumb-sep">|</span>
+            <Link
+              to="/"
+              onClick={(e) => {
+                e.preventDefault();
+                goBack('/');
+              }}
+            >
+              Home
+            </Link>
             <span className="crumb-sep">›</span>
             <span className="crumb-current">All Collection</span>
           </nav>
@@ -573,13 +593,21 @@ export default function Products() {
           margin-bottom: 10px;
         }
 
-        .hero-breadcrumb-top a {
+        .hero-breadcrumb-top a,
+        .crumb-back-btn {
           color: var(--brand-muted, #735e59);
           text-decoration: none;
           transition: color 0.18s ease;
+          background: none;
+          border: none;
+          padding: 0;
+          font-family: inherit;
+          font-size: inherit;
+          cursor: pointer;
         }
 
-        .hero-breadcrumb-top a:hover {
+        .hero-breadcrumb-top a:hover,
+        .crumb-back-btn:hover {
           color: var(--brand-primary, #581e15);
           text-decoration: underline;
         }
