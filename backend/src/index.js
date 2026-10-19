@@ -96,6 +96,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.resolve(__dirname, '../../frontend/dist');
 
+// Static uploads directory (uploaded product, category, and banner photos)
+const uploadsPath = path.resolve(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadsPath, { maxAge: '30d' }));
+
 app.use(express.static(distPath));
 
 // For SPA routing, redirect non-API GET requests to index.html

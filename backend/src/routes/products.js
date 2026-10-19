@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query, pool } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { saveImageToDisk, saveImagesArrayToDisk } from '../lib/storage.js';
 
 const router = Router();
 
@@ -68,24 +69,37 @@ function mapVariant(v) {
   };
 }
 
-// GET /api/products — public catalog with lightweight columns + active color variants
+// GET /api/products — public catalog with lightweight columns + color swatches
 router.get('/', async (req, res) => {
-  const { category } = req.query;
+  const { category, page, limit } = req.query;
   const listColumns = `
     id, name, category_id, price, mrp, stock, sku, short_description,
     image, hover_image, weight_grams, return_available, return_window_hours, cancellation_available,
     active, created_at
   `;
 
-  const { rows } = category
-    ? await query(`SELECT ${listColumns} FROM products WHERE active = true AND category_id = $1 ORDER BY created_at DESC`, [category])
-    : await query(`SELECT ${listColumns} FROM products WHERE active = true ORDER BY created_at DESC`);
+  let querySql = `SELECT ${listColumns} FROM products WHERE active = true`;
+  const params = [];
+  if (category) {
+    params.push(category);
+    querySql += ` AND category_id = $${params.length}`;
+  }
+  querySql += ` ORDER BY created_at DESC`;
 
+  if (limit) {
+    const l = Math.min(100, Math.max(1, Number(limit) || 24));
+    const p = Math.max(1, Number(page) || 1);
+    params.push(l, (p - 1) * l);
+    querySql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  }
+
+  const { rows } = await query(querySql, params);
   if (!rows.length) return res.json({ products: [] });
 
   const productIds = rows.map((p) => p.id);
+  // Swatches only for catalog cards (omits heavy variant image arrays)
   const { rows: variantRows } = await query(
-    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
+    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, active
      FROM product_variants
      WHERE product_id = ANY($1) AND active = true
      ORDER BY id ASC`,
@@ -95,45 +109,88 @@ router.get('/', async (req, res) => {
   const variantsByProduct = {};
   for (const v of variantRows) {
     if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-    variantsByProduct[v.product_id].push(v);
+    variantsByProduct[v.product_id].push({
+      id: v.id,
+      productId: v.product_id,
+      colorName: v.color_name,
+      colorCode: v.color_code || '',
+      sku: v.sku || '',
+      price: v.price != null ? Number(v.price) : null,
+      mrp: v.mrp != null ? Number(v.mrp) : null,
+      stock: Number(v.stock) || 0,
+      active: v.active,
+    });
   }
 
   res.json({
-    products: rows.map((p) => mapProduct(p, variantsByProduct[p.id] || [])),
+    products: rows.map((p) => ({
+      ...mapProduct(p, variantsByProduct[p.id] || []),
+      images: [], // Omit full gallery in list view for sub-second loading
+    })),
   });
 });
 
-// GET /api/products/admin/all — all products with full columns & all variants
+// GET /api/products/admin/all — ultra-lightweight list for admin table
 router.get('/admin/all', requireAdmin, async (_req, res) => {
-  const { rows } = await query('SELECT * FROM products ORDER BY created_at DESC');
+  const listColumns = `
+    id, name, category_id, price, mrp, stock, sku, image, hover_image, active, created_at
+  `;
+  const { rows } = await query(`SELECT ${listColumns} FROM products ORDER BY created_at DESC`);
   if (!rows.length) return res.json({ products: [] });
 
   const productIds = rows.map((p) => p.id);
   const { rows: variantRows } = await query(
-    `SELECT * FROM product_variants WHERE product_id = ANY($1) ORDER BY id ASC`,
+    `SELECT id, product_id, color_name, color_code, stock, active
+     FROM product_variants
+     WHERE product_id = ANY($1)
+     ORDER BY id ASC`,
     [productIds]
   );
 
   const variantsByProduct = {};
   for (const v of variantRows) {
     if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-    variantsByProduct[v.product_id].push(v);
+    variantsByProduct[v.product_id].push({
+      id: v.id,
+      productId: v.product_id,
+      colorName: v.color_name,
+      colorCode: v.color_code || '',
+      stock: Number(v.stock) || 0,
+      active: v.active,
+    });
   }
 
   res.json({
-    products: rows.map((p) => mapProduct(p, variantsByProduct[p.id] || [])),
+    products: rows.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: p.category_id,
+      categoryId: p.category_id,
+      price: p.price,
+      mrp: p.mrp,
+      stock: p.stock,
+      sku: p.sku || '',
+      image: p.image || '',
+      hoverImage: p.hover_image || '',
+      active: p.active ?? true,
+      createdAt: p.created_at,
+      variants: variantsByProduct[p.id] || [],
+    })),
   });
 });
 
-// GET /api/products/:id — single product with all active variants
+// GET /api/products/:id — single product with full gallery and all variants
 router.get('/:id', async (req, res) => {
-  const { rows } = await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
+  const isAdmin = req.user?.isAdmin;
+  const { rows } = isAdmin
+    ? await query('SELECT * FROM products WHERE id = $1', [req.params.id])
+    : await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
+
   if (!rows[0]) return res.status(404).json({ error: 'Product not found.' });
 
-  const { rows: variantRows } = await query(
-    'SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC',
-    [req.params.id]
-  );
+  const { rows: variantRows } = isAdmin
+    ? await query('SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC', [req.params.id])
+    : await query('SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC', [req.params.id]);
 
   res.json({ product: mapProduct(rows[0], variantRows) });
 });
@@ -173,7 +230,12 @@ router.post('/', requireAdmin, async (req, res) => {
   const id = 'p' + Date.now();
   const cleanSlug = (slug || name).trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
   const cleanSku = (sku || `SK-${id.toUpperCase()}`).trim();
-  const finalHoverImage = (hoverImage !== undefined ? hoverImage : hover_image) || '';
+  const rawHover = (hoverImage !== undefined ? hoverImage : hover_image) || '';
+
+  // Save base64 images directly to disk as WebP files
+  const savedImage = await saveImageToDisk(image, 'products');
+  const savedHover = await saveImageToDisk(rawHover, 'products');
+  const savedImages = await saveImagesArrayToDisk(images, 'products');
 
   const client = await pool.connect();
   try {
@@ -201,9 +263,9 @@ router.post('/', requireAdmin, async (req, res) => {
         cleanSku,
         shortDescription || '',
         description || '',
-        image || '',
-        finalHoverImage,
-        JSON.stringify(Array.isArray(images) ? images : []),
+        savedImage || '',
+        savedHover || '',
+        JSON.stringify(savedImages),
         Number(weightGrams) || 500,
         Number(lengthCm) || 30,
         Number(widthCm) || 20,
@@ -223,6 +285,9 @@ router.post('/', requireAdmin, async (req, res) => {
     if (Array.isArray(variants) && variants.length) {
       for (const v of variants) {
         if (!v.colorName?.trim()) continue;
+        const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
+        const vImages = await saveImagesArrayToDisk(v.images, 'products');
+
         const vResult = await client.query(
           `INSERT INTO product_variants (
              product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
@@ -236,8 +301,8 @@ router.post('/', requireAdmin, async (req, res) => {
             v.mrp != null ? Number(v.mrp) : null,
             Number(v.stock) || 0,
             v.weightGrams != null ? Number(v.weightGrams) : null,
-            JSON.stringify(Array.isArray(v.images) ? v.images : []),
-            v.hoverImage ?? v.hover_image ?? '',
+            JSON.stringify(vImages),
+            vHover,
             v.active !== false,
           ]
         );
@@ -293,6 +358,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
     const passedHover = hoverImage !== undefined ? hoverImage : (hover_image !== undefined ? hover_image : null);
 
+    // Save any base64 images directly to disk as WebP files
+    const savedImage = image !== undefined ? await saveImageToDisk(image, 'products') : undefined;
+    const savedHover = passedHover !== null ? await saveImageToDisk(passedHover, 'products') : null;
+    const savedImages = images !== undefined ? await saveImagesArrayToDisk(images, 'products') : undefined;
+
     const { rows } = await client.query(
       `UPDATE products SET
          name = COALESCE($1, name),
@@ -330,9 +400,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
         sku,
         shortDescription,
         description,
-        image,
-        passedHover,
-        images !== undefined ? JSON.stringify(images) : null,
+        savedImage,
+        savedHover,
+        savedImages !== undefined ? JSON.stringify(savedImages) : null,
         weightGrams != null ? Number(weightGrams) : null,
         lengthCm != null ? Number(lengthCm) : null,
         widthCm != null ? Number(widthCm) : null,
@@ -366,6 +436,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
       for (const v of variants) {
         if (!v.colorName?.trim()) continue;
+        const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
+        const vImages = await saveImagesArrayToDisk(v.images, 'products');
+
         if (v.id) {
           await client.query(
             `UPDATE product_variants SET
@@ -380,8 +453,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.mrp != null ? Number(v.mrp) : null,
               Number(v.stock) || 0,
               v.weightGrams != null ? Number(v.weightGrams) : null,
-              JSON.stringify(Array.isArray(v.images) ? v.images : []),
-              v.hoverImage ?? v.hover_image ?? '',
+              JSON.stringify(vImages),
+              vHover,
               v.active !== false,
               v.id,
               req.params.id,
@@ -401,8 +474,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.mrp != null ? Number(v.mrp) : null,
               Number(v.stock) || 0,
               v.weightGrams != null ? Number(v.weightGrams) : null,
-              JSON.stringify(Array.isArray(v.images) ? v.images : []),
-              v.hoverImage ?? v.hover_image ?? '',
+              JSON.stringify(vImages),
+              vHover,
               v.active !== false,
             ]
           );

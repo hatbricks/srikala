@@ -26,6 +26,8 @@ import ResetPassword from './pages/ResetPassword';
 import CompleteProfile from './pages/CompleteProfile';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CancellationReturnsPolicy from './pages/CancellationReturnsPolicy';
+import TermsConditions from './pages/TermsConditions';
+import ShippingPolicy from './pages/ShippingPolicy';
 import UserGuide from './pages/UserGuide';
 import NotFound from './pages/NotFound';
 import AdminLayout from './pages/admin/AdminLayout';
@@ -128,7 +130,12 @@ function PublicSite() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/complete-profile" element={<RequireAuth><CompleteProfile /></RequireAuth>} />
+          <Route path="/terms" element={<TermsConditions />} />
+          <Route path="/terms-and-conditions" element={<TermsConditions />} />
+          <Route path="/shipping-policy" element={<ShippingPolicy />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/cancellation-policy" element={<CancellationReturnsPolicy />} />
           <Route path="/returns-and-cancellation" element={<CancellationReturnsPolicy />} />
           <Route path="/return-cancellation-policy" element={<CancellationReturnsPolicy />} />
           <Route path="/user-guide" element={<UserGuide />} />

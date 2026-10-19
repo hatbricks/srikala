@@ -90,7 +90,9 @@ export default function Footer() {
           <h4>Customer Care</h4>
           <Link to="/orders">Orders &amp; Tracking</Link>
           <Link to="/user-guide">User &amp; Silk Guide</Link>
+          <Link to="/shipping-policy">Shipping &amp; Delivery</Link>
           <Link to="/returns-and-cancellation">Returns &amp; Cancellation</Link>
+          <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/privacy-policy">Privacy Policy</Link>
           <Link to="/contact">Contact Us</Link>
         </div>
@@ -127,11 +129,13 @@ export default function Footer() {
           </a>
         </div>
         <div className="footer-bottom-links">
+          <Link to="/terms">Terms of Service</Link>
+          <span className="dot">•</span>
           <Link to="/privacy-policy">Privacy Policy</Link>
           <span className="dot">•</span>
-          <Link to="/returns-and-cancellation">Returns &amp; Cancellation</Link>
+          <Link to="/shipping-policy">Shipping Policy</Link>
           <span className="dot">•</span>
-          <Link to="/user-guide">User Guide</Link>
+          <Link to="/returns-and-cancellation">Returns &amp; Cancellation</Link>
         </div>
       </div>
 
