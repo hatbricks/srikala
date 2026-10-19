@@ -7,12 +7,24 @@
 # Automated Cron (Run daily at 2:00 AM):
 #   0 2 * * * /bin/bash /var/www/srikala/scripts/backup.sh >> /var/log/srikala_backup.log 2>&1
 # ==============================================================================
-set -e
+set -eo pipefail
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_DIR="/var/backups/srikala"
 DB_NAME="srikala"
 RETENTION_DAYS=14
+
+# Locate backend .env to read DATABASE_URL
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../backend/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  ENV_FILE="/var/www/srikala/backend/.env"
+fi
+
+DATABASE_URL=""
+if [ -f "$ENV_FILE" ]; then
+  DATABASE_URL=$(grep -E '^[[:space:]]*DATABASE_URL=' "$ENV_FILE" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+fi
 
 mkdir -p "$BACKUP_DIR"
 
@@ -22,13 +34,27 @@ echo "========================================================"
 
 # 1. Database Backup via pg_dump
 DB_BACKUP_FILE="$BACKUP_DIR/srikala_db_${TIMESTAMP}.sql.gz"
-echo "🗄️  Dumping PostgreSQL database '${DB_NAME}'..."
-if sudo -u postgres pg_dump "$DB_NAME" | gzip -9 > "$DB_BACKUP_FILE"; then
-  DB_SIZE=$(du -h "$DB_BACKUP_FILE" | cut -f1)
-  echo "✅ Database backup successful: ${DB_BACKUP_FILE} (${DB_SIZE})"
+
+if [ -n "$DATABASE_URL" ]; then
+  # Mask credentials in output
+  HOST_INFO=$(echo "$DATABASE_URL" | sed -E 's|.*@([^/?]+).*|\1|')
+  echo "🗄️  Dumping PostgreSQL database from DATABASE_URL (host: ${HOST_INFO})..."
+  if pg_dump "$DATABASE_URL" | gzip -9 > "$DB_BACKUP_FILE"; then
+    DB_SIZE=$(du -h "$DB_BACKUP_FILE" | cut -f1)
+    echo "✅ Database backup successful: ${DB_BACKUP_FILE} (${DB_SIZE})"
+  else
+    echo "❌ Database backup via DATABASE_URL failed!" >&2
+    exit 1
+  fi
 else
-  echo "❌ Database backup failed!" >&2
-  exit 1
+  echo "🗄️  Dumping local PostgreSQL database '${DB_NAME}'..."
+  if sudo -u postgres pg_dump "$DB_NAME" | gzip -9 > "$DB_BACKUP_FILE"; then
+    DB_SIZE=$(du -h "$DB_BACKUP_FILE" | cut -f1)
+    echo "✅ Database backup successful: ${DB_BACKUP_FILE} (${DB_SIZE})"
+  else
+    echo "❌ Database backup failed!" >&2
+    exit 1
+  fi
 fi
 
 # 2. Uploads & Photos Archive

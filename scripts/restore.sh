@@ -24,7 +24,18 @@ if [ ! -f "$BACKUP_FILE" ]; then
   exit 1
 fi
 
-echo "⚠️  WARNING: Restoring will overwrite existing data in database '${DB_NAME}'!"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../backend/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  ENV_FILE="/var/www/srikala/backend/.env"
+fi
+
+DATABASE_URL=""
+if [ -f "$ENV_FILE" ]; then
+  DATABASE_URL=$(grep -E '^[[:space:]]*DATABASE_URL=' "$ENV_FILE" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+fi
+
+echo "⚠️  WARNING: Restoring will overwrite existing data!"
 read -p "Are you sure you want to proceed? (yes/no): " CONFIRM
 if [ "$CONFIRM" != "yes" ]; then
   echo "Aborted."
@@ -32,7 +43,11 @@ if [ "$CONFIRM" != "yes" ]; then
 fi
 
 echo "🗄️  Restoring database from '${BACKUP_FILE}'..."
-gunzip -c "$BACKUP_FILE" | sudo -u postgres psql -d "$DB_NAME"
+if [ -n "$DATABASE_URL" ]; then
+  gunzip -c "$BACKUP_FILE" | psql "$DATABASE_URL"
+else
+  gunzip -c "$BACKUP_FILE" | sudo -u postgres psql -d "$DB_NAME"
+fi
 echo "✅ Database restored successfully!"
 
 if [ -n "$MEDIA_FILE" ] && [ -f "$MEDIA_FILE" ]; then
