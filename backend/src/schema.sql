@@ -449,3 +449,30 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Store billing (In-store offline retail bills / cash memo without GST)
+CREATE TABLE IF NOT EXISTS store_bills (
+  id               SERIAL PRIMARY KEY,
+  bill_number      TEXT NOT NULL UNIQUE,
+  bill_date        DATE NOT NULL DEFAULT CURRENT_DATE,
+  customer_name    TEXT NOT NULL,
+  customer_phone   TEXT,
+  customer_city    TEXT,
+  customer_address TEXT,
+  items            JSONB NOT NULL DEFAULT '[]'::jsonb,
+  subtotal         NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  discount         NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  round_off        NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  total_amount     NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  payment_method   TEXT NOT NULL DEFAULT 'Cash', -- 'Cash' | 'UPI' | 'Card' | 'Bank Transfer' | 'Split'
+  payment_ref      TEXT,
+  notes            TEXT,
+  created_by       TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_store_bills_created ON store_bills(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_store_bills_date ON store_bills(bill_date DESC);
+CREATE INDEX IF NOT EXISTS idx_store_bills_number ON store_bills(bill_number);
+CREATE INDEX IF NOT EXISTS idx_store_bills_customer ON store_bills(customer_name, customer_phone);
+

@@ -1,7 +1,7 @@
 // Thin fetch wrapper around the backend at VITE_API_URL (defaults to
 // localhost:4000 for dev). Attaches the JWT automatically when present.
 
-const BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? '' : 'http://localhost:4000');
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const TOKEN_KEY = 'srikala_token';
 
 export function getToken() {
@@ -177,6 +177,17 @@ export const api = {
   createPolicyTier: (payload) => request('/api/cancellation-policy', { method: 'POST', body: payload }),
   updatePolicyTier: (id, payload) => request(`/api/cancellation-policy/${id}`, { method: 'PUT', body: payload }),
   deletePolicyTier: (id) => request(`/api/cancellation-policy/${id}`, { method: 'DELETE' }),
+
+  // store billing (in-store retail bills without GST)
+  getNextStoreBillNumber: () => request('/api/admin/store-bills/next-number'),
+  getStoreBills: (params) => {
+    const q = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/api/admin/store-bills${q}`);
+  },
+  getStoreBill: (id) => request(`/api/admin/store-bills/${id}`),
+  createStoreBill: (payload) => request('/api/admin/store-bills', { method: 'POST', body: payload }),
+  updateStoreBill: (id, payload) => request(`/api/admin/store-bills/${id}`, { method: 'PUT', body: payload }),
+  deleteStoreBill: (id) => request(`/api/admin/store-bills/${id}`, { method: 'DELETE' }),
 };
 
 export { BASE_URL };

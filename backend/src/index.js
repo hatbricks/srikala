@@ -22,6 +22,7 @@ import webhookRoutes from './routes/webhooks.js';
 import returnRoutes from './routes/returns.js';
 import settingsRoutes from './routes/settings.js';
 import adminRoutes from './routes/admin.js';
+import storeBillRoutes from './routes/storeBills.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -49,13 +50,6 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (!allowedOrigins.length) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (
-      origin.includes('ravichandratextiles.com') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-    ) {
-      return callback(null, true);
-    }
     console.warn(`[cors] rejected origin: ${origin} — allowed: ${allowedOrigins.join(', ')}`);
     callback(new Error('Not allowed by CORS'));
   },
@@ -72,7 +66,8 @@ app.use(attachUser);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
-// Not under /api — sitemaps live at the domain root by convention
+// Not under /api — sitemaps live at the domain root by convention, and the
+// frontend (Vercel) proxies /sitemap.xml to this exact path (see vercel.json).
 app.use(sitemapRoutes);
 
 app.use('/api/auth', authRoutes);
@@ -89,6 +84,7 @@ app.use('/api/pickup-locations', pickupLocationRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/admin/store-bills', storeBillRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Static frontend build layer (serves React SPA directly from server)
@@ -111,7 +107,6 @@ app.get('*', (req, res, next) => {
     if (err) next();
   });
 });
-
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: 'Something went wrong on our end.' });

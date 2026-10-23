@@ -19,11 +19,13 @@ import {
   LogoutIcon,
   CloseIcon,
   BackIcon,
+  BillingIcon,
 } from '../../components/admin/AdminIcons';
 
 const links = [
   { to: '/admin', label: 'Dashboard', end: true, icon: DashboardIcon },
   { to: '/admin/orders', label: 'Orders', icon: OrdersIcon },
+  { to: '/admin/billing', label: 'Store Billing', icon: BillingIcon },
   { to: '/admin/users', label: 'Customers', icon: UsersIcon },
   { to: '/admin/products', label: 'Products', icon: ProductsIcon },
   { to: '/admin/categories', label: 'Categories', icon: CategoriesIcon },
