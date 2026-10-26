@@ -50,6 +50,13 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (!allowedOrigins.length) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (
+      origin.includes('ravichandratextiles.com') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
     console.warn(`[cors] rejected origin: ${origin} — allowed: ${allowedOrigins.join(', ')}`);
     callback(new Error('Not allowed by CORS'));
   },

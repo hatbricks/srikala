@@ -1,7 +1,7 @@
 // Thin fetch wrapper around the backend at VITE_API_URL (defaults to
 // localhost:4000 for dev). Attaches the JWT automatically when present.
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' ? '' : 'http://localhost:4000');
 const TOKEN_KEY = 'srikala_token';
 
 export function getToken() {
