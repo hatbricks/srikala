@@ -1501,15 +1501,16 @@ export default function AdminStoreBilling() {
                   <div className="ornament-line" />
                 </div>
 
-                {/* Brand Header — Centered, No Duplicate Text, No Retail Store Bill badge */}
+                {/* Brand Header — Centered, Royal Temple Emblem, Prominent Brand Typography */}
                 <header className="sheet-brand-header">
                   <div className="sheet-logo-wrap">
                     <img
-                      src={BRAND.assets.logoHorizontal || BRAND.assets.logoLight || '/images/logo.png'}
+                      src="/images/ravichandra-emblem.png"
                       alt={BRAND.name}
-                      className="sheet-logo-img"
+                      className="sheet-emblem-img"
                     />
                   </div>
+                  <h2 className="sheet-brand-title">RAVICHANDRA TEXTILES</h2>
 
                   <div className="sheet-store-info">
                     <p className="sheet-store-tagline">
@@ -2884,16 +2885,31 @@ export default function AdminStoreBilling() {
           justify-content: center;
         }
 
-        .sheet-size-a3 .sheet-logo-img {
-          height: 56px;
+        .sheet-emblem-img,
+        .sheet-logo-img {
+          height: 38px;
           width: auto;
           object-fit: contain;
+          margin-bottom: 2px;
         }
 
-        .sheet-size-a4 .sheet-logo-img {
-          height: 44px;
-          width: auto;
-          object-fit: contain;
+        .sheet-size-a3 .sheet-emblem-img,
+        .sheet-size-a3 .sheet-logo-img {
+          height: 48px;
+        }
+
+        .sheet-brand-title {
+          font-size: 20px;
+          font-weight: 800;
+          color: #581e15;
+          letter-spacing: 0.04em;
+          margin: 0;
+          line-height: 1.15;
+          text-transform: uppercase;
+        }
+
+        .sheet-size-a3 .sheet-brand-title {
+          font-size: 25px;
         }
 
         .sheet-store-info {

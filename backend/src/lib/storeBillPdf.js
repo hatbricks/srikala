@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const EMBLEM_PATH = path.join(__dirname, '..', '..', 'assets', 'emblem.png');
 const LOGO_HORIZONTAL = path.join(__dirname, '..', '..', 'assets', 'logo-horizontal.png');
 const LOGO_INVOICE = path.join(__dirname, '..', '..', 'assets', 'logo-invoice.png');
 
@@ -107,7 +108,8 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   // Outer decorative border
   doc.rect(margin - 8, margin - 8, contentWidth + 16, (isA3 ? 1190.55 : 841.89) - (margin * 2) + 16)
      .lineWidth(1)
-     .strokeColor(GOLD);
+     .strokeColor(GOLD)
+     .stroke();
 
   let curY = margin + 10;
 
@@ -115,51 +117,55 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   doc.moveTo(margin + 40, curY)
      .lineTo(margin + (contentWidth / 2) - 20, curY)
      .lineWidth(0.8)
-     .strokeColor(GOLD);
+     .strokeColor(GOLD)
+     .stroke();
 
   doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 11 : 9).text('*', margin + (contentWidth / 2) - 4, curY - (isA3 ? 6 : 5));
 
   doc.moveTo(margin + (contentWidth / 2) + 20, curY)
      .lineTo(margin + contentWidth - 40, curY)
      .lineWidth(0.8)
-     .strokeColor(GOLD);
+     .strokeColor(GOLD)
+     .stroke();
 
-  curY += isA3 ? 16 : 12;
+  curY += isA3 ? 12 : 9;
 
-  // 2. Centered Logo (Contains "Ravichandra Textiles" brand typography)
-  // We DO NOT repeat "Ravichandra Textiles" in plain text below it.
-  const logoWidth = isA3 ? 240 : 180;
-  const logoX = margin + (contentWidth - logoWidth) / 2;
+  // 2. Centered Sacred Temple Emblem
+  const emblemWidth = isA3 ? 34 : 26;
+  const emblemX = margin + (contentWidth - emblemWidth) / 2;
   try {
-    doc.image(LOGO_HORIZONTAL, logoX, curY, { width: logoWidth });
-    curY += isA3 ? 62 : 46;
+    doc.image(EMBLEM_PATH, emblemX, curY, { width: emblemWidth });
+    curY += isA3 ? 42 : 33;
   } catch {
     try {
-      doc.image(LOGO_INVOICE, margin + (contentWidth - 70) / 2, curY, { width: 70 });
-      curY += 76;
+      doc.image(LOGO_INVOICE, emblemX, curY, { width: emblemWidth });
+      curY += isA3 ? 42 : 33;
     } catch {
-      // Text fallback if image missing
-      doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 24 : 18).text(STORE_INFO.name, 0, curY, { align: 'center' });
-      curY += isA3 ? 28 : 22;
+      curY += 2;
     }
   }
 
-  // Store Tagline, Address, and Contact (centered below logo)
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 11 : 8.5)
-     .text(STORE_INFO.tagline, 0, curY, { align: 'center' });
-  curY += isA3 ? 15 : 12;
+  // Brand Name Typography: High-contrast, royal, prominent
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 23 : 18)
+     .text(STORE_INFO.name.toUpperCase(), margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 22 : 18;
 
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8)
-     .text(STORE_INFO.address, 0, curY, { align: 'center' });
+  // Store Tagline, Address, and Contact (centered below brand name)
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 10.5 : 8.5)
+     .text(STORE_INFO.tagline, margin, curY, { width: contentWidth, align: 'center' });
   curY += isA3 ? 13 : 11;
 
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8)
-     .text(`Phone: ${STORE_INFO.phone}   |   Email: ${STORE_INFO.email}`, 0, curY, { align: 'center' });
-  curY += isA3 ? 18 : 14;
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 8)
+     .text(STORE_INFO.address, margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 12 : 10;
+
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 8)
+     .text(`Phone: ${STORE_INFO.phone}   |   Email: ${STORE_INFO.email}`, margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 15 : 12;
 
   // Maroon Separator Line
-  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(2).strokeColor(MAROON);
-  curY += isA3 ? 16 : 12;
+  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.8).strokeColor(MAROON).stroke();
+  curY += isA3 ? 12 : 9;
 
   // 3. Customer & Bill Particulars Box
   const boxHeight = isA3 ? 92 : 78;
@@ -175,7 +181,8 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   doc.moveTo(leftBoxX + 12, curY + 20)
      .lineTo(leftBoxX + colWidth - 12, curY + 20)
      .lineWidth(0.5)
-     .strokeColor(RULE);
+     .strokeColor(RULE)
+     .stroke();
 
   doc.fillColor(INK).font('Helvetica-Bold').fontSize(isA3 ? 13 : 10.5)
      .text(bill.customer_name || 'Valued Customer', leftBoxX + 12, curY + 25);
@@ -205,7 +212,8 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   doc.moveTo(rightBoxX + 12, curY + 20)
      .lineTo(rightBoxX + colWidth - 12, curY + 20)
      .lineWidth(0.5)
-     .strokeColor(RULE);
+     .strokeColor(RULE)
+     .stroke();
 
   const particulars = [
     ['Bill No:', bill.bill_number, true],
@@ -276,7 +284,7 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
       doc.rect(margin, curY, contentWidth, rowHeight).fill(BG_ALT);
     }
 
-    doc.moveTo(margin, curY + rowHeight).lineTo(margin + contentWidth, curY + rowHeight).lineWidth(0.5).strokeColor(RULE);
+    doc.moveTo(margin, curY + rowHeight).lineTo(margin + contentWidth, curY + rowHeight).lineWidth(0.5).strokeColor(RULE).stroke();
 
     let rX = margin;
     doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8)
@@ -378,31 +386,34 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   curY = Math.max(tY, totalsY + gtHeight) + (isA3 ? 30 : 20);
 
   // 6. Signatures & Authenticity Seal Footer
-  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(0.5).strokeColor(RULE);
-  curY += isA3 ? 18 : 12;
+  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(0.5).strokeColor(RULE).stroke();
+  curY += isA3 ? 14 : 10;
 
   // Customer Signature
-  const sigWidth = 140;
-  doc.moveTo(margin + 10, curY + 28).lineTo(margin + 10 + sigWidth, curY + 28).lineWidth(0.8).strokeColor(INK_LIGHT);
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 7.5)
-     .text('Customer Signature', margin + 10, curY + 34, { width: sigWidth, align: 'center' });
+  const sigWidth = isA3 ? 150 : 130;
+  const sigLineY = curY + (isA3 ? 34 : 26);
+  doc.moveTo(margin + 10, sigLineY).lineTo(margin + 10 + sigWidth, sigLineY).lineWidth(0.8).strokeColor(INK_LIGHT).stroke();
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9 : 7.5)
+     .text('Customer Signature', margin + 10, sigLineY + 6, { width: sigWidth, align: 'center' });
 
   // Center Purity Seal Badge
-  const sealWidth = 260;
+  const sealWidth = isA3 ? 240 : 200;
   const sealX = margin + (contentWidth - sealWidth) / 2;
-  doc.rect(sealX, curY + 12, sealWidth, isA3 ? 20 : 16).fillAndStroke('#fbf7f2', GOLD);
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9 : 7)
-     .text('CERTIFIED DHARMAVARAM HANDLOOM SILK', sealX, curY + (isA3 ? 17 : 16), { width: sealWidth, align: 'center' });
-  doc.fillColor(INK_LIGHT).font('Helvetica-Oblique').fontSize(isA3 ? 8.5 : 6.5)
-     .text('Thank you for patronizing authentic Indian handlooms!', sealX, curY + (isA3 ? 36 : 32), { width: sealWidth, align: 'center' });
+  const sealY = curY + (isA3 ? 8 : 6);
+  const sealH = isA3 ? 20 : 16;
+  doc.rect(sealX, sealY, sealWidth, sealH).fillAndStroke('#fbf7f2', GOLD);
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 8.5 : 7)
+     .text('CERTIFIED DHARMAVARAM HANDLOOM SILK', sealX, sealY + (isA3 ? 5.5 : 4.5), { width: sealWidth, align: 'center' });
+  doc.fillColor(INK_LIGHT).font('Helvetica-Oblique').fontSize(isA3 ? 8 : 6.5)
+     .text('Thank you for patronizing authentic Indian handlooms!', sealX, sealY + sealH + 6, { width: sealWidth, align: 'center' });
 
   // Authorized Signatory
   const authX = margin + contentWidth - sigWidth - 10;
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 10 : 8)
-     .text('For RAVICHANDRA TEXTILES', authX, curY + 10, { width: sigWidth, align: 'center' });
-  doc.moveTo(authX, curY + 28).lineTo(authX + sigWidth, curY + 28).lineWidth(0.8).strokeColor(INK_LIGHT);
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 7.5)
-     .text('Authorized Signatory', authX, curY + 34, { width: sigWidth, align: 'center' });
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 8)
+     .text('For RAVICHANDRA TEXTILES', authX, curY + (isA3 ? 14 : 10), { width: sigWidth, align: 'center' });
+  doc.moveTo(authX, sigLineY).lineTo(authX + sigWidth, sigLineY).lineWidth(0.8).strokeColor(INK_LIGHT).stroke();
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9 : 7.5)
+     .text('Authorized Signatory', authX, sigLineY + 6, { width: sigWidth, align: 'center' });
 
   doc.end();
 }
