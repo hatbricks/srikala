@@ -14664,7 +14664,7 @@ Dear *${e.customer_name}*,\nHere is your official store bill PDF (Bill No: *${e.
           }
         }
       `})]})}var qo=``;function Jo(e){return Number(e||0).toLocaleString(`en-IN`,{minimumFractionDigits:2,maximumFractionDigits:2})}function Yo(e){if(!e)return`—`;try{let t=new Date(e);return isNaN(t.getTime())?String(e):`${String(t.getDate()).padStart(2,`0`)}/${String(t.getMonth()+1).padStart(2,`0`)}/${t.getFullYear()}`}catch{return String(e)}}function Xo(e){let t=Math.round(Number(e||0));if(t===0)return`Rupees Zero Only`;let n=[``,`One`,`Two`,`Three`,`Four`,`Five`,`Six`,`Seven`,`Eight`,`Nine`],r=[`Ten`,`Eleven`,`Twelve`,`Thirteen`,`Fourteen`,`Fifteen`,`Sixteen`,`Seventeen`,`Eighteen`,`Nineteen`],i=[``,``,`Twenty`,`Thirty`,`Forty`,`Fifty`,`Sixty`,`Seventy`,`Eighty`,`Ninety`];function a(e){if(e===0)return``;if(e<10)return n[e];if(e<20)return r[e-10];let t=e%10;return i[Math.floor(e/10)]+(t===0?``:` `+n[t])}function o(e){let t=Math.floor(e/100),r=e%100,i=``;return t>0&&(i+=n[t]+` Hundred`,r>0&&(i+=` `)),r>0&&(i+=a(r)),i}let s=Math.floor(t/1e7),c=t%1e7,l=Math.floor(c/1e5),u=c%1e5,d=Math.floor(u/1e3),f=u%1e3,p=``;return s>0&&(p+=o(s)+` Crore `),l>0&&(p+=o(l)+` Lakh `),d>0&&(p+=o(d)+` Thousand `),f>0&&(p+=o(f)+` `),`Rupees `+p.trim()+` Only`}function Zo(){let[e,t]=(0,x.useState)(`new`),[n,r]=(0,x.useState)({store_name:`RAVICHANDRA HANDLOOMS`,store_gstin:`37AYPPR2420N1ZU`,store_pan:`AYPPR2420N`,store_cell:`9493049274, 8317551337`,store_tagline:`Hand Loom Pure Lace SILK SAREES Manufacturers`,store_address:`Door No. 11/412, Janardhan Complex, Thogata Street,
-DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_account_no:`7653499335`,bank_ifsc:`IDIB000D083`,invoice_prefix:`RCH-GST-`,default_hsn:`5007`,default_sgst_rate:2.5,default_cgst_rate:2.5,default_igst_rate:5,terms:[`1. This is to certify that we have valid registration under GST & all above informations are true and correct.`,`2. Our Goods are claimless & Goods once sold cannot be taken back.`,`3. Our responsibility ceases after handover the goods to transporter.`,`4. Subject to Dharmavaram jurisdiction.`]}),[i,a]=(0,x.useState)(``),[o,s]=(0,x.useState)(()=>new Date().toISOString().split(`T`)[0]),[c,l]=(0,x.useState)(``),[u,d]=(0,x.useState)(``),[f,p]=(0,x.useState)(`No`),[m,h]=(0,x.useState)(``),[g,_]=(0,x.useState)(``),[v,y]=(0,x.useState)(``),[b,S]=(0,x.useState)(``),[C,w]=(0,x.useState)(`Andhra Pradesh (37)`),[T,E]=(0,x.useState)(``),[D,O]=(0,x.useState)([{id:1,hsn_code:`5007`,description:`Pure Silk Dharmavaram Wedding Pattu Sarees`,qty:1,rate:8500,amount:8500}]),[k,A]=(0,x.useState)(`INTRA_STATE`),[j,ee]=(0,x.useState)(2.5),[te,M]=(0,x.useState)(2.5),[ne,N]=(0,x.useState)(5),[P,re]=(0,x.useState)(`Bank Transfer`),[ie,ae]=(0,x.useState)(``),[oe,se]=(0,x.useState)(``),[F,ce]=(0,x.useState)(!1),[le,ue]=(0,x.useState)(null),[de,fe]=(0,x.useState)(null),pe=(0,x.useRef)(null),[me,he]=(0,x.useState)([]),[ge,_e]=(0,x.useState)({total_invoices:0,total_taxable:0,total_sgst:0,total_cgst:0,total_igst:0,total_amount:0}),[ve,ye]=(0,x.useState)(!1),[be,xe]=(0,x.useState)(``),[Se,Ce]=(0,x.useState)(`all`),[we,Te]=(0,x.useState)(``),[Ee,De]=(0,x.useState)(``),[Oe,ke]=(0,x.useState)([]);(0,x.useEffect)(()=>{Ae(),Me(),Ne()},[]),(0,x.useEffect)(()=>{e===`history`&&Qe()},[e,Se,we,Ee,be]);async function Ae(){try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/settings`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(t.ok){let e=await t.json();e.settings&&(r(e.settings),ee(e.settings.default_sgst_rate||2.5),M(e.settings.default_cgst_rate||2.5),N(e.settings.default_igst_rate||5))}}catch(e){console.warn(`Failed to load GST settings:`,e)}}async function je(e){e&&e.preventDefault(),ce(!0),ue(null);try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/settings`,{method:`PUT`,headers:{"Content-Type":`application/json`,...e?{Authorization:`Bearer ${e}`}:{}},body:JSON.stringify(n)}),r=await t.json();if(!t.ok)throw Error(r.error||`Failed to save settings`);ue({type:`success`,text:`GST Settings & CMS configuration saved successfully!`})}catch(e){ue({type:`error`,text:e.message})}finally{ce(!1)}}async function Me(){try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/next-number`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(t.ok){let e=await t.json();e.nextInvoiceNumber&&a(e.nextInvoiceNumber)}}catch(e){console.warn(`Failed to load next invoice number:`,e)}}async function Ne(){try{let e=await fetch(`${qo}/api/products?limit=100`);if(e.ok){let t=await e.json();ke(t.products||t||[])}}catch(e){console.warn(`Failed to load product catalog:`,e)}}let Pe=Math.round(D.reduce((e,t)=>e+(Number(t.amount)||0),0)*100)/100,Fe=0,Ie=0,Le=0,Re=0,ze=0,Be=0;k===`INTRA_STATE`?(Fe=Number(j)||0,Ie=Number(te)||0,Re=Math.round(Fe/100*Pe*100)/100,ze=Math.round(Ie/100*Pe*100)/100):k===`INTER_STATE`?(Le=Number(ne)||0,Be=Math.round(Le/100*Pe*100)/100):(Fe=Number(j)||0,Ie=Number(te)||0,Le=Number(ne)||0,Re=Math.round(Fe/100*Pe*100)/100,ze=Math.round(Ie/100*Pe*100)/100,Be=Math.round(Le/100*Pe*100)/100);let Ve=Pe+Re+ze+Be,He=Math.round(Ve),Ue=Math.round((He-Ve)*100)/100,We=He,Ge=Xo(We);function Ke(){O(e=>[...e,{id:Date.now(),hsn_code:n.default_hsn||`5007`,description:``,qty:1,rate:0,amount:0}])}function qe(e){D.length<=1||O(t=>t.filter((t,n)=>n!==e))}function Je(e,t,n){O(r=>{let i=[...r],a={...i[e],[t]:n},o=Math.max(1,parseFloat(a.qty)||1),s=Math.max(0,parseFloat(a.rate)||0);return a.amount=Math.round(o*s*100)/100,i[e]=a,i})}function Ye(e,t){t&&O(r=>{let i=[...r];return i[e]={...i[e],description:t.name,rate:t.price||0,amount:Math.round((i[e].qty||1)*(t.price||0)*100)/100,hsn_code:t.hsn_code||n.default_hsn||`5007`},i})}function Xe(){Me(),s(new Date().toISOString().split(`T`)[0]),l(``),d(``),p(`No`),h(``),_(``),y(``),S(``),E(``),O([{id:Date.now(),hsn_code:n.default_hsn||`5007`,description:``,qty:1,rate:0,amount:0}]),A(`INTRA_STATE`),re(`Bank Transfer`),ae(``),se(``),ue(null)}async function Ze(e=!1){if(ue(null),!g.trim()){ue({type:`error`,text:`Please provide Receiver (Customer) Name.`});return}let t=D.filter(e=>e.description&&e.description.trim());if(t.length===0){ue({type:`error`,text:`Please add at least one valid item with a description.`});return}ce(!0);try{let r=ir(),a={invoice_number:i,invoice_date:o,vehicle_no:c,transporter:u,reverse_charge:f,agent_name:m,receiver_name:g,receiver_gstin:v,receiver_phone:b,receiver_state:C,receiver_address:T,items:t,tax_type:k,sgst_rate:Fe,cgst_rate:Ie,igst_rate:Le,bank_name:n.bank_name,bank_account_no:n.bank_account_no,bank_ifsc:n.bank_ifsc,terms:n.terms,store_name:n.store_name,store_gstin:n.store_gstin,store_pan:n.store_pan,store_cell:n.store_cell,store_tagline:n.store_tagline,store_address:n.store_address,payment_method:P,payment_ref:ie,notes:oe},s=await fetch(`${qo}/api/admin/gst-bills`,{method:`POST`,headers:{"Content-Type":`application/json`,...r?{Authorization:`Bearer ${r}`}:{}},body:JSON.stringify(a)}),l=await s.json();if(!s.ok)throw Error(l.error||`Failed to save GST invoice`);ue({type:`success`,text:`GST Invoice #${l.bill.invoice_number} saved successfully!`}),e&&(fe(l.bill),setTimeout(()=>{nt(l.bill)},350)),Xe()}catch(e){ue({type:`error`,text:e.message||`Error creating invoice`})}finally{ce(!1)}}async function Qe(){ye(!0);try{let e=ir(),t=new URLSearchParams;be.trim()&&t.append(`search`,be.trim());let n=new Date;if(Se===`today`){let e=n.toISOString().split(`T`)[0];t.append(`from`,e),t.append(`to`,e)}else if(Se===`yesterday`){let e=new Date(n);e.setDate(e.getDate()-1);let r=e.toISOString().split(`T`)[0];t.append(`from`,r),t.append(`to`,r)}else if(Se===`week`){let e=new Date(n);e.setDate(e.getDate()-7),t.append(`from`,e.toISOString().split(`T`)[0]),t.append(`to`,n.toISOString().split(`T`)[0])}else if(Se===`month`){let e=new Date(n.getFullYear(),n.getMonth(),1);t.append(`from`,e.toISOString().split(`T`)[0]),t.append(`to`,n.toISOString().split(`T`)[0])}else Se===`custom`&&(we&&t.append(`from`,we),Ee&&t.append(`to`,Ee));let r=await fetch(`${qo}/api/admin/gst-bills?${t.toString()}`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(r.ok){let e=await r.json();he(e.bills||[]),e.stats&&_e(e.stats)}}catch(e){console.warn(`Failed to load history:`,e)}finally{ye(!1)}}async function $e(e){if(window.confirm(`Are you sure you want to delete this GST invoice permanently?`))try{let t=ir(),n=await fetch(`${qo}/api/admin/gst-bills/${e}`,{method:`DELETE`,headers:t?{Authorization:`Bearer ${t}`}:{}});if(n.ok)Qe();else{let e=await n.json();alert(e.error||`Failed to delete`)}}catch{alert(`Delete failed`)}}async function et(e){if(!e)return;let t=e.id||e.invoice_number,n=`GST_Invoice_${e.invoice_number}.pdf`,r=ir();try{let e=`${qo}/api/admin/gst-bills/${t}/pdf${r?`?token=${r}`:``}`,i=await fetch(e,{headers:r?{Authorization:`Bearer ${r}`}:{}});if(i.ok){let e=await i.blob(),t=window.URL.createObjectURL(e),r=document.createElement(`a`);r.href=t,r.download=n,document.body.appendChild(r),r.click(),document.body.removeChild(r),setTimeout(()=>window.URL.revokeObjectURL(t),2e3);return}}catch(e){console.warn(`Direct blob download failed, falling back:`,e)}let i=`${qo}/api/gst-bills/public/${e.invoice_number}/pdf`;window.open(i,`_blank`)}function tt(e){if(!e)return;let t=(e.receiver_phone||``).replace(/\D/g,``);if(t.length<10){alert(`Please provide a valid 10-digit mobile number to send WhatsApp bill.`);return}let n=t.length===10?`91${t}`:t,r=`${typeof window<`u`&&window.location.hostname!==`localhost`&&window.location.hostname,window.location.origin}/api/gst-bills/public/${e.invoice_number}/pdf?inline=1`,i=`*${e.store_name||`RAVICHANDRA HANDLOOMS`} — DHARMAVARAM*\n*GST Tax Invoice (Bill No: ${e.invoice_number})*\n\nDear *${e.receiver_name}*,\nThank you for your valued order! Please find your official GST Tax Invoice below:\n\n📄 *View / Download GST Invoice PDF:*\n${r}\n\nTaxable Value: *₹${Jo(e.taxable_amount)}*\nTotal Payable: *₹${Jo(e.total_amount)}*\nPayment Mode: *${e.payment_method||`Bank Transfer`}*\n\nThank you for patronizing authentic Dharmavaram silk handlooms!`,a=`https://wa.me/${n}?text=${encodeURIComponent(i)}`;window.open(a,`_blank`)}function nt(e){let t=document.getElementById(`printable-gst-bill-sheet`);if(!t){window.print();return}try{let n=document.getElementById(`gst-print-iframe-target`);n||(n=document.createElement(`iframe`),n.id=`gst-print-iframe-target`,n.style.position=`fixed`,n.style.right=`0`,n.style.bottom=`0`,n.style.width=`0`,n.style.height=`0`,n.style.border=`0`,document.body.appendChild(n));let r=`
+DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_account_no:`7653499335`,bank_ifsc:`IDIB000D083`,invoice_prefix:`RCH-GST-`,default_hsn:`5007`,default_sgst_rate:2.5,default_cgst_rate:2.5,default_igst_rate:5,terms:[`1. This is to certify that we have valid registration under GST & all above informations are true and correct.`,`2. Our Goods are claimless & Goods once sold cannot be taken back.`,`3. Our responsibility ceases after handover the goods to transporter.`,`4. Subject to Dharmavaram jurisdiction.`]}),[i,a]=(0,x.useState)(``),[o,s]=(0,x.useState)(()=>new Date().toISOString().split(`T`)[0]),[c,l]=(0,x.useState)(``),[u,d]=(0,x.useState)(``),[f,p]=(0,x.useState)(`No`),[m,h]=(0,x.useState)(``),[g,_]=(0,x.useState)(``),[v,y]=(0,x.useState)(``),[b,S]=(0,x.useState)(``),[C,w]=(0,x.useState)(`Andhra Pradesh (37)`),[T,E]=(0,x.useState)(``),[D,O]=(0,x.useState)([{id:1,hsn_code:`5007`,description:`Pure Silk Dharmavaram Wedding Pattu Sarees`,qty:1,rate:8500,amount:8500}]),[k,A]=(0,x.useState)(`INTRA_STATE`),[j,ee]=(0,x.useState)(2.5),[te,M]=(0,x.useState)(2.5),[ne,N]=(0,x.useState)(5),[P,re]=(0,x.useState)(`Bank Transfer`),[ie,ae]=(0,x.useState)(``),[oe,se]=(0,x.useState)(``),[F,ce]=(0,x.useState)(!1),[le,ue]=(0,x.useState)(null),[de,fe]=(0,x.useState)(null),pe=(0,x.useRef)(null),[me,he]=(0,x.useState)([]),[ge,_e]=(0,x.useState)({total_invoices:0,total_taxable:0,total_sgst:0,total_cgst:0,total_igst:0,total_amount:0}),[ve,ye]=(0,x.useState)(!1),[be,xe]=(0,x.useState)(``),[Se,Ce]=(0,x.useState)(`all`),[we,Te]=(0,x.useState)(``),[Ee,De]=(0,x.useState)(``),[Oe,ke]=(0,x.useState)([]);(0,x.useEffect)(()=>{Ae(),Me(),Ne()},[]),(0,x.useEffect)(()=>{e===`history`&&Qe()},[e,Se,we,Ee,be]);async function Ae(){try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/settings`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(t.ok){let e=await t.json();e.settings&&(r(e.settings),ee(e.settings.default_sgst_rate||2.5),M(e.settings.default_cgst_rate||2.5),N(e.settings.default_igst_rate||5))}}catch(e){console.warn(`Failed to load GST settings:`,e)}}async function je(e){e&&e.preventDefault(),ce(!0),ue(null);try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/settings`,{method:`PUT`,headers:{"Content-Type":`application/json`,...e?{Authorization:`Bearer ${e}`}:{}},body:JSON.stringify(n)}),r=await t.json();if(!t.ok)throw Error(r.error||`Failed to save settings`);ue({type:`success`,text:`GST Settings & CMS configuration saved successfully!`})}catch(e){ue({type:`error`,text:e.message})}finally{ce(!1)}}async function Me(){try{let e=ir(),t=await fetch(`${qo}/api/admin/gst-bills/next-number`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(t.ok){let e=await t.json();e.nextInvoiceNumber&&a(e.nextInvoiceNumber)}}catch(e){console.warn(`Failed to load next invoice number:`,e)}}async function Ne(){try{let e=await fetch(`${qo}/api/products?limit=100`);if(e.ok){let t=await e.json();ke(t.products||t||[])}}catch(e){console.warn(`Failed to load product catalog:`,e)}}let Pe=Math.round(D.reduce((e,t)=>e+(Number(t.amount)||0),0)*100)/100,Fe=0,Ie=0,Le=0,Re=0,ze=0,Be=0;k===`INTRA_STATE`?(Fe=Number(j)||0,Ie=Number(te)||0,Re=Math.round(Fe/100*Pe*100)/100,ze=Math.round(Ie/100*Pe*100)/100):k===`INTER_STATE`?(Le=Number(ne)||0,Be=Math.round(Le/100*Pe*100)/100):(Fe=Number(j)||0,Ie=Number(te)||0,Le=Number(ne)||0,Re=Math.round(Fe/100*Pe*100)/100,ze=Math.round(Ie/100*Pe*100)/100,Be=Math.round(Le/100*Pe*100)/100);let Ve=Pe+Re+ze+Be,He=Math.round(Ve),Ue=Math.round((He-Ve)*100)/100,We=He,Ge=Xo(We);function Ke(){O(e=>[...e,{id:Date.now(),hsn_code:n.default_hsn||`5007`,description:``,qty:1,rate:0,amount:0}])}function qe(e){D.length<=1||O(t=>t.filter((t,n)=>n!==e))}function Je(e,t,n){O(r=>{let i=[...r],a={...i[e],[t]:n},o=Math.max(1,parseFloat(a.qty)||1),s=Math.max(0,parseFloat(a.rate)||0);return a.amount=Math.round(o*s*100)/100,i[e]=a,i})}function Ye(e,t){t&&O(r=>{let i=[...r];return i[e]={...i[e],description:t.name,rate:t.price||0,amount:Math.round((i[e].qty||1)*(t.price||0)*100)/100,hsn_code:t.hsn_code||n.default_hsn||`5007`},i})}function Xe(){Me(),s(new Date().toISOString().split(`T`)[0]),l(``),d(``),p(`No`),h(``),_(``),y(``),S(``),E(``),O([{id:Date.now(),hsn_code:n.default_hsn||`5007`,description:``,qty:1,rate:0,amount:0}]),A(`INTRA_STATE`),re(`Bank Transfer`),ae(``),se(``),ue(null)}async function Ze(e=!1){if(ue(null),!g.trim()){ue({type:`error`,text:`Please provide Receiver (Customer) Name.`});return}let t=D.filter(e=>e.description&&e.description.trim());if(t.length===0){ue({type:`error`,text:`Please add at least one valid item with a description.`});return}ce(!0);try{let r=ir(),a={invoice_number:i,invoice_date:o,vehicle_no:c,transporter:u,reverse_charge:f,agent_name:m,receiver_name:g,receiver_gstin:v,receiver_phone:b,receiver_state:C,receiver_address:T,items:t,tax_type:k,sgst_rate:Fe,cgst_rate:Ie,igst_rate:Le,bank_name:n.bank_name,bank_account_no:n.bank_account_no,bank_ifsc:n.bank_ifsc,terms:n.terms,store_name:n.store_name,store_gstin:n.store_gstin,store_pan:n.store_pan,store_cell:n.store_cell,store_tagline:n.store_tagline,store_address:n.store_address,payment_method:P,payment_ref:ie,notes:oe},s=await fetch(`${qo}/api/admin/gst-bills`,{method:`POST`,headers:{"Content-Type":`application/json`,...r?{Authorization:`Bearer ${r}`}:{}},body:JSON.stringify(a)}),l=await s.json();if(!s.ok)throw Error(l.error||`Failed to save GST invoice`);ue({type:`success`,text:`GST Invoice #${l.bill.invoice_number} saved successfully!`}),e&&(fe(l.bill),setTimeout(()=>{nt(l.bill)},350)),Xe()}catch(e){ue({type:`error`,text:e.message||`Error creating invoice`})}finally{ce(!1)}}async function Qe(){ye(!0);try{let e=ir(),t=new URLSearchParams;be.trim()&&t.append(`search`,be.trim());let n=new Date;if(Se===`today`){let e=n.toISOString().split(`T`)[0];t.append(`from`,e),t.append(`to`,e)}else if(Se===`yesterday`){let e=new Date(n);e.setDate(e.getDate()-1);let r=e.toISOString().split(`T`)[0];t.append(`from`,r),t.append(`to`,r)}else if(Se===`week`){let e=new Date(n);e.setDate(e.getDate()-7),t.append(`from`,e.toISOString().split(`T`)[0]),t.append(`to`,n.toISOString().split(`T`)[0])}else if(Se===`month`){let e=new Date(n.getFullYear(),n.getMonth(),1);t.append(`from`,e.toISOString().split(`T`)[0]),t.append(`to`,n.toISOString().split(`T`)[0])}else Se===`custom`&&(we&&t.append(`from`,we),Ee&&t.append(`to`,Ee));let r=await fetch(`${qo}/api/admin/gst-bills?${t.toString()}`,{headers:e?{Authorization:`Bearer ${e}`}:{}});if(r.ok){let e=await r.json();he(e.bills||[]),e.stats&&_e(e.stats)}}catch(e){console.warn(`Failed to load history:`,e)}finally{ye(!1)}}async function $e(e){if(window.confirm(`Are you sure you want to delete this GST invoice permanently?`))try{let t=ir(),n=await fetch(`${qo}/api/admin/gst-bills/${e}`,{method:`DELETE`,headers:t?{Authorization:`Bearer ${t}`}:{}});if(n.ok)Qe();else{let e=await n.json();alert(e.error||`Failed to delete`)}}catch{alert(`Delete failed`)}}async function et(e){if(!e)return;let t=e.id||e.invoice_number,n=`GST_Invoice_${e.invoice_number}.pdf`,r=ir();try{let e=`${qo}/api/admin/gst-bills/${t}/pdf${r?`?token=${r}`:``}`,i=await fetch(e,{headers:r?{Authorization:`Bearer ${r}`}:{}});if(i.ok){let e=await i.blob(),t=window.URL.createObjectURL(e),r=document.createElement(`a`);r.href=t,r.download=n,document.body.appendChild(r),r.click(),document.body.removeChild(r),setTimeout(()=>window.URL.revokeObjectURL(t),2e3);return}}catch(e){console.warn(`[gst-billing] Direct blob download failed, falling back:`,e)}let i=`${qo}/api/gst-bills/${e.invoice_number}/pdf`;window.open(i,`_blank`)}function tt(e){if(!e)return;let t=(e.receiver_phone||``).replace(/\D/g,``);if(t.length<10){alert(`Please provide a valid 10-digit mobile number to send WhatsApp bill.`);return}let n=t.length===10?`91${t}`:t,r=`${typeof window<`u`&&window.location.hostname!==`localhost`&&window.location.hostname,window.location.origin}/api/gst-bills/${e.invoice_number}/pdf?inline=1`,i=`*${(e.store_name||`RAVICHANDRA HANDLOOMS`).toUpperCase()} — DHARMAVARAM*\n*Official GST Tax Invoice (Invoice No: ${e.invoice_number})*\n\nDear *${e.receiver_name}*,\nThank you for your valued order! Please find your official GST Tax Invoice PDF below:\n\n📄 *View / Download GST Invoice PDF:*\n${r}\n\nTaxable Value: *₹${Jo(e.taxable_amount)}*\nTotal Payable: *₹${Jo(e.total_amount)}*\nPayment Mode: *${e.payment_method||`Bank Transfer`}*\n\nThank you for patronizing authentic Dharmavaram silk handlooms!`,a=`https://wa.me/${n}?text=${encodeURIComponent(i)}`;window.open(a,`_blank`)}function nt(e){let t=document.getElementById(`printable-gst-bill-sheet`);if(!t){window.print();return}try{let n=document.getElementById(`gst-print-iframe-target`);n||(n=document.createElement(`iframe`),n.id=`gst-print-iframe-target`,n.style.position=`fixed`,n.style.right=`0`,n.style.bottom=`0`,n.style.width=`0`,n.style.height=`0`,n.style.border=`0`,document.body.appendChild(n));let r=`
         <!DOCTYPE html>
         <html>
           <head>
@@ -14759,7 +14759,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
               .brand-title-blue {
                 font-size: 24px;
                 font-weight: 900;
-                color: #0b35b8;
+                color: #581e15;
                 letter-spacing: 0.06em;
                 margin: 2px 0;
                 line-height: 1.1;
@@ -14782,7 +14782,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
                 color: #000000;
               }
               .dharmavaram-blue {
-                color: #0b35b8;
+                color: #581e15;
                 font-weight: 800;
               }
               .particulars-table,
@@ -14799,7 +14799,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
                 width: 50%;
               }
               .receiver-header-bar {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border: 1px solid #000000;
                 font-size: 10px;
                 font-weight: 800;
@@ -14812,7 +14812,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
                 font-size: 9.5px;
               }
               .goods-table th {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border: 1px solid #000000;
                 font-size: 9.5px;
                 font-weight: 800;
@@ -14858,7 +14858,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
                 justify-content: space-between;
               }
               .section-gray-bar {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border-bottom: 1px solid #000000;
                 font-size: 9.5px;
                 font-weight: 800;
@@ -14902,7 +14902,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
               .grand-total-highlight {
                 font-weight: 800 !important;
                 font-size: 10.5px !important;
-                background: #f7f7f7;
+                background: #fdf7f0;
+                color: #581e15;
               }
               .for-store-sig-box {
                 padding: 6px;
@@ -14910,7 +14911,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
                 font-size: 9.5px;
               }
               .for-store-brand {
-                color: #0b35b8;
+                color: #581e15;
                 font-weight: 800;
                 font-size: 10px;
                 text-transform: uppercase;
@@ -14948,7 +14949,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: flex;
           align-items: center;
           gap: 10px;
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .gst-title-badge h1 {
@@ -14993,9 +14994,9 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .tab-pill-btn.active {
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
-          box-shadow: 0 1px 3px rgba(11, 53, 184, 0.3);
+          box-shadow: 0 1px 3px rgba(88, 30, 21, 0.3);
         }
 
         .count-pill {
@@ -15121,8 +15122,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         .form-field input:focus,
         .form-field select:focus,
         .form-field textarea:focus {
-          border-color: #0b35b8;
-          box-shadow: 0 0 0 2px rgba(11, 53, 184, 0.15);
+          border-color: #581e15;
+          box-shadow: 0 0 0 2px rgba(88, 30, 21, 0.15);
         }
 
         /* Items Table */
@@ -15158,7 +15159,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .table-input:focus {
-          border-color: #0b35b8;
+          border-color: #581e15;
         }
 
         .desc-cell-wrap {
@@ -15181,7 +15182,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #0b35b8;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 5px 12px;
@@ -15238,8 +15239,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .tax-radio-card.active {
-          border-color: #0b35b8;
-          background: #eff6ff;
+          border-color: #581e15;
+          background: #fdf7f0;
         }
 
         .radio-text strong {
@@ -15285,11 +15286,11 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-top: 2px solid #0b35b8;
-          border-bottom: 2px solid #0b35b8;
+          border-top: 2px solid #581e15;
+          border-bottom: 2px solid #581e15;
           padding: 10px 0;
           margin-top: 8px;
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .grand-total-highlight-row strong {
@@ -15337,7 +15338,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #0ea5e9;
+          background: #2c1810;
           color: #ffffff;
           border: none;
           padding: 8px 16px;
@@ -15351,7 +15352,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #10b981;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 8px 18px;
@@ -15365,7 +15366,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
           border: none;
           padding: 8px 20px;
@@ -15391,8 +15392,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .stat-card.highlight {
-          background: #eff6ff;
-          border-color: #bfdbfe;
+          background: #fdf7f0;
+          border-color: #ebd9c8;
         }
 
         .stat-label {
@@ -15411,7 +15412,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .stat-card.highlight .stat-value {
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .stat-desc {
@@ -15468,7 +15469,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .preset-btn.active {
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
         }
 
@@ -15515,9 +15516,10 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .invoice-num-badge {
-          color: #0b35b8;
+          color: #581e15;
           font-family: monospace;
           font-size: 12.5px;
+          font-weight: 700;
         }
 
         .gstin-code-tag {
@@ -15542,7 +15544,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .text-total {
-          color: #0b35b8;
+          color: #581e15;
+          font-weight: 700;
         }
 
         .table-actions-cell {
@@ -15564,9 +15567,9 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           color: #ffffff;
         }
 
-        .action-btn.view { background: #0ea5e9; }
-        .action-btn.print { background: #0b35b8; }
-        .action-btn.pdf { background: #d97706; }
+        .action-btn.view { background: #2c1810; }
+        .action-btn.print { background: #581e15; }
+        .action-btn.pdf { background: #b87d2b; }
         .action-btn.wa { background: #25D366; }
         .action-btn.delete { background: #ef4444; }
 
@@ -15586,7 +15589,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .bill-modal-window {
-          background: #2b2b2b;
+          background: #2c1810;
           border-radius: 10px;
           width: 95%;
           max-width: 960px;
@@ -15598,8 +15601,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .bill-modal-screen-bar {
-          background: #1e1e1e;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: #1a0d0a;
+          border-bottom: 1px solid rgba(184, 125, 43, 0.25);
           padding: 10px 18px;
           display: flex;
           align-items: center;
@@ -15619,7 +15622,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .format-badge-a4 {
-          background: #0b35b8;
+          background: #b87d2b;
           color: #ffffff;
           font-size: 10px;
           font-weight: 700;
@@ -15638,7 +15641,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
           border: none;
           padding: 6px 12px;
@@ -15652,7 +15655,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #d97706;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 6px 12px;
@@ -15781,7 +15784,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         .brand-title-blue {
           font-size: 24px;
           font-weight: 900;
-          color: #0b35b8;
+          color: #581e15;
           letter-spacing: 0.06em;
           margin: 2px 0;
           line-height: 1.1;
@@ -15807,7 +15810,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .dharmavaram-blue {
-          color: #0b35b8;
+          color: #581e15;
           font-weight: 800;
         }
 
@@ -15827,7 +15830,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .receiver-header-bar {
-          background: #eaeaea;
+          background: #f7f2ea;
           border: 1px solid #000000;
           font-size: 10px;
           font-weight: 800;
@@ -15842,7 +15845,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .goods-table th {
-          background: #eaeaea;
+          background: #f7f2ea;
           border: 1px solid #000000;
           font-size: 9.5px;
           font-weight: 800;
@@ -15895,7 +15898,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .section-gray-bar {
-          background: #eaeaea;
+          background: #f7f2ea;
           border-bottom: 1px solid #000000;
           font-size: 9.5px;
           font-weight: 800;
@@ -15947,7 +15950,8 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         .grand-total-highlight {
           font-weight: 800 !important;
           font-size: 10.5px !important;
-          background: #f7f7f7;
+          background: #fdf7f0;
+          color: #581e15;
         }
 
         .for-store-sig-box {
@@ -15957,7 +15961,7 @@ DHARMAVARAM-515 671. Sree Satya SaiDist. (A.P.)`,bank_name:`Indian Bank`,bank_ac
         }
 
         .for-store-brand {
-          color: #0b35b8;
+          color: #581e15;
           font-weight: 800;
           font-size: 10px;
           text-transform: uppercase;

@@ -193,31 +193,8 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/gst-bills/:id — Get a single GST bill by ID or invoice_number
-router.get('/:id', requireAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const isNum = !isNaN(parseInt(id, 10)) && String(parseInt(id, 10)) === String(id).trim();
-
-    const { rows } = await query(
-      isNum
-        ? `SELECT * FROM gst_bills WHERE id = $1`
-        : `SELECT * FROM gst_bills WHERE invoice_number = $1`,
-      [isNum ? parseInt(id, 10) : id.trim()]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'GST Invoice not found.' });
-    }
-
-    res.json({ bill: rows[0] });
-  } catch (err) {
-    console.error('[gst-bills] get by id error:', err);
-    res.status(500).json({ error: 'Failed to retrieve invoice.' });
-  }
-});
-
-// GET /api/admin/gst-bills/:id/pdf — Download or view GST invoice in vector PDF format
+// GET /api/admin/gst-bills/:id/pdf or /api/gst-bills/:invoiceNumber/pdf — Download or view GST invoice in vector PDF format
+// Publicly accessible with valid bill ID or invoice number so receipts & WhatsApp links open seamlessly
 router.get('/:id/pdf', async (req, res) => {
   try {
     const { id } = req.params;
@@ -282,6 +259,30 @@ router.get('/public/:invoiceNumber/pdf', async (req, res) => {
     } else {
       res.end();
     }
+  }
+});
+
+// GET /api/admin/gst-bills/:id — Get a single GST bill by ID or invoice_number
+router.get('/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isNum = !isNaN(parseInt(id, 10)) && String(parseInt(id, 10)) === String(id).trim();
+
+    const { rows } = await query(
+      isNum
+        ? `SELECT * FROM gst_bills WHERE id = $1`
+        : `SELECT * FROM gst_bills WHERE invoice_number = $1`,
+      [isNum ? parseInt(id, 10) : id.trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'GST Invoice not found.' });
+    }
+
+    res.json({ bill: rows[0] });
+  } catch (err) {
+    console.error('[gst-bills] get by id error:', err);
+    res.status(500).json({ error: 'Failed to retrieve invoice.' });
   }
 });
 

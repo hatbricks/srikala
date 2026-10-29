@@ -513,13 +513,14 @@ export default function AdminGstBilling() {
     }
   }
 
-  // Vector PDF download
+  // Vector PDF download (exact matching Store Billing with authenticated blob & public fallback)
   async function downloadBillPdf(bill) {
     if (!bill) return;
     const invoiceId = bill.id || bill.invoice_number;
     const filename = `GST_Invoice_${bill.invoice_number}.pdf`;
     const token = getToken();
 
+    // 1. Primary: fetch binary stream with auth header and trigger direct browser blob download
     try {
       const url = `${BASE_URL}/api/admin/gst-bills/${invoiceId}/pdf${token ? `?token=${token}` : ''}`;
       const res = await fetch(url, {
@@ -538,14 +539,15 @@ export default function AdminGstBilling() {
         return;
       }
     } catch (err) {
-      console.warn('Direct blob download failed, falling back:', err);
+      console.warn('[gst-billing] Direct blob download failed, falling back:', err);
     }
 
-    const publicUrl = `${BASE_URL}/api/gst-bills/public/${bill.invoice_number}/pdf`;
-    window.open(publicUrl, '_blank');
+    // 2. Secondary fallback: direct public endpoint
+    const fallbackUrl = `${BASE_URL}/api/gst-bills/${bill.invoice_number}/pdf`;
+    window.open(fallbackUrl, '_blank');
   }
 
-  // WhatsApp share
+  // WhatsApp share (exact matching Store Billing redirect flow)
   function openWhatsAppBill(bill) {
     if (!bill) return;
     const phone = bill.receiver_phone || '';
@@ -556,16 +558,18 @@ export default function AdminGstBilling() {
     }
     const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
+    // Direct public PDF bill URL
     const origin = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
       ? window.location.origin
       : (BASE_URL && !BASE_URL.includes('localhost') ? BASE_URL : window.location.origin);
-    const pdfUrl = `${origin}/api/gst-bills/public/${bill.invoice_number}/pdf?inline=1`;
+    const pdfUrl = `${origin}/api/gst-bills/${bill.invoice_number}/pdf?inline=1`;
 
+    const storeTitle = (bill.store_name || 'RAVICHANDRA HANDLOOMS').toUpperCase();
     const message =
-      `*${bill.store_name || 'RAVICHANDRA HANDLOOMS'} — DHARMAVARAM*\n` +
-      `*GST Tax Invoice (Bill No: ${bill.invoice_number})*\n\n` +
+      `*${storeTitle} — DHARMAVARAM*\n` +
+      `*Official GST Tax Invoice (Invoice No: ${bill.invoice_number})*\n\n` +
       `Dear *${bill.receiver_name}*,\n` +
-      `Thank you for your valued order! Please find your official GST Tax Invoice below:\n\n` +
+      `Thank you for your valued order! Please find your official GST Tax Invoice PDF below:\n\n` +
       `📄 *View / Download GST Invoice PDF:*\n${pdfUrl}\n\n` +
       `Taxable Value: *₹${formatINR(bill.taxable_amount)}*\n` +
       `Total Payable: *₹${formatINR(bill.total_amount)}*\n` +
@@ -693,7 +697,7 @@ export default function AdminGstBilling() {
               .brand-title-blue {
                 font-size: 24px;
                 font-weight: 900;
-                color: #0b35b8;
+                color: #581e15;
                 letter-spacing: 0.06em;
                 margin: 2px 0;
                 line-height: 1.1;
@@ -716,7 +720,7 @@ export default function AdminGstBilling() {
                 color: #000000;
               }
               .dharmavaram-blue {
-                color: #0b35b8;
+                color: #581e15;
                 font-weight: 800;
               }
               .particulars-table,
@@ -733,7 +737,7 @@ export default function AdminGstBilling() {
                 width: 50%;
               }
               .receiver-header-bar {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border: 1px solid #000000;
                 font-size: 10px;
                 font-weight: 800;
@@ -746,7 +750,7 @@ export default function AdminGstBilling() {
                 font-size: 9.5px;
               }
               .goods-table th {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border: 1px solid #000000;
                 font-size: 9.5px;
                 font-weight: 800;
@@ -792,7 +796,7 @@ export default function AdminGstBilling() {
                 justify-content: space-between;
               }
               .section-gray-bar {
-                background: #eaeaea;
+                background: #f7f2ea;
                 border-bottom: 1px solid #000000;
                 font-size: 9.5px;
                 font-weight: 800;
@@ -836,7 +840,8 @@ export default function AdminGstBilling() {
               .grand-total-highlight {
                 font-weight: 800 !important;
                 font-size: 10.5px !important;
-                background: #f7f7f7;
+                background: #fdf7f0;
+                color: #581e15;
               }
               .for-store-sig-box {
                 padding: 6px;
@@ -844,7 +849,7 @@ export default function AdminGstBilling() {
                 font-size: 9.5px;
               }
               .for-store-brand {
-                color: #0b35b8;
+                color: #581e15;
                 font-weight: 800;
                 font-size: 10px;
                 text-transform: uppercase;
@@ -2127,7 +2132,7 @@ export default function AdminGstBilling() {
           display: flex;
           align-items: center;
           gap: 10px;
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .gst-title-badge h1 {
@@ -2172,9 +2177,9 @@ export default function AdminGstBilling() {
         }
 
         .tab-pill-btn.active {
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
-          box-shadow: 0 1px 3px rgba(11, 53, 184, 0.3);
+          box-shadow: 0 1px 3px rgba(88, 30, 21, 0.3);
         }
 
         .count-pill {
@@ -2300,8 +2305,8 @@ export default function AdminGstBilling() {
         .form-field input:focus,
         .form-field select:focus,
         .form-field textarea:focus {
-          border-color: #0b35b8;
-          box-shadow: 0 0 0 2px rgba(11, 53, 184, 0.15);
+          border-color: #581e15;
+          box-shadow: 0 0 0 2px rgba(88, 30, 21, 0.15);
         }
 
         /* Items Table */
@@ -2337,7 +2342,7 @@ export default function AdminGstBilling() {
         }
 
         .table-input:focus {
-          border-color: #0b35b8;
+          border-color: #581e15;
         }
 
         .desc-cell-wrap {
@@ -2360,7 +2365,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #0b35b8;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 5px 12px;
@@ -2417,8 +2422,8 @@ export default function AdminGstBilling() {
         }
 
         .tax-radio-card.active {
-          border-color: #0b35b8;
-          background: #eff6ff;
+          border-color: #581e15;
+          background: #fdf7f0;
         }
 
         .radio-text strong {
@@ -2464,11 +2469,11 @@ export default function AdminGstBilling() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-top: 2px solid #0b35b8;
-          border-bottom: 2px solid #0b35b8;
+          border-top: 2px solid #581e15;
+          border-bottom: 2px solid #581e15;
           padding: 10px 0;
           margin-top: 8px;
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .grand-total-highlight-row strong {
@@ -2516,7 +2521,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #0ea5e9;
+          background: #2c1810;
           color: #ffffff;
           border: none;
           padding: 8px 16px;
@@ -2530,7 +2535,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #10b981;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 8px 18px;
@@ -2544,7 +2549,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
           border: none;
           padding: 8px 20px;
@@ -2570,8 +2575,8 @@ export default function AdminGstBilling() {
         }
 
         .stat-card.highlight {
-          background: #eff6ff;
-          border-color: #bfdbfe;
+          background: #fdf7f0;
+          border-color: #ebd9c8;
         }
 
         .stat-label {
@@ -2590,7 +2595,7 @@ export default function AdminGstBilling() {
         }
 
         .stat-card.highlight .stat-value {
-          color: #0b35b8;
+          color: #581e15;
         }
 
         .stat-desc {
@@ -2647,7 +2652,7 @@ export default function AdminGstBilling() {
         }
 
         .preset-btn.active {
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
         }
 
@@ -2694,9 +2699,10 @@ export default function AdminGstBilling() {
         }
 
         .invoice-num-badge {
-          color: #0b35b8;
+          color: #581e15;
           font-family: monospace;
           font-size: 12.5px;
+          font-weight: 700;
         }
 
         .gstin-code-tag {
@@ -2721,7 +2727,8 @@ export default function AdminGstBilling() {
         }
 
         .text-total {
-          color: #0b35b8;
+          color: #581e15;
+          font-weight: 700;
         }
 
         .table-actions-cell {
@@ -2743,9 +2750,9 @@ export default function AdminGstBilling() {
           color: #ffffff;
         }
 
-        .action-btn.view { background: #0ea5e9; }
-        .action-btn.print { background: #0b35b8; }
-        .action-btn.pdf { background: #d97706; }
+        .action-btn.view { background: #2c1810; }
+        .action-btn.print { background: #581e15; }
+        .action-btn.pdf { background: #b87d2b; }
         .action-btn.wa { background: #25D366; }
         .action-btn.delete { background: #ef4444; }
 
@@ -2765,7 +2772,7 @@ export default function AdminGstBilling() {
         }
 
         .bill-modal-window {
-          background: #2b2b2b;
+          background: #2c1810;
           border-radius: 10px;
           width: 95%;
           max-width: 960px;
@@ -2777,8 +2784,8 @@ export default function AdminGstBilling() {
         }
 
         .bill-modal-screen-bar {
-          background: #1e1e1e;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          background: #1a0d0a;
+          border-bottom: 1px solid rgba(184, 125, 43, 0.25);
           padding: 10px 18px;
           display: flex;
           align-items: center;
@@ -2798,7 +2805,7 @@ export default function AdminGstBilling() {
         }
 
         .format-badge-a4 {
-          background: #0b35b8;
+          background: #b87d2b;
           color: #ffffff;
           font-size: 10px;
           font-weight: 700;
@@ -2817,7 +2824,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #0b35b8;
+          background: #581e15;
           color: #ffffff;
           border: none;
           padding: 6px 12px;
@@ -2831,7 +2838,7 @@ export default function AdminGstBilling() {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: #d97706;
+          background: #b87d2b;
           color: #ffffff;
           border: none;
           padding: 6px 12px;
@@ -2960,7 +2967,7 @@ export default function AdminGstBilling() {
         .brand-title-blue {
           font-size: 24px;
           font-weight: 900;
-          color: #0b35b8;
+          color: #581e15;
           letter-spacing: 0.06em;
           margin: 2px 0;
           line-height: 1.1;
@@ -2986,7 +2993,7 @@ export default function AdminGstBilling() {
         }
 
         .dharmavaram-blue {
-          color: #0b35b8;
+          color: #581e15;
           font-weight: 800;
         }
 
@@ -3006,7 +3013,7 @@ export default function AdminGstBilling() {
         }
 
         .receiver-header-bar {
-          background: #eaeaea;
+          background: #f7f2ea;
           border: 1px solid #000000;
           font-size: 10px;
           font-weight: 800;
@@ -3021,7 +3028,7 @@ export default function AdminGstBilling() {
         }
 
         .goods-table th {
-          background: #eaeaea;
+          background: #f7f2ea;
           border: 1px solid #000000;
           font-size: 9.5px;
           font-weight: 800;
@@ -3074,7 +3081,7 @@ export default function AdminGstBilling() {
         }
 
         .section-gray-bar {
-          background: #eaeaea;
+          background: #f7f2ea;
           border-bottom: 1px solid #000000;
           font-size: 9.5px;
           font-weight: 800;
@@ -3126,7 +3133,8 @@ export default function AdminGstBilling() {
         .grand-total-highlight {
           font-weight: 800 !important;
           font-size: 10.5px !important;
-          background: #f7f7f7;
+          background: #fdf7f0;
+          color: #581e15;
         }
 
         .for-store-sig-box {
@@ -3136,7 +3144,7 @@ export default function AdminGstBilling() {
         }
 
         .for-store-brand {
-          color: #0b35b8;
+          color: #581e15;
           font-weight: 800;
           font-size: 10px;
           text-transform: uppercase;

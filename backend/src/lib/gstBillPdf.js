@@ -9,12 +9,14 @@ const __dirname = path.dirname(__filename);
 const DEITY_PATH = path.join(__dirname, '..', 'assets', 'gst-deity.png');
 const WATERMARK_PATH = path.join(__dirname, '..', 'assets', 'gst-watermark.png');
 
-// Colors
-const BLACK = '#000000';
-const INK_DARK = '#1a1a1a';
-const ROYAL_BLUE = '#0b35b8';
-const HEADER_BG = '#eaeaea';
-const BORDER_COLOR = '#000000';
+// Colors matching website's royal silk palette
+const BLACK = '#1a1a1a';
+const INK_DARK = '#2c1810';
+const MAROON = '#581e15';
+const GOLD = '#b87d2b';
+const HEADER_BG = '#f7f2ea';
+const HIGHLIGHT_BG = '#fdf7f0';
+const BORDER_COLOR = '#2c1810';
 
 function formatINR(amount) {
   const num = Number(amount || 0);
@@ -160,8 +162,8 @@ export function renderGstBillPDF(res, bill) {
   doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.5)
      .text(`8317551337`, rightX, curY + 13, { width: rightW, align: 'right' });
 
-  // Main Brand Name (Bold Royal Blue, Big)
-  doc.fillColor(ROYAL_BLUE).font('Helvetica-Bold').fontSize(22)
+  // Main Brand Name (Bold Royal Maroon, Big)
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(22)
      .text(storeName.toUpperCase(), rightX, curY + 28, { width: rightW, align: 'center', characterSpacing: 0.5 });
 
   // Tagline In Outlined Box
@@ -179,7 +181,7 @@ export function renderGstBillPDF(res, bill) {
     const parts = addrText.split('DHARMAVARAM');
     doc.fillColor(BLACK).font('Helvetica').fontSize(8.5)
        .text(parts[0].trim(), rightX, curY + 77, { width: rightW, align: 'center' });
-    doc.fillColor(ROYAL_BLUE).font('Helvetica-Bold').fontSize(8.8)
+    doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(8.8)
        .text('DHARMAVARAM' + (parts[1] || ''), rightX, curY + 89, { width: rightW, align: 'center' });
   } else {
     doc.fillColor(BLACK).font('Helvetica').fontSize(8.5)
@@ -433,18 +435,18 @@ export function renderGstBillPDF(res, bill) {
   doc.fillColor(INK_DARK).font('Helvetica').fontSize(8.5).text(formatINR(bill.igst_amount), rightColX + labelW, bRightY + 4, { width: valW - 8, align: 'right' });
   bRightY += totalRowH;
 
-  // TOTAL AMOUNT (Double bordered/highlighted)
+  // TOTAL AMOUNT (Double bordered/highlighted in royal silk cream)
   const gtRowH = 18;
-  doc.rect(rightColX, bRightY, rightColW, gtRowH).fillColor('#f7f7f7').fill();
+  doc.rect(rightColX, bRightY, rightColW, gtRowH).fillColor(HIGHLIGHT_BG).fill();
   doc.rect(rightColX, bRightY, rightColW, gtRowH).lineWidth(0.8).strokeColor(BLACK).stroke();
   doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(9.5).text('TOTAL AMOUNT', rightColX + 8, bRightY + 5);
-  doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(10).text(formatINR(bill.total_amount), rightColX + labelW, bRightY + 4.5, { width: valW - 8, align: 'right' });
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(10).text(formatINR(bill.total_amount), rightColX + labelW, bRightY + 4.5, { width: valW - 8, align: 'right' });
   bRightY += gtRowH;
 
-  // For : RAVICHANDRA HANDLOOMS (in Bold Royal Blue)
+  // For : RAVICHANDRA HANDLOOMS (in Bold Royal Maroon)
   doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.5)
      .text('For  : ', rightColX + 16, bRightY + 8);
-  doc.fillColor(ROYAL_BLUE).font('Helvetica-Bold').fontSize(9)
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(9)
      .text(storeName.toUpperCase(), rightColX + 46, bRightY + 7.5);
 
   // Signature
