@@ -216,32 +216,38 @@ export default function AdminStoreBilling() {
   function updateItem(index, field, value) {
     setItems((prev) => {
       const next = [...prev];
-      const item = { ...next[index], [field]: value };
+      let val = value;
+      if (field === 'qty') {
+        val = String(value).replace(/[^0-9]/g, '');
+      } else if (field === 'rate' || field === 'discount') {
+        val = String(value).replace(/[^0-9.]/g, '');
+        const parts = val.split('.');
+        if (parts.length > 2) {
+          val = parts[0] + '.' + parts.slice(1).join('');
+        }
+      }
 
-      const qty = Math.max(1, Number(item.qty || 1));
-      const rate = Math.max(0, Number(item.rate || 0));
-      const disc = Math.max(0, Number(item.discount || 0));
-      item.amount = Math.max(0, qty * rate - disc);
+      const item = { ...next[index], [field]: val };
 
-      next[index] = item;
-      return next;
-    });
-  }
+      // If user typed/selected a saree name matching a catalog product and rate is empty, auto-fill rate
+      if (field === 'name' && (!item.rate || Number(item.rate) === 0)) {
+        const matched = catalogProducts.find(
+          (p) => p.name?.trim().toLowerCase() === String(val).trim().toLowerCase()
+        );
+        if (matched) {
+          if (matched.price) item.rate = String(matched.price);
+          if (!item.color) {
+            const vColor = matched.variants?.[0]?.colorName || matched.variants?.[0]?.color_name;
+            if (vColor) item.color = vColor;
+          }
+        }
+      }
 
-  function handleSelectCatalogProduct(index, productId) {
-    if (!productId) return;
-    const prod = catalogProducts.find((p) => String(p.id) === String(productId));
-    if (!prod) return;
+      const qty = Math.max(1, parseFloat(item.qty) || 1);
+      const rate = Math.max(0, parseFloat(item.rate) || 0);
+      const disc = Math.max(0, parseFloat(item.discount) || 0);
+      item.amount = Math.max(0, Math.round(qty * rate - disc));
 
-    setItems((prev) => {
-      const next = [...prev];
-      const item = { ...next[index] };
-      item.name = prod.name;
-      item.rate = prod.price || '';
-      item.color = prod.variants?.[0]?.colorName || prod.variants?.[0]?.color_name || '';
-      const qty = Math.max(1, Number(item.qty || 1));
-      const disc = Math.max(0, Number(item.discount || 0));
-      item.amount = Math.max(0, qty * (prod.price || 0) - disc);
       next[index] = item;
       return next;
     });
@@ -271,7 +277,7 @@ export default function AdminStoreBilling() {
         name: prod.name || '',
         color: color,
         qty: 1,
-        rate: rate || '',
+        rate: rate ? String(rate) : '',
         discount: 0,
         amount: rate || 0,
       }
@@ -937,12 +943,12 @@ export default function AdminStoreBilling() {
             <div className="items-card-head">
               <div className="items-head-left">
                 <span className="items-heading">Saree Particulars &amp; Items</span>
-                <span className="items-subheading">Enter saree name &amp; price manually, or pick from web catalog</span>
+                <span className="items-subheading">Type saree name &amp; price directly into the table cells below</span>
               </div>
               <div className="items-head-actions">
-                <button type="button" className="btn-add-manual" onClick={addManualItem}>
+                <button type="button" className="btn-add-manual" onClick={addItemRow}>
                   <PlusIcon width={13} height={13} />
-                  <span>+ Add Manual Item</span>
+                  <span>+ Add Saree Item</span>
                 </button>
                 {catalogProducts.length > 0 && (
                   <select
@@ -956,10 +962,10 @@ export default function AdminStoreBilling() {
                     }}
                     defaultValue=""
                   >
-                    <option value="" disabled>+ Add from Web Catalog ▾</option>
+                    <option value="" disabled>+ Pick from Web Catalog ▾</option>
                     {catalogProducts.map((p) => (
                       <option key={p.id} value={p.id}>
-                        + {p.name} (₹{Number(p.price).toLocaleString('en-IN')})
+                        {p.name} (₹{Number(p.price).toLocaleString('en-IN')})
                       </option>
                     ))}
                   </select>
@@ -972,10 +978,10 @@ export default function AdminStoreBilling() {
                 <thead>
                   <tr>
                     <th style={{ width: '4%' }}>#</th>
-                    <th style={{ width: '42%' }}>Saree Particulars (Manual Entry / Catalog)</th>
+                    <th style={{ width: '40%' }}>Saree Particulars / Name (Type Directly)</th>
                     <th style={{ width: '18%' }}>Color / Design</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>Qty</th>
-                    <th style={{ width: '12%', textAlign: 'right' }}>Rate / Price (₹)</th>
+                    <th style={{ width: '14%', textAlign: 'right' }}>Rate / Price (₹)</th>
                     <th style={{ width: '8%', textAlign: 'right' }}>Disc (₹)</th>
                     <th style={{ width: '14%', textAlign: 'right' }}>Amount (₹)</th>
                     <th style={{ width: '4%', textAlign: 'center' }}></th>
@@ -986,31 +992,16 @@ export default function AdminStoreBilling() {
                     <tr key={idx}>
                       <td className="cell-num">{idx + 1}</td>
                       <td>
-                        <div className="cell-name-box">
-                          <input
-                            type="text"
-                            placeholder="Type saree name manually (e.g. Kanchi Pattu Silk Saree)"
-                            value={it.name}
-                            onChange={(e) => updateItem(idx, 'name', e.target.value)}
-                            required
-                            className="input-saree-name"
-                          />
-                          {catalogProducts.length > 0 && (
-                            <select
-                              className="catalog-row-select"
-                              onChange={(e) => handleSelectCatalogProduct(idx, e.target.value)}
-                              value=""
-                              title="Optionally auto-fill from existing web product"
-                            >
-                              <option value="">⚡ Or auto-fill from web product...</option>
-                              {catalogProducts.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} — ₹{Number(p.price).toLocaleString('en-IN')}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
+                        <input
+                          type="text"
+                          placeholder="Type saree name (e.g. Dharmavaram Pure Silk Saree)"
+                          value={it.name}
+                          onChange={(e) => updateItem(idx, 'name', e.target.value)}
+                          list="saree-catalog-list"
+                          autoComplete="off"
+                          required
+                          className="input-saree-name"
+                        />
                       </td>
                       <td>
                         <input
@@ -1022,30 +1013,30 @@ export default function AdminStoreBilling() {
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <input
-                          type="number"
-                          min="1"
+                          type="text"
+                          inputMode="numeric"
                           style={{ textAlign: 'center' }}
                           value={it.qty}
                           onChange={(e) => updateItem(idx, 'qty', e.target.value)}
+                          placeholder="1"
                         />
                       </td>
                       <td>
                         <input
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           style={{ textAlign: 'right' }}
-                          placeholder="Price (₹)"
+                          placeholder="0"
                           value={it.rate}
                           onChange={(e) => updateItem(idx, 'rate', e.target.value)}
                           required
                           className="input-manual-price"
-                          title="Enter price manually"
                         />
                       </td>
                       <td>
                         <input
-                          type="number"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           style={{ textAlign: 'right' }}
                           placeholder="0"
                           value={it.discount}
@@ -1069,26 +1060,23 @@ export default function AdminStoreBilling() {
                   ))}
                 </tbody>
               </table>
+
+              {catalogProducts.length > 0 && (
+                <datalist id="saree-catalog-list">
+                  {catalogProducts.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      ₹{Number(p.price).toLocaleString('en-IN')}
+                    </option>
+                  ))}
+                </datalist>
+              )}
             </div>
 
             <div className="table-actions-bottom">
-              <button type="button" className="btn-add-item-ghost" onClick={addManualItem}>
+              <button type="button" className="btn-add-item-ghost" onClick={addItemRow}>
                 <PlusIcon width={13} height={13} />
-                <span>+ Add Manual Saree Item</span>
+                <span>+ Add Saree Item</span>
               </button>
-              {catalogProducts.length > 0 && (
-                <button
-                  type="button"
-                  className="btn-add-item-ghost btn-catalog-ghost"
-                  onClick={() => {
-                    const first = catalogProducts[0];
-                    if (first) addCatalogItem(first);
-                  }}
-                >
-                  <StoreIcon width={13} height={13} />
-                  <span>+ Add from Web Products</span>
-                </button>
-              )}
             </div>
           </div>
 
@@ -2015,63 +2003,41 @@ export default function AdminStoreBilling() {
         }
 
         .cell-num {
-          color: var(--ink-400);
-          font-weight: 600;
+          color: #8c5d1e;
+          font-weight: 700;
           text-align: center;
         }
 
-        .cell-name-box {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .cell-name-box input {
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        .input-saree-name {
-          color: #1e1e1e;
-          font-weight: 600 !important;
-          border-color: #d1c7bd !important;
-        }
-
-        .catalog-row-select,
-        .catalog-dropdown {
-          font-size: 11px !important;
-          padding: 4px 6px !important;
-          background: #faf7f2 !important;
-          border: 1px solid rgba(184, 125, 43, 0.35) !important;
-          color: #8c5d1e !important;
-          border-radius: 4px !important;
-          cursor: pointer;
-          font-weight: 500;
-        }
-
-        .catalog-row-select:focus,
-        .catalog-dropdown:focus {
-          outline: none;
-          border-color: #8c5d1e !important;
-        }
-
-        .input-manual-price {
-          font-weight: 700 !important;
-          color: #581e15 !important;
-        }
-
         .store-items-table input {
-          font-size: 12.5px;
-          padding: 6px 8px;
-          border: 1px solid var(--stone-300);
-          border-radius: 5px;
+          font-size: 13px;
+          padding: 8px 10px;
+          border: 1.5px solid #d1d5db;
+          border-radius: 6px;
           width: 100%;
           box-sizing: border-box;
+          background: #ffffff;
+          color: #111827;
+          font-family: inherit;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .store-items-table input:focus {
           outline: none;
           border-color: #581e15;
+          box-shadow: 0 0 0 3px rgba(88, 30, 21, 0.12);
+          background: #ffffff;
+        }
+
+        .input-saree-name {
+          font-weight: 600;
+          color: #111827;
+          letter-spacing: 0.01em;
+        }
+
+        .input-manual-price {
+          font-weight: 700 !important;
+          color: #581e15 !important;
+          font-size: 13.5px !important;
         }
 
         .row-total-val {
