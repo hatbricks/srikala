@@ -447,100 +447,33 @@ export default function AdminStoreBilling() {
     window.open(fallbackUrl, '_blank');
   }
 
-  async function openWhatsAppBill(bill) {
+  function openWhatsAppBill(bill) {
     if (!bill.customer_phone) {
-      alert('No customer phone number available.');
+      alert('No customer phone number available for this bill.');
       return;
     }
 
     const cleanPhone = bill.customer_phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    const itemsText = (Array.isArray(bill.items) ? bill.items : [])
-      .map((it, idx) => `${idx + 1}. ${it.name} (${it.color || 'Silk'}) x ${it.qty} = ${formatINR(it.amount)}`)
-      .join('\n');
+    // Direct public PDF bill URL
+    const origin = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+      ? window.location.origin
+      : (BASE_URL && !BASE_URL.includes('localhost') ? BASE_URL : window.location.origin);
+    const pdfUrl = `${origin}/api/store-bills/${bill.bill_number}/pdf?size=${paperSize}&inline=1`;
 
-    const apiBase = BASE_URL && BASE_URL.startsWith('http') ? BASE_URL : window.location.origin;
-    const publicPdfUrl = `${apiBase}/api/store-bills/${bill.bill_number}/pdf?size=${paperSize}&inline=1`;
-
-    const textContent =
+    const message =
       `*RAVICHANDRA TEXTILES — DHARMAVARAM*\n` +
       `*Authentic Pure Silk Handlooms & Royal Bridal Pattu*\n\n` +
       `Dear *${bill.customer_name}*,\n` +
-      `Thank you for shopping at Ravichandra Textiles! Here is your official store bill:\n\n` +
-      `*Bill No:* ${bill.bill_number}\n` +
-      `*Date:* ${formatDate(bill.bill_date)}\n` +
-      `*Total Payable:* ${formatINR(bill.total_amount)}\n` +
-      `*Payment Mode:* ${bill.payment_method || 'Cash'}\n\n` +
-      `📄 *Official PDF Bill Link:*\n${publicPdfUrl}\n\n` +
-      `*Items Purchased:*\n${itemsText}\n\n` +
-      `*Amount in Words:* ${numberToWordsINR(bill.total_amount)}\n\n` +
-      `Handwoven pure silk with heirloom blessings. We look forward to serving you again!\n` +
-      `*Store Address:* 10-28, Kpt street, near Punjab National Bank, Dharmavaram, AP - 515671\n` +
-      `*Phone:* +91 83175 51337`;
+      `Here is your official store bill PDF (Bill No: *${bill.bill_number}*):\n\n` +
+      `📄 *View / Download Bill PDF:*\n${pdfUrl}\n\n` +
+      `Total Payable: *${formatINR(bill.total_amount)}*\n` +
+      `Payment Mode: *${bill.payment_method || 'Cash'}*\n\n` +
+      `Thank you for shopping at Ravichandra Textiles, Dharmavaram!`;
 
-    // 1. Fetch PDF Blob so we have the file ready for native sharing or direct download
-    let pdfBlob = null;
-    try {
-      const token = getToken();
-      const billId = bill.id || bill.bill_number;
-      const pdfFetchUrl = `${BASE_URL}/api/admin/store-bills/${billId}/pdf?size=${paperSize}${token ? `&token=${token}` : ''}`;
-      const res = await fetch(pdfFetchUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        pdfBlob = await res.blob();
-      }
-    } catch (e) {
-      console.warn('Could not fetch PDF blob:', e);
-    }
-
-    // 2. Check if native Web Share API with File is supported (mobile devices / tablets)
-    if (pdfBlob && typeof navigator !== 'undefined' && navigator.canShare) {
-      try {
-        const pdfFile = new File([pdfBlob], `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`, {
-          type: 'application/pdf',
-        });
-        if (navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({
-            files: [pdfFile],
-            title: `Bill ${bill.bill_number} - Ravichandra Textiles`,
-            text: textContent,
-          });
-          return;
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.warn('Web Share failed, falling back to WhatsApp Web URL:', err);
-        } else {
-          return;
-        }
-      }
-    }
-
-    // 3. Desktop / Standard Fallback:
-    // Download the PDF file directly to cashier's computer so it can be attached in WhatsApp Web
-    if (pdfBlob) {
-      const blobUrl = window.URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 3000);
-    } else {
-      downloadBillPdf(bill, paperSize);
-    }
-
-    // Open WhatsApp Web with the pre-filled message and direct PDF view link
-    const encodedMessage = encodeURIComponent(textContent);
-    window.open(`https://wa.me/${phoneWithCountry}?text=${encodedMessage}`, '_blank');
-
-    setFeedback({
-      type: 'success',
-      text: `PDF Bill downloaded to your computer! Opening WhatsApp chat for ${bill.customer_name}. Attach the downloaded PDF via 📎 icon if you want to send the file directly.`,
-    });
+    const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
   }
 
   function printBillDirect(bill, size = paperSize) {
