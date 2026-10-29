@@ -522,6 +522,7 @@ export default function AdminStoreBilling() {
       }
 
       const isA3 = size === 'A3';
+      const pageSizeCss = isA3 ? '297mm 420mm' : '210mm 297mm';
       const pageMargin = isA3 ? '12mm' : '8mm';
 
       const htmlContent = `
@@ -532,7 +533,7 @@ export default function AdminStoreBilling() {
             <title>Bill_${bill.bill_number}</title>
             <style>
               @page {
-                size: ${size} portrait;
+                size: ${pageSizeCss};
                 margin: ${pageMargin};
               }
               * {
@@ -544,15 +545,17 @@ export default function AdminStoreBilling() {
                 margin: 0;
                 padding: 0;
                 background: #ffffff;
+                width: 100%;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                 color: #1e1e1e;
               }
               .bill-sheet {
-                width: 100%;
+                width: ${isA3 ? '273mm' : '194mm'};
+                max-width: ${isA3 ? '273mm' : '194mm'};
                 margin: 0 auto;
                 background: #ffffff;
                 border: 1px solid #d5cbbf;
-                padding: ${isA3 ? '26px 30px' : '18px 22px'};
+                padding: ${isA3 ? '24px 28px' : '18px 22px'};
               }
               .sheet-ornament-header {
                 display: flex;
