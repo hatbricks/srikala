@@ -209,7 +209,7 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
     custDetailY += isA3 ? 13 : 11;
   }
   if (bill.customer_address) {
-    doc.text(`Address: ${bill.customer_address}`, leftBoxX + 12, custDetailY, { width: colWidth - 24, lineBreak: false });
+    doc.text(`Address: ${bill.customer_address}`, leftBoxX + 12, custDetailY, { width: colWidth - 24, lineBreak: false, ellipsis: true });
   }
 
   // Right Box: Bill Particulars
@@ -285,7 +285,11 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   curY += tableHeaderHeight;
 
   // Table Rows (Directly followed by summary — NO gaps!)
-  const items = Array.isArray(bill.items) ? bill.items : [];
+  let rawItems = bill.items;
+  if (typeof rawItems === 'string') {
+    try { rawItems = JSON.parse(rawItems); } catch { rawItems = []; }
+  }
+  const items = Array.isArray(rawItems) ? rawItems : [];
   const rowHeight = isA3 ? 24 : 20;
 
   items.forEach((it, idx) => {
@@ -302,11 +306,11 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
     rX += colWidths.sno;
 
     doc.fillColor(INK).font('Helvetica-Bold').fontSize(isA3 ? 10.5 : 8.5)
-       .text(it.name || 'Pure Silk Saree', rX + 6, curY + (isA3 ? 6 : 5), { width: colWidths.desc - 12, lineBreak: false });
+       .text(it.name || 'Pure Silk Saree', rX + 6, curY + (isA3 ? 6 : 5), { width: colWidths.desc - 12, lineBreak: false, ellipsis: true });
     rX += colWidths.desc;
 
     doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8)
-       .text(it.color || 'Traditional Pure Silk', rX + 6, curY + (isA3 ? 6 : 5), { width: colWidths.color - 12, lineBreak: false });
+       .text(it.color || 'Traditional Pure Silk', rX + 6, curY + (isA3 ? 6 : 5), { width: colWidths.color - 12, lineBreak: false, ellipsis: true });
     rX += colWidths.color;
 
     doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 10 : 8)

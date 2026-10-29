@@ -16,7 +16,6 @@ import {
   PhoneIcon,
   CalendarIcon,
   RupeeIcon,
-  StoreIcon,
   DownloadIcon,
 } from '../../components/admin/AdminIcons';
 
@@ -284,13 +283,6 @@ export default function AdminStoreBilling() {
     ]);
   }
 
-  function addManualItem() {
-    setItems((prev) => [
-      ...prev,
-      { name: '', color: '', qty: 1, rate: '', discount: 0, amount: 0 }
-    ]);
-  }
-
   function addCatalogItem(prod) {
     if (!prod) return;
     const rate = Number(prod.price) || 0;
@@ -478,6 +470,10 @@ export default function AdminStoreBilling() {
     }
 
     const cleanPhone = bill.customer_phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      alert('Please provide a valid 10-digit mobile number to send WhatsApp bill.');
+      return;
+    }
     const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
     // Direct public PDF bill URL

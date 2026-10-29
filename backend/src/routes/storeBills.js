@@ -13,7 +13,8 @@ async function generateNextBillNumber() {
   const { rows } = await query(
     `SELECT bill_number FROM store_bills
      WHERE bill_number LIKE $1
-     ORDER BY id DESC LIMIT 1`,
+     ORDER BY LENGTH(bill_number) DESC, bill_number DESC
+     LIMIT 1`,
     [`${prefix}%`]
   );
 
@@ -100,15 +101,15 @@ router.get('/', requireAdmin, async (req, res) => {
     const { rows: countRows } = await query(countQuery, params);
     const totalCount = parseInt(countRows[0]?.total_count || 0, 10);
 
-    // Global Statistics for Store Billing KPI cards
+    // Global Statistics for Store Billing KPI cards (aligned with Indian Standard Time)
     const statsQuery = `
       SELECT
         COUNT(*) AS total_bills,
         COALESCE(SUM(total_amount), 0) AS total_revenue,
-        COALESCE(SUM(CASE WHEN bill_date = CURRENT_DATE THEN total_amount ELSE 0 END), 0) AS today_revenue,
-        COUNT(CASE WHEN bill_date = CURRENT_DATE THEN 1 END) AS today_bills,
-        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', bill_date) = DATE_TRUNC('month', CURRENT_DATE) THEN total_amount ELSE 0 END), 0) AS month_revenue,
-        COUNT(CASE WHEN DATE_TRUNC('month', bill_date) = DATE_TRUNC('month', CURRENT_DATE) THEN 1 END) AS month_bills
+        COALESCE(SUM(CASE WHEN bill_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::DATE THEN total_amount ELSE 0 END), 0) AS today_revenue,
+        COUNT(CASE WHEN bill_date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::DATE THEN 1 END) AS today_bills,
+        COALESCE(SUM(CASE WHEN DATE_TRUNC('month', bill_date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::DATE) THEN total_amount ELSE 0 END), 0) AS month_revenue,
+        COUNT(CASE WHEN DATE_TRUNC('month', bill_date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Kolkata')::DATE) THEN 1 END) AS month_bills
       FROM store_bills
     `;
     const { rows: statsRows } = await query(statsQuery);
@@ -188,7 +189,11 @@ router.get('/:id/pdf', async (req, res) => {
     renderStoreBillPDF(res, bill, size);
   } catch (err) {
     console.error('[store-bills] PDF generation error:', err);
-    res.status(500).json({ error: 'Failed to generate bill PDF.' });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate bill PDF.' });
+    } else {
+      res.end();
+    }
   }
 });
 
@@ -217,7 +222,11 @@ router.get('/public/:billNumber/pdf', async (req, res) => {
     renderStoreBillPDF(res, bill, size);
   } catch (err) {
     console.error('[store-bills] public PDF generation error:', err);
-    res.status(500).send('Failed to generate bill PDF.');
+    if (!res.headersSent) {
+      res.status(500).send('Failed to generate bill PDF.');
+    } else {
+      res.end();
+    }
   }
 });
 
@@ -254,15 +263,29 @@ router.post('/', requireAdmin, async (req, res) => {
       bill_number = await generateNextBillNumber();
     } else {
       bill_number = bill_number.trim().toUpperCase();
-      // Check if bill_number already exists
+    }
+
+    // Ensure bill_number is strictly unique before insert
+    let candidateNumber = bill_number;
+    let collisionCount = 0;
+    while (true) {
       const { rows: exists } = await query(
         `SELECT id FROM store_bills WHERE bill_number = $1`,
-        [bill_number]
+        [candidateNumber]
       );
-      if (exists.length > 0) {
-        bill_number = await generateNextBillNumber();
+      if (exists.length === 0) break;
+      collisionCount++;
+      const nextSuggested = await generateNextBillNumber();
+      if (nextSuggested === candidateNumber) {
+        const parts = candidateNumber.split('-');
+        const lastPart = parseInt(parts[parts.length - 1], 10) || 0;
+        candidateNumber = parts.slice(0, -1).join('-') + '-' + String(lastPart + collisionCount).padStart(4, '0');
+      } else {
+        candidateNumber = nextSuggested;
       }
+      if (collisionCount > 10) break;
     }
+    bill_number = candidateNumber;
 
     // Calculate/Verify amounts
     const computedSubtotal = items.reduce((sum, it) => {
@@ -277,7 +300,7 @@ router.post('/', requireAdmin, async (req, res) => {
     const rOff = round_off !== undefined ? Number(round_off) : Number((roundedTotal - netBeforeRound).toFixed(2));
     const finalTotal = total_amount !== undefined ? Number(total_amount) : roundedTotal;
 
-    const dateVal = bill_date || new Date().toISOString().split('T')[0];
+    const dateVal = bill_date || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const createdBy = req.user?.email || 'admin';
 
     const insertSql = `
