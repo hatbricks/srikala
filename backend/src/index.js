@@ -92,6 +92,9 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin/store-bills', storeBillRoutes);
+app.get('/api/store-bills/:billNumber/pdf', (req, res) => {
+  res.redirect(`/api/admin/store-bills/public/${encodeURIComponent(req.params.billNumber)}/pdf?size=${req.query.size || 'A3'}`);
+});
 app.use('/api/admin', adminRoutes);
 
 // Static frontend build layer (serves React SPA directly from server)

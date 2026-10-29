@@ -188,6 +188,8 @@ export const api = {
   createStoreBill: (payload) => request('/api/admin/store-bills', { method: 'POST', body: payload }),
   updateStoreBill: (id, payload) => request(`/api/admin/store-bills/${id}`, { method: 'PUT', body: payload }),
   deleteStoreBill: (id) => request(`/api/admin/store-bills/${id}`, { method: 'DELETE' }),
+  getStoreBillPdfUrl: (idOrNumber, size = 'A3') => `${BASE_URL}/api/admin/store-bills/${idOrNumber}/pdf?size=${size}`,
+  getPublicStoreBillPdfUrl: (billNumber, size = 'A3') => `${BASE_URL}/api/store-bills/${billNumber}/pdf?size=${size}`,
 };
 
 export { BASE_URL };

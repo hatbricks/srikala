@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
+import { renderStoreBillPDF } from '../lib/storeBillPdf.js';
 
 const router = Router();
 
@@ -154,6 +155,67 @@ router.get('/:id', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('[store-bills] get error:', err);
     res.status(500).json({ error: 'Failed to retrieve bill details.' });
+  }
+});
+
+// GET /api/admin/store-bills/:id/pdf — Download or view Store Bill in PDF format (A3 / A4)
+router.get('/:id/pdf', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { size = 'A3' } = req.query;
+    const isNum = !isNaN(parseInt(id, 10));
+
+    const { rows } = await query(
+      isNum
+        ? `SELECT * FROM store_bills WHERE id = $1`
+        : `SELECT * FROM store_bills WHERE bill_number = $1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Store bill not found.' });
+    }
+
+    const bill = rows[0];
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
+    );
+
+    renderStoreBillPDF(res, bill, size);
+  } catch (err) {
+    console.error('[store-bills] PDF generation error:', err);
+    res.status(500).json({ error: 'Failed to generate bill PDF.' });
+  }
+});
+
+// GET /api/admin/store-bills/public/:billNumber/pdf — Public customer download endpoint for WhatsApp
+router.get('/public/:billNumber/pdf', async (req, res) => {
+  try {
+    const { billNumber } = req.params;
+    const { size = 'A3' } = req.query;
+
+    const { rows } = await query(
+      `SELECT * FROM store_bills WHERE UPPER(bill_number) = UPPER($1)`,
+      [billNumber.trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).send('Bill not found or invalid link.');
+    }
+
+    const bill = rows[0];
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
+    );
+
+    renderStoreBillPDF(res, bill, size);
+  } catch (err) {
+    console.error('[store-bills] public PDF generation error:', err);
+    res.status(500).send('Failed to generate bill PDF.');
   }
 });
 
