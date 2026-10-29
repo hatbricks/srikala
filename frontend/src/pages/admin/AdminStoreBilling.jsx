@@ -128,7 +128,9 @@ export default function AdminStoreBilling() {
     monthBills: 0,
   });
   const [search, setSearch] = useState('');
-  const [filterDate, setFilterDate] = useState('ALL'); // 'ALL' | 'TODAY' | 'MONTH'
+  const [filterDate, setFilterDate] = useState('ALL'); // 'ALL' | 'TODAY' | 'YESTERDAY' | 'WEEK' | 'MONTH' | 'CUSTOM'
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
   const [filterPayment, setFilterPayment] = useState('ALL');
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -150,7 +152,7 @@ export default function AdminStoreBilling() {
     if (activeTab === 'history') {
       loadHistory();
     }
-  }, [activeTab, filterDate, filterPayment]);
+  }, [activeTab, filterDate, filterPayment, customDateFrom, customDateTo]);
 
   async function loadNextBillNumber() {
     try {
@@ -184,15 +186,37 @@ export default function AdminStoreBilling() {
       if (search.trim()) params.search = search.trim();
       if (filterPayment !== 'ALL') params.paymentMethod = filterPayment;
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const formatYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      const todayStr = formatYMD(now);
+
       if (filterDate === 'TODAY') {
         params.from = todayStr;
         params.to = todayStr;
-      } else if (filterDate === 'MONTH') {
-        const d = new Date();
-        const firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
-        params.from = firstDay;
+      } else if (filterDate === 'YESTERDAY') {
+        const yest = new Date(now);
+        yest.setDate(yest.getDate() - 1);
+        const yestStr = formatYMD(yest);
+        params.from = yestStr;
+        params.to = yestStr;
+      } else if (filterDate === 'WEEK') {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - 6);
+        params.from = formatYMD(weekStart);
         params.to = todayStr;
+      } else if (filterDate === 'MONTH') {
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        params.from = formatYMD(firstDay);
+        params.to = todayStr;
+      } else if (filterDate === 'CUSTOM') {
+        if (customDateFrom) params.from = customDateFrom;
+        if (customDateTo) params.to = customDateTo;
       }
 
       const res = await api.getStoreBills(params);
@@ -362,7 +386,7 @@ export default function AdminStoreBilling() {
       if (autoPrint) {
         setPreviewBill(savedBill);
         setTimeout(() => {
-          window.print();
+          printBillDirect(savedBill, paperSize);
         }, 350);
       }
 
@@ -1183,33 +1207,26 @@ export default function AdminStoreBilling() {
                   className="btn-primary-print"
                   disabled={submitting}
                   onClick={() => handleSaveBill(true)}
+                  title="Print bill directly to connected printer and store in database"
                 >
                   <PrinterIcon width={16} height={16} />
-                  <span>{submitting ? 'Saving…' : 'Save & Print Bill'}</span>
+                  <span>{submitting ? 'Printing & Storing…' : 'Print Bill'}</span>
                 </button>
 
                 <div className="button-sub-row">
                   <button
                     type="button"
                     className="btn-subtle"
-                    disabled={submitting}
-                    onClick={() => handleSaveBill(false)}
-                  >
-                    <span>Save Bill Only</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-subtle"
                     onClick={handleDirectPreview}
                   >
-                    <span>Preview</span>
+                    <span>Preview Bill</span>
                   </button>
                   <button
                     type="button"
                     className="btn-reset-link"
                     onClick={resetForm}
                   >
-                    <span>Clear</span>
+                    <span>Clear Form</span>
                   </button>
                 </div>
               </div>
@@ -1232,40 +1249,29 @@ export default function AdminStoreBilling() {
               <div className="kpi-content">
                 <span className="kpi-heading">Total Store Sales</span>
                 <strong className="kpi-figure">{formatINR(stats.totalRevenue)}</strong>
-                <span className="kpi-meta">{stats.totalBills} total bills</span>
+                <span className="kpi-meta">All-time store revenue</span>
               </div>
             </div>
 
             <div className="kpi-box">
               <div className="kpi-icon-wrap icon-gold">
-                <CalendarIcon width={18} height={18} />
+                <BillingIcon width={18} height={18} />
               </div>
               <div className="kpi-content">
-                <span className="kpi-heading">Today's In-Store Revenue</span>
-                <strong className="kpi-figure">{formatINR(stats.todayRevenue)}</strong>
-                <span className="kpi-meta">{stats.todayBills} bills today</span>
+                <span className="kpi-heading">Number of Payments</span>
+                <strong className="kpi-figure">{stats.totalBills}</strong>
+                <span className="kpi-meta">Total bills generated</span>
               </div>
             </div>
 
             <div className="kpi-box">
               <div className="kpi-icon-wrap icon-emerald">
-                <BillingIcon width={18} height={18} />
+                <CalendarIcon width={18} height={18} />
               </div>
               <div className="kpi-content">
-                <span className="kpi-heading">This Month Sales</span>
+                <span className="kpi-heading">Overall Month Total</span>
                 <strong className="kpi-figure">{formatINR(stats.monthRevenue)}</strong>
                 <span className="kpi-meta">{stats.monthBills} bills this month</span>
-              </div>
-            </div>
-
-            <div className="kpi-box">
-              <div className="kpi-icon-wrap icon-blue">
-                <StoreIcon width={18} height={18} />
-              </div>
-              <div className="kpi-content">
-                <span className="kpi-heading">Dharmavaram Store</span>
-                <strong className="kpi-figure">Ready</strong>
-                <span className="kpi-meta">Counter billing active</span>
               </div>
             </div>
           </div>
@@ -1300,9 +1306,33 @@ export default function AdminStoreBilling() {
                 <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)}>
                   <option value="ALL">All Time</option>
                   <option value="TODAY">Today</option>
+                  <option value="YESTERDAY">Yesterday</option>
+                  <option value="WEEK">This Week (Last 7 Days)</option>
                   <option value="MONTH">This Month</option>
+                  <option value="CUSTOM">Custom Date Selection…</option>
                 </select>
               </div>
+
+              {filterDate === 'CUSTOM' && (
+                <div className="custom-date-inputs">
+                  <div className="date-input-wrap">
+                    <span>From:</span>
+                    <input
+                      type="date"
+                      value={customDateFrom}
+                      onChange={(e) => setCustomDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="date-input-wrap">
+                    <span>To:</span>
+                    <input
+                      type="date"
+                      value={customDateTo}
+                      onChange={(e) => setCustomDateTo(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="select-wrap">
                 <span>Payment:</span>
@@ -1311,7 +1341,7 @@ export default function AdminStoreBilling() {
                   <option value="Cash">Cash</option>
                   <option value="UPI">UPI</option>
                   <option value="Card">Card</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Split">Split</option>
                 </select>
               </div>
 
@@ -1319,11 +1349,36 @@ export default function AdminStoreBilling() {
                 type="button"
                 className="btn-refresh-history"
                 onClick={loadHistory}
-                title="Refresh bills"
+                title="Refresh bills list"
               >
                 <RefreshIcon width={13} height={13} />
               </button>
             </div>
+          </div>
+
+          {/* Active Filter & Summary Banner */}
+          <div className="history-summary-bar">
+            <span className="summary-text">
+              Showing <strong>{bills.length}</strong> {bills.length === 1 ? 'bill' : 'bills'}
+              {bills.length > 0 && (
+                <> &bull; Filtered Total: <strong>{formatINR(bills.reduce((sum, b) => sum + Number(b.total_amount || 0), 0))}</strong></>
+              )}
+            </span>
+            {(filterDate !== 'ALL' || filterPayment !== 'ALL' || search || customDateFrom || customDateTo) && (
+              <button
+                type="button"
+                className="btn-clear-all-filters"
+                onClick={() => {
+                  setFilterDate('ALL');
+                  setFilterPayment('ALL');
+                  setSearch('');
+                  setCustomDateFrom('');
+                  setCustomDateTo('');
+                }}
+              >
+                Reset Filters
+              </button>
+            )}
           </div>
 
           {/* Table Card */}
@@ -2464,6 +2519,66 @@ export default function AdminStoreBilling() {
           border: 1px solid var(--stone-300);
           border-radius: 6px;
           background: #ffffff;
+        }
+
+        .custom-date-inputs {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .date-input-wrap {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          color: var(--ink-600);
+          background: #faf7f2;
+          border: 1px solid var(--stone-300);
+          border-radius: 6px;
+          padding: 3px 8px;
+        }
+
+        .date-input-wrap input {
+          border: none;
+          background: transparent;
+          font-size: 12px;
+          color: #111827;
+          outline: none;
+          font-family: inherit;
+        }
+
+        .history-summary-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 9px 14px;
+          background: #faf7f2;
+          border: 1px solid #ebd9c8;
+          border-radius: 6px;
+          font-size: 12.5px;
+          color: #581e15;
+        }
+
+        .history-summary-bar strong {
+          color: #581e15;
+          font-weight: 700;
+        }
+
+        .btn-clear-all-filters {
+          background: none;
+          border: none;
+          color: #8c5d1e;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+        }
+
+        .btn-clear-all-filters:hover {
+          color: #581e15;
         }
 
         .btn-refresh-history {
