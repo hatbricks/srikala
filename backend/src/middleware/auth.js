@@ -15,7 +15,9 @@ export function signToken(user) {
 // know who's asking (e.g. to show "your review" state).
 export function attachUser(req, _res, next) {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  const token = header.startsWith('Bearer ')
+    ? header.slice(7)
+    : (req.query?.token || null);
   if (token) {
     try {
       req.user = jwt.verify(token, JWT_SECRET);

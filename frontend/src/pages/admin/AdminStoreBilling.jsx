@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../../data/api';
+import { api, getToken, BASE_URL } from '../../data/api';
 import BRAND from '../../config/brand';
 import Seo from '../../components/Seo';
 import {
@@ -254,6 +254,30 @@ export default function AdminStoreBilling() {
     ]);
   }
 
+  function addManualItem() {
+    setItems((prev) => [
+      ...prev,
+      { name: '', color: '', qty: 1, rate: '', discount: 0, amount: 0 }
+    ]);
+  }
+
+  function addCatalogItem(prod) {
+    if (!prod) return;
+    const rate = Number(prod.price) || 0;
+    const color = prod.variants?.[0]?.colorName || prod.variants?.[0]?.color_name || 'Traditional Pure Silk';
+    setItems((prev) => [
+      ...prev,
+      {
+        name: prod.name || '',
+        color: color,
+        qty: 1,
+        rate: rate || '',
+        discount: 0,
+        amount: rate || 0,
+      }
+    ]);
+  }
+
   function removeItemRow(index) {
     if (items.length <= 1) {
       setItems([{ name: '', color: '', qty: 1, rate: '', discount: 0, amount: 0 }]);
@@ -384,18 +408,37 @@ export default function AdminStoreBilling() {
     }
   }
 
-  function downloadBillPdf(bill, size = paperSize) {
+  async function downloadBillPdf(bill, size = paperSize) {
     if (!bill) return;
-    const url = api.getStoreBillPdfUrl
-      ? api.getStoreBillPdfUrl(bill.id || bill.bill_number, size)
-      : `/api/admin/store-bills/${bill.id || bill.bill_number}/pdf?size=${size}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const billId = bill.id || bill.bill_number;
+    const filename = `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`;
+    const token = getToken();
+
+    // 1. Primary: fetch binary stream with auth header and trigger direct browser blob download
+    try {
+      const url = `${BASE_URL}/api/admin/store-bills/${billId}/pdf?size=${size}${token ? `&token=${token}` : ''}`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+        return;
+      }
+    } catch (e) {
+      console.warn('[store-billing] Blob fetch failed, falling back to direct public download:', e);
+    }
+
+    // 2. Secondary fallback: direct public link (no auth required)
+    const fallbackUrl = `${BASE_URL}/api/store-bills/${bill.bill_number}/pdf?size=${size}`;
+    window.open(fallbackUrl, '_blank');
   }
 
   function openWhatsAppBill(bill) {
@@ -889,14 +932,39 @@ export default function AdminStoreBilling() {
             </div>
           </div>
 
-          {/* Card 2: Items Table (Full Width & Clean) */}
+          {/* Card 2: Items Table (Full Width & Clean with Manual Entry & Web Products) */}
           <div className="card-box items-table-card">
             <div className="items-card-head">
-              <span className="items-heading">Saree Particulars &amp; Items</span>
-              <button type="button" className="btn-add-item" onClick={addItemRow}>
-                <PlusIcon width={13} height={13} />
-                <span>Add Item</span>
-              </button>
+              <div className="items-head-left">
+                <span className="items-heading">Saree Particulars &amp; Items</span>
+                <span className="items-subheading">Enter saree name &amp; price manually, or pick from web catalog</span>
+              </div>
+              <div className="items-head-actions">
+                <button type="button" className="btn-add-manual" onClick={addManualItem}>
+                  <PlusIcon width={13} height={13} />
+                  <span>+ Add Manual Item</span>
+                </button>
+                {catalogProducts.length > 0 && (
+                  <select
+                    className="select-add-catalog-head"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const p = catalogProducts.find((x) => String(x.id) === String(e.target.value));
+                        if (p) addCatalogItem(p);
+                        e.target.value = '';
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>+ Add from Web Catalog ▾</option>
+                    {catalogProducts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        + {p.name} (₹{Number(p.price).toLocaleString('en-IN')})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div className="table-responsive">
@@ -904,10 +972,10 @@ export default function AdminStoreBilling() {
                 <thead>
                   <tr>
                     <th style={{ width: '4%' }}>#</th>
-                    <th style={{ width: '42%' }}>Saree Description / Catalog Selection</th>
+                    <th style={{ width: '42%' }}>Saree Particulars (Manual Entry / Catalog)</th>
                     <th style={{ width: '18%' }}>Color / Design</th>
                     <th style={{ width: '8%', textAlign: 'center' }}>Qty</th>
-                    <th style={{ width: '12%', textAlign: 'right' }}>Rate (₹)</th>
+                    <th style={{ width: '12%', textAlign: 'right' }}>Rate / Price (₹)</th>
                     <th style={{ width: '8%', textAlign: 'right' }}>Disc (₹)</th>
                     <th style={{ width: '14%', textAlign: 'right' }}>Amount (₹)</th>
                     <th style={{ width: '4%', textAlign: 'center' }}></th>
@@ -921,19 +989,20 @@ export default function AdminStoreBilling() {
                         <div className="cell-name-box">
                           <input
                             type="text"
-                            placeholder="e.g. Dharmavaram Pure Silk Saree"
+                            placeholder="Type saree name manually (e.g. Kanchi Pattu Silk Saree)"
                             value={it.name}
                             onChange={(e) => updateItem(idx, 'name', e.target.value)}
                             required
+                            className="input-saree-name"
                           />
                           {catalogProducts.length > 0 && (
                             <select
-                              className="catalog-dropdown"
+                              className="catalog-row-select"
                               onChange={(e) => handleSelectCatalogProduct(idx, e.target.value)}
-                              defaultValue=""
-                              title="Pick from existing saree catalog"
+                              value=""
+                              title="Optionally auto-fill from existing web product"
                             >
-                              <option value="" disabled>Select from store catalog...</option>
+                              <option value="">⚡ Or auto-fill from web product...</option>
                               {catalogProducts.map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {p.name} — ₹{Number(p.price).toLocaleString('en-IN')}
@@ -946,7 +1015,7 @@ export default function AdminStoreBilling() {
                       <td>
                         <input
                           type="text"
-                          placeholder="e.g. Royal Red / Gold"
+                          placeholder="e.g. Royal Red / Zari"
                           value={it.color}
                           onChange={(e) => updateItem(idx, 'color', e.target.value)}
                         />
@@ -965,10 +1034,12 @@ export default function AdminStoreBilling() {
                           type="number"
                           min="0"
                           style={{ textAlign: 'right' }}
-                          placeholder="0"
+                          placeholder="Price (₹)"
                           value={it.rate}
                           onChange={(e) => updateItem(idx, 'rate', e.target.value)}
                           required
+                          className="input-manual-price"
+                          title="Enter price manually"
                         />
                       </td>
                       <td>
@@ -1001,10 +1072,23 @@ export default function AdminStoreBilling() {
             </div>
 
             <div className="table-actions-bottom">
-              <button type="button" className="btn-add-item-ghost" onClick={addItemRow}>
+              <button type="button" className="btn-add-item-ghost" onClick={addManualItem}>
                 <PlusIcon width={13} height={13} />
-                <span>Add Another Saree Item</span>
+                <span>+ Add Manual Saree Item</span>
               </button>
+              {catalogProducts.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-add-item-ghost btn-catalog-ghost"
+                  onClick={() => {
+                    const first = catalogProducts[0];
+                    if (first) addCatalogItem(first);
+                  }}
+                >
+                  <StoreIcon width={13} height={13} />
+                  <span>+ Add from Web Products</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -1820,12 +1904,66 @@ export default function AdminStoreBilling() {
           align-items: center;
           justify-content: space-between;
           margin-bottom: 12px;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .items-head-left {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
 
         .items-heading {
           font-size: 14px;
           font-weight: 700;
           color: var(--ink-900);
+        }
+
+        .items-subheading {
+          font-size: 11px;
+          color: var(--ink-500);
+        }
+
+        .items-head-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .btn-add-manual {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #581e15;
+          color: #ffffff;
+          border: none;
+          padding: 6px 13px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .btn-add-manual:hover {
+          background: #41140d;
+        }
+
+        .select-add-catalog-head {
+          font-size: 12px;
+          font-weight: 600;
+          color: #8c5d1e;
+          background: #fdfaf5;
+          border: 1px solid rgba(184, 125, 43, 0.4);
+          padding: 6px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+
+        .select-add-catalog-head:hover {
+          border-color: #8c5d1e;
         }
 
         .btn-add-item {
@@ -1892,14 +2030,33 @@ export default function AdminStoreBilling() {
           font-weight: 600;
         }
 
+        .input-saree-name {
+          color: #1e1e1e;
+          font-weight: 600 !important;
+          border-color: #d1c7bd !important;
+        }
+
+        .catalog-row-select,
         .catalog-dropdown {
           font-size: 11px !important;
-          padding: 3px 6px !important;
+          padding: 4px 6px !important;
           background: #faf7f2 !important;
-          border: 1px solid rgba(184, 125, 43, 0.3) !important;
+          border: 1px solid rgba(184, 125, 43, 0.35) !important;
           color: #8c5d1e !important;
           border-radius: 4px !important;
           cursor: pointer;
+          font-weight: 500;
+        }
+
+        .catalog-row-select:focus,
+        .catalog-dropdown:focus {
+          outline: none;
+          border-color: #8c5d1e !important;
+        }
+
+        .input-manual-price {
+          font-weight: 700 !important;
+          color: #581e15 !important;
         }
 
         .store-items-table input {
@@ -1942,7 +2099,9 @@ export default function AdminStoreBilling() {
         .table-actions-bottom {
           margin-top: 10px;
           display: flex;
-          justify-content: flex-start;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
         }
 
         .btn-add-item-ghost {
@@ -1957,11 +2116,22 @@ export default function AdminStoreBilling() {
           display: inline-flex;
           align-items: center;
           gap: 6px;
+          transition: all 0.15s ease;
         }
 
         .btn-add-item-ghost:hover {
           background: var(--stone-50);
           border-color: #581e15;
+        }
+
+        .btn-catalog-ghost {
+          border-color: rgba(184, 125, 43, 0.45);
+          color: #8c5d1e;
+        }
+
+        .btn-catalog-ghost:hover {
+          background: #fdf8f0;
+          border-color: #8c5d1e;
         }
 
         /* Card 3: Bottom Calculation & Actions Grid */
@@ -2651,6 +2821,7 @@ export default function AdminStoreBilling() {
           padding: 20px;
           display: flex;
           justify-content: center;
+          align-items: flex-start;
         }
 
         /* ======================== PRINTABLE SHEET ======================== */
@@ -2658,6 +2829,8 @@ export default function AdminStoreBilling() {
           background: #ffffff;
           color: #1e1e1e;
           width: 100%;
+          height: auto;
+          min-height: auto;
           box-sizing: border-box;
           box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           border: 1px solid #d5cbbf;
@@ -2667,14 +2840,14 @@ export default function AdminStoreBilling() {
 
         /* A3 Format Sheet */
         .bill-sheet.sheet-size-a3 {
-          max-width: 920px;
-          padding: 32px 38px;
+          max-width: 900px;
+          padding: 24px 28px;
         }
 
         /* A4 Format Sheet */
         .bill-sheet.sheet-size-a4 {
-          max-width: 760px;
-          padding: 22px 26px;
+          max-width: 740px;
+          padding: 16px 20px;
         }
 
         .sheet-ornament-header {
@@ -2682,7 +2855,7 @@ export default function AdminStoreBilling() {
           align-items: center;
           justify-content: center;
           gap: 12px;
-          margin-bottom: 8px;
+          margin-bottom: 4px;
         }
 
         .ornament-line {
@@ -2693,7 +2866,7 @@ export default function AdminStoreBilling() {
 
         .ornament-gem {
           color: #b87d2b;
-          font-size: 12px;
+          font-size: 11px;
         }
 
         .sheet-brand-header {
@@ -2701,8 +2874,8 @@ export default function AdminStoreBilling() {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          gap: 4px;
-          padding-bottom: 12px;
+          gap: 3px;
+          padding-bottom: 8px;
           border-bottom: 2px solid #581e15;
         }
 
@@ -2712,13 +2885,13 @@ export default function AdminStoreBilling() {
         }
 
         .sheet-size-a3 .sheet-logo-img {
-          height: 64px;
+          height: 56px;
           width: auto;
           object-fit: contain;
         }
 
         .sheet-size-a4 .sheet-logo-img {
-          height: 48px;
+          height: 44px;
           width: auto;
           object-fit: contain;
         }
@@ -2728,45 +2901,45 @@ export default function AdminStoreBilling() {
         }
 
         .sheet-size-a3 .sheet-store-tagline {
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 700;
           color: #8c5d1e;
-          margin: 2px 0;
+          margin: 1px 0;
         }
 
         .sheet-size-a4 .sheet-store-tagline {
           font-size: 10px;
           font-weight: 700;
           color: #8c5d1e;
-          margin: 2px 0;
+          margin: 1px 0;
         }
 
         .sheet-size-a3 .sheet-store-address,
         .sheet-size-a3 .sheet-store-contact {
-          font-size: 10.5px;
+          font-size: 10px;
           color: #555555;
-          margin: 1.5px 0;
+          margin: 1px 0;
         }
 
         .sheet-size-a4 .sheet-store-address,
         .sheet-size-a4 .sheet-store-contact {
-          font-size: 9.5px;
+          font-size: 9px;
           color: #555555;
-          margin: 1.5px 0;
+          margin: 1px 0;
         }
 
         .sheet-meta-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 12px;
-          margin: 12px 0;
+          gap: 10px;
+          margin: 8px 0;
         }
 
         .sheet-meta-box {
           background: #faf7f2;
           border: 1px solid #e4ddd4;
           border-radius: 5px;
-          padding: 9px 12px;
+          padding: 7px 10px;
         }
 
         .meta-box-label {
@@ -2775,40 +2948,40 @@ export default function AdminStoreBilling() {
           color: #8c5d1e;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          margin-bottom: 4px;
+          margin-bottom: 3px;
           border-bottom: 1px solid #ebd9c8;
           padding-bottom: 2px;
         }
 
         .customer-print-name {
-          font-size: 13.5px;
+          font-size: 13px;
           font-weight: 700;
           color: #2c1810;
-          margin: 0 0 3px;
+          margin: 0 0 2px;
         }
 
         .customer-print-detail {
-          font-size: 11px;
+          font-size: 10.5px;
           color: #444444;
           margin: 0 0 2px;
-          line-height: 1.35;
+          line-height: 1.3;
         }
 
         .meta-info-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11px;
+          font-size: 10.5px;
         }
 
         .meta-info-table td {
-          padding: 2px 0;
+          padding: 1.5px 0;
           color: #444444;
         }
 
         .print-bill-no {
           font-weight: 800;
           color: #581e15;
-          font-size: 12px;
+          font-size: 11.5px;
         }
 
         .print-pay-mode {
@@ -2817,27 +2990,27 @@ export default function AdminStoreBilling() {
         }
 
         .sheet-items-section {
-          margin: 10px 0 0;
+          margin: 6px 0 0;
         }
 
         .sheet-items-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11.5px;
+          font-size: 11px;
         }
 
         .sheet-items-table th {
           background: #581e15;
           color: #ffffff;
-          padding: 7px 8px;
-          font-size: 10.5px;
+          padding: 6px 8px;
+          font-size: 10px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.03em;
         }
 
         .sheet-items-table td {
-          padding: 7px 8px;
+          padding: 5px 8px;
           border-bottom: 1px solid #e4ddd4;
           color: #222222;
         }
@@ -2849,20 +3022,20 @@ export default function AdminStoreBilling() {
         .sheet-summary-grid {
           display: grid;
           grid-template-columns: 1fr 270px;
-          gap: 12px;
-          margin: 10px 0 0;
+          gap: 10px;
+          margin: 8px 0 0;
         }
 
         .amount-words-box {
           background: #fdfaf5;
           border: 1px dashed #cbbdae;
           border-radius: 5px;
-          padding: 7px 10px;
-          margin-bottom: 6px;
+          padding: 6px 8px;
+          margin-bottom: 4px;
         }
 
         .words-title {
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 700;
           color: #8c5d1e;
           text-transform: uppercase;
@@ -2871,16 +3044,16 @@ export default function AdminStoreBilling() {
         }
 
         .words-text {
-          font-size: 11.5px;
+          font-size: 11px;
           color: #581e15;
-          line-height: 1.35;
+          line-height: 1.3;
           font-weight: 700;
         }
 
         .sheet-terms-box {
-          font-size: 9.5px;
+          font-size: 9px;
           color: #555555;
-          line-height: 1.4;
+          line-height: 1.35;
         }
 
         .terms-title {
@@ -2898,11 +3071,11 @@ export default function AdminStoreBilling() {
         .sheet-totals-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 11.5px;
+          font-size: 11px;
         }
 
         .sheet-totals-table td {
-          padding: 3px 4px;
+          padding: 2.5px 4px;
           color: #333333;
         }
 
@@ -2918,13 +3091,13 @@ export default function AdminStoreBilling() {
         .grand-total-row td {
           border-top: 2px solid #581e15;
           border-bottom: 2px solid #581e15;
-          padding: 7px 5px;
+          padding: 5px 6px;
           background: #fdf2ea;
           color: #581e15;
         }
 
         .grand-total-val {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 800;
           color: #581e15;
         }
@@ -2933,8 +3106,8 @@ export default function AdminStoreBilling() {
           display: flex;
           align-items: flex-end;
           justify-content: space-between;
-          padding-top: 20px;
-          margin-top: 14px;
+          padding-top: 12px;
+          margin-top: 8px;
           border-top: 1px solid #e4ddd4;
         }
 
@@ -2943,7 +3116,7 @@ export default function AdminStoreBilling() {
           flex-direction: column;
           align-items: center;
           width: 170px;
-          font-size: 10px;
+          font-size: 9.5px;
           color: #555555;
           text-align: center;
         }
@@ -2952,12 +3125,12 @@ export default function AdminStoreBilling() {
           width: 130px;
           height: 1px;
           border-top: 1px dashed #666666;
-          margin-bottom: 5px;
+          margin-bottom: 4px;
         }
 
         .store-sig strong {
           color: #581e15;
-          font-size: 10.5px;
+          font-size: 10px;
         }
 
         .sheet-seal-badge {
@@ -2969,17 +3142,17 @@ export default function AdminStoreBilling() {
           border: 1px solid #b87d2b;
           background: #fbf7f2;
           color: #8c5d1e;
-          font-size: 8.5px;
+          font-size: 8px;
           font-weight: 700;
-          padding: 2px 8px;
+          padding: 2px 7px;
           border-radius: 999px;
           letter-spacing: 0.04em;
         }
 
         .thank-you-note {
-          font-size: 9.5px;
+          font-size: 9px;
           color: #777777;
-          margin: 3px 0 0;
+          margin: 2px 0 0;
           font-style: italic;
         }
 
