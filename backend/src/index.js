@@ -23,6 +23,7 @@ import returnRoutes from './routes/returns.js';
 import settingsRoutes from './routes/settings.js';
 import adminRoutes from './routes/admin.js';
 import storeBillRoutes from './routes/storeBills.js';
+import gstBillRoutes from './routes/gstBills.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -93,6 +94,8 @@ app.use('/api/returns', returnRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin/store-bills', storeBillRoutes);
 app.use('/api/store-bills', storeBillRoutes);
+app.use('/api/admin/gst-bills', gstBillRoutes);
+app.use('/api/gst-bills', gstBillRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Static frontend build layer (serves React SPA directly from server)

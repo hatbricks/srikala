@@ -40,6 +40,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminStoreBilling from './pages/admin/AdminStoreBilling';
+import AdminGstBilling from './pages/admin/AdminGstBilling';
 import AdminReturns from './pages/admin/AdminReturns';
 import AdminPickupLocations from './pages/admin/AdminPickupLocations';
 import AdminSettings from './pages/admin/AdminSettings';
@@ -168,6 +169,7 @@ export default function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="billing" element={<AdminStoreBilling />} />
+            <Route path="gst-billing" element={<AdminGstBilling />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="returns" element={<AdminReturns />} />
             <Route path="pickup-locations" element={<AdminPickupLocations />} />

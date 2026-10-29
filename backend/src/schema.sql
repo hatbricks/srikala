@@ -476,3 +476,53 @@ CREATE INDEX IF NOT EXISTS idx_store_bills_date ON store_bills(bill_date DESC);
 CREATE INDEX IF NOT EXISTS idx_store_bills_number ON store_bills(bill_number);
 CREATE INDEX IF NOT EXISTS idx_store_bills_customer ON store_bills(customer_name, customer_phone);
 
+-- Official GST Billing (Tax Invoices with HSN, SGST/CGST/IGST, Transporter, Vehicle, Bank & Receiver GSTIN)
+CREATE TABLE IF NOT EXISTS gst_bills (
+  id               SERIAL PRIMARY KEY,
+  invoice_number   TEXT NOT NULL UNIQUE,
+  invoice_date     DATE NOT NULL DEFAULT CURRENT_DATE,
+  vehicle_no       TEXT,
+  transporter      TEXT,
+  reverse_charge   TEXT NOT NULL DEFAULT 'No', -- 'No' | 'Yes'
+  agent_name       TEXT,
+  receiver_name    TEXT NOT NULL,
+  receiver_gstin   TEXT,
+  receiver_address TEXT,
+  receiver_phone   TEXT,
+  receiver_state   TEXT,
+  items            JSONB NOT NULL DEFAULT '[]'::jsonb,
+  taxable_amount   NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  tax_type         TEXT NOT NULL DEFAULT 'INTRA_STATE', -- 'INTRA_STATE' (CGST+SGST) | 'INTER_STATE' (IGST) | 'EXEMPT'
+  sgst_rate        NUMERIC(5, 2) NOT NULL DEFAULT 2.5,
+  sgst_amount      NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  cgst_rate        NUMERIC(5, 2) NOT NULL DEFAULT 2.5,
+  cgst_amount      NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  igst_rate        NUMERIC(5, 2) NOT NULL DEFAULT 0,
+  igst_amount      NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  round_off        NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  total_amount     NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  amount_in_words  TEXT,
+  bank_name        TEXT DEFAULT 'Indian Bank',
+  bank_account_no  TEXT DEFAULT '7653499335',
+  bank_ifsc        TEXT DEFAULT 'IDIB000D083',
+  terms            JSONB DEFAULT '["1. This is to certify that we have valid registration under GST & all above informations are true and correct.","2. Our Goods are claimless & Goods once sold cannot be taken back.","3. Our responsibility ceases after handover the goods to transporter.","4. Subject to Dharmavaram jurisdiction."]'::jsonb,
+  store_name       TEXT DEFAULT 'RAVICHANDRA HANDLOOMS',
+  store_gstin      TEXT DEFAULT '37AYPPR2420N1ZU',
+  store_pan        TEXT DEFAULT 'AYPPR2420N',
+  store_cell       TEXT DEFAULT '9493049274, 8317551337',
+  store_tagline    TEXT DEFAULT 'Pure Silk Sarees Manufacturers',
+  store_address    TEXT DEFAULT '# 10/28, K.P.T. Street, DHARMAVARAM-515671. Sri Sathyasai Dist. A.P.',
+  payment_method   TEXT DEFAULT 'Bank Transfer', -- 'Bank Transfer' | 'Cash' | 'UPI' | 'Cheque'
+  payment_ref      TEXT,
+  notes            TEXT,
+  created_by       TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gst_bills_created ON gst_bills(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_gst_bills_date ON gst_bills(invoice_date DESC);
+CREATE INDEX IF NOT EXISTS idx_gst_bills_number ON gst_bills(invoice_number);
+CREATE INDEX IF NOT EXISTS idx_gst_bills_receiver ON gst_bills(receiver_name, receiver_gstin);
+
+
