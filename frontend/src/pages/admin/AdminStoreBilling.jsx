@@ -619,6 +619,7 @@ export default function AdminStoreBilling() {
                 justify-content: space-between;
                 gap: 14px;
                 padding-bottom: 8px;
+                margin-bottom: 6px;
                 border-bottom: 2px solid #581e15;
               }
               .sheet-brand-left {
@@ -629,11 +630,12 @@ export default function AdminStoreBilling() {
               }
               .sheet-emblem-img,
               .sheet-logo-img {
-                height: ${isA3 ? '54px' : '42px'} !important;
-                max-width: ${isA3 ? '58px' : '46px'} !important;
+                height: ${isA3 ? '48px' : '36px'} !important;
+                max-width: ${isA3 ? '52px' : '40px'} !important;
                 width: auto !important;
                 object-fit: contain !important;
                 flex-shrink: 0;
+                display: block !important;
               }
               .brand-text-block {
                 display: flex;
@@ -656,13 +658,6 @@ export default function AdminStoreBilling() {
                 color: #8c5d1e;
                 margin: 0;
                 line-height: 1.25;
-              }
-              .sheet-store-badge {
-                font-size: ${isA3 ? '8px' : '6.5px'};
-                font-weight: 700;
-                color: #786f66;
-                letter-spacing: 0.05em;
-                margin-top: 2px;
               }
               .sheet-brand-right {
                 text-align: right;
@@ -1618,7 +1613,6 @@ export default function AdminStoreBilling() {
                       <p className="sheet-store-tagline">
                         Authentic Dharmavaram Pure Silk Handlooms &amp; Royal Bridal Pattu
                       </p>
-                      <span className="sheet-store-badge">NON-GST STORE CASH MEMO &bull; HANDLOOM SILK SHOWROOM</span>
                     </div>
                   </div>
 
@@ -2978,17 +2972,18 @@ export default function AdminStoreBilling() {
 
         .sheet-emblem-img,
         .sheet-logo-img {
-          height: 44px;
+          height: 36px;
           width: auto;
-          max-width: 48px;
+          max-width: 40px;
           object-fit: contain;
           flex-shrink: 0;
+          display: block;
         }
 
         .sheet-size-a3 .sheet-emblem-img,
         .sheet-size-a3 .sheet-logo-img {
-          height: 56px;
-          max-width: 60px;
+          height: 48px;
+          max-width: 52px;
         }
 
         .brand-text-block {
@@ -3022,18 +3017,6 @@ export default function AdminStoreBilling() {
 
         .sheet-size-a3 .sheet-store-tagline {
           font-size: 11.5px;
-        }
-
-        .sheet-store-badge {
-          font-size: 7.5px;
-          font-weight: 700;
-          color: #786f66;
-          letter-spacing: 0.05em;
-          margin-top: 2px;
-        }
-
-        .sheet-size-a3 .sheet-store-badge {
-          font-size: 8.5px;
         }
 
         .sheet-brand-right {
@@ -3404,10 +3387,11 @@ export default function AdminStoreBilling() {
 
           .sheet-emblem-img,
           .sheet-logo-img {
-            height: 44px !important;
-            max-width: 48px !important;
+            height: 36px !important;
+            max-width: 40px !important;
             width: auto !important;
             object-fit: contain !important;
+            display: block !important;
           }
 
           * {

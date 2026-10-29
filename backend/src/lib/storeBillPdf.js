@@ -131,19 +131,21 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   curY += isA3 ? 12 : 9;
 
   // 2. Header: Left-side Shop Branding & Right-side Showroom Address
-  const emblemWidth = isA3 ? 42 : 32;
-  const leftColWidth = contentWidth * 0.58;
-  const rightColWidth = contentWidth * 0.40;
+  // Proportional emblem: aspect ratio ~ 1 : 1.506
+  const emblemWidth = isA3 ? 32 : 24;
+  const emblemHeight = isA3 ? 48 : 36;
+  const leftColWidth = contentWidth * 0.54;
+  const rightColWidth = contentWidth * 0.44;
   const rightColX = margin + contentWidth - rightColWidth;
 
-  // Left: Sacred Temple Emblem + Brand Title & Subtitle
+  // Left: Sacred Temple Emblem (vertically aligned with brand typography)
   try {
-    doc.image(EMBLEM_PATH, margin, curY, { width: emblemWidth });
+    doc.image(EMBLEM_PATH, margin, curY, { width: emblemWidth, height: emblemHeight });
   } catch {
     try {
-      doc.image(LOGO_INVOICE, margin, curY, { width: emblemWidth });
+      doc.image(LOGO_INVOICE, margin, curY, { width: emblemWidth, height: emblemHeight });
     } catch {
-      // fallback if image cannot be read
+      // fallback
     }
   }
 
@@ -151,32 +153,28 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
   const leftTextWidth = leftColWidth - emblemWidth - 12;
 
   // Brand Title: Bold Royal Maroon
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 19 : 15)
-     .text(STORE_INFO.name.toUpperCase(), leftTextX, curY + (isA3 ? 2 : 1), { width: leftTextWidth });
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 19.5 : 15.5)
+     .text(STORE_INFO.name.toUpperCase(), leftTextX, curY + (isA3 ? 5 : 3), { width: leftTextWidth });
 
-  // Store Tagline
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9 : 7.2)
-     .text(STORE_INFO.tagline, leftTextX, curY + (isA3 ? 23 : 18), { width: leftTextWidth });
-
-  // Subtitle badge
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8 : 6.5)
-     .text('NON-GST STORE CASH MEMO  *  HANDLOOM SILK SHOWROOM', leftTextX, curY + (isA3 ? 36 : 28), { width: leftTextWidth });
+  // Store Tagline (Gold)
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 7.6)
+     .text(STORE_INFO.tagline, leftTextX, curY + (isA3 ? 28 : 22), { width: leftTextWidth });
 
   // Right: Showroom & Store Address
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 8.5 : 7)
-     .text('SHOWROOM & STORE ADDRESS', rightColX, curY + 1, { width: rightColWidth, align: 'right' });
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 8.5 : 7.2)
+     .text('SHOWROOM & STORE ADDRESS', rightColX, curY + 2, { width: rightColWidth, align: 'right' });
 
   doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 8.5 : 7)
-     .text(STORE_INFO.address, rightColX, curY + (isA3 ? 13 : 11), { width: rightColWidth, align: 'right' });
+     .text("10-28, Kpt street, near Punjab National Bank\nDharmavaram, Andhra Pradesh - 515671", rightColX, curY + (isA3 ? 15 : 12), { width: rightColWidth, align: 'right' });
 
   doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8 : 6.5)
-     .text(`Phone: ${STORE_INFO.phone}  |  Email: ${STORE_INFO.email}`, rightColX, curY + (isA3 ? 36 : 30), { width: rightColWidth, align: 'right' });
+     .text(`Phone: ${STORE_INFO.phone}  |  Email: ${STORE_INFO.email}`, rightColX, curY + (isA3 ? 35 : 28), { width: rightColWidth, align: 'right' });
 
-  // Spacing before separator line
-  curY += isA3 ? 54 : 45;
+  // Clear breathing room below emblem and text before separator line
+  curY += isA3 ? 56 : 44;
 
   // Maroon Separator Line
-  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.8).strokeColor(MAROON).stroke();
+  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.6).strokeColor(MAROON).stroke();
   curY += isA3 ? 10 : 8;
 
   // 3. Customer & Bill Particulars Box
