@@ -178,10 +178,11 @@ router.get('/:id/pdf', async (req, res) => {
     }
 
     const bill = rows[0];
+    const isInline = req.query.inline === 'true' || req.query.inline === '1';
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
+      `${isInline ? 'inline' : 'attachment'}; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
     );
 
     renderStoreBillPDF(res, bill, size);

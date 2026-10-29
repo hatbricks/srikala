@@ -447,40 +447,100 @@ export default function AdminStoreBilling() {
     window.open(fallbackUrl, '_blank');
   }
 
-  function openWhatsAppBill(bill) {
+  async function openWhatsAppBill(bill) {
     if (!bill.customer_phone) {
       alert('No customer phone number available.');
       return;
     }
-    // Also trigger instant local PDF download for the cashier/admin
-    downloadBillPdf(bill, paperSize);
 
     const cleanPhone = bill.customer_phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
     const itemsText = (Array.isArray(bill.items) ? bill.items : [])
       .map((it, idx) => `${idx + 1}. ${it.name} (${it.color || 'Silk'}) x ${it.qty} = ${formatINR(it.amount)}`)
-      .join('%0A');
+      .join('\n');
 
-    const pdfUrl = `${window.location.origin}/api/store-bills/${bill.bill_number}/pdf?size=${paperSize}`;
+    const apiBase = BASE_URL && BASE_URL.startsWith('http') ? BASE_URL : window.location.origin;
+    const publicPdfUrl = `${apiBase}/api/store-bills/${bill.bill_number}/pdf?size=${paperSize}&inline=1`;
 
-    const message =
-      `*RAVICHANDRA TEXTILES — DHARMAVARAM*%0A` +
-      `*Pure Silk Handlooms & Royal Bridal Pattu*%0A%0A` +
-      `Dear *${bill.customer_name}*,%0A` +
-      `Thank you for choosing Ravichandra Textiles! Here is your official store bill:%0A%0A` +
-      `*Bill No:* ${bill.bill_number}%0A` +
-      `*Date:* ${formatDate(bill.bill_date)}%0A` +
-      `*Total Payable:* ${formatINR(bill.total_amount)}%0A` +
-      `*Payment Mode:* ${bill.payment_method || 'Cash'}%0A%0A` +
-      `📄 *Download / View Official PDF Bill:*%0A${encodeURIComponent(pdfUrl)}%0A%0A` +
-      `*Items Purchased:*%0A${itemsText}%0A%0A` +
-      `*Amount in Words:* ${numberToWordsINR(bill.total_amount)}%0A%0A` +
-      `Handwoven pure silk with heirloom blessings. We look forward to serving you again!%0A` +
-      `*Store Address:* 10-28, Kpt street, near Punjab National Bank, Dharmavaram, AP - 515671%0A` +
+    const textContent =
+      `*RAVICHANDRA TEXTILES — DHARMAVARAM*\n` +
+      `*Authentic Pure Silk Handlooms & Royal Bridal Pattu*\n\n` +
+      `Dear *${bill.customer_name}*,\n` +
+      `Thank you for shopping at Ravichandra Textiles! Here is your official store bill:\n\n` +
+      `*Bill No:* ${bill.bill_number}\n` +
+      `*Date:* ${formatDate(bill.bill_date)}\n` +
+      `*Total Payable:* ${formatINR(bill.total_amount)}\n` +
+      `*Payment Mode:* ${bill.payment_method || 'Cash'}\n\n` +
+      `📄 *Official PDF Bill Link:*\n${publicPdfUrl}\n\n` +
+      `*Items Purchased:*\n${itemsText}\n\n` +
+      `*Amount in Words:* ${numberToWordsINR(bill.total_amount)}\n\n` +
+      `Handwoven pure silk with heirloom blessings. We look forward to serving you again!\n` +
+      `*Store Address:* 10-28, Kpt street, near Punjab National Bank, Dharmavaram, AP - 515671\n` +
       `*Phone:* +91 83175 51337`;
 
-    window.open(`https://wa.me/${phoneWithCountry}?text=${message}`, '_blank');
+    // 1. Fetch PDF Blob so we have the file ready for native sharing or direct download
+    let pdfBlob = null;
+    try {
+      const token = getToken();
+      const billId = bill.id || bill.bill_number;
+      const pdfFetchUrl = `${BASE_URL}/api/admin/store-bills/${billId}/pdf?size=${paperSize}${token ? `&token=${token}` : ''}`;
+      const res = await fetch(pdfFetchUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        pdfBlob = await res.blob();
+      }
+    } catch (e) {
+      console.warn('Could not fetch PDF blob:', e);
+    }
+
+    // 2. Check if native Web Share API with File is supported (mobile devices / tablets)
+    if (pdfBlob && typeof navigator !== 'undefined' && navigator.canShare) {
+      try {
+        const pdfFile = new File([pdfBlob], `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`, {
+          type: 'application/pdf',
+        });
+        if (navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({
+            files: [pdfFile],
+            title: `Bill ${bill.bill_number} - Ravichandra Textiles`,
+            text: textContent,
+          });
+          return;
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('Web Share failed, falling back to WhatsApp Web URL:', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // 3. Desktop / Standard Fallback:
+    // Download the PDF file directly to cashier's computer so it can be attached in WhatsApp Web
+    if (pdfBlob) {
+      const blobUrl = window.URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 3000);
+    } else {
+      downloadBillPdf(bill, paperSize);
+    }
+
+    // Open WhatsApp Web with the pre-filled message and direct PDF view link
+    const encodedMessage = encodeURIComponent(textContent);
+    window.open(`https://wa.me/${phoneWithCountry}?text=${encodedMessage}`, '_blank');
+
+    setFeedback({
+      type: 'success',
+      text: `PDF Bill downloaded to your computer! Opening WhatsApp chat for ${bill.customer_name}. Attach the downloaded PDF via 📎 icon if you want to send the file directly.`,
+    });
   }
 
   function printBillDirect(bill, size = paperSize) {
@@ -554,30 +614,86 @@ export default function AdminStoreBilling() {
                 font-size: ${isA3 ? '14px' : '11px'};
               }
               .sheet-brand-header {
-                text-align: center;
-                padding-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                padding-bottom: 8px;
                 border-bottom: 2px solid #581e15;
               }
-              .sheet-logo-wrap {
+              .sheet-brand-left {
                 display: flex;
-                justify-content: center;
-                margin-bottom: 4px;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
               }
+              .sheet-emblem-img,
               .sheet-logo-img {
-                height: ${isA3 ? '68px' : '48px'};
-                width: auto;
-                object-fit: contain;
+                height: ${isA3 ? '54px' : '42px'} !important;
+                max-width: ${isA3 ? '58px' : '46px'} !important;
+                width: auto !important;
+                object-fit: contain !important;
+                flex-shrink: 0;
+              }
+              .brand-text-block {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                text-align: left;
+              }
+              .sheet-brand-title {
+                margin: 0;
+                font-size: ${isA3 ? '21px' : '16.5px'};
+                font-weight: 800;
+                color: #581e15;
+                letter-spacing: 0.04em;
+                line-height: 1.15;
+                text-transform: uppercase;
               }
               .sheet-store-tagline {
-                font-size: ${isA3 ? '12px' : '9.5px'};
+                font-size: ${isA3 ? '10.5px' : '8.5px'};
                 font-weight: 700;
                 color: #8c5d1e;
-                margin: 2px 0;
+                margin: 0;
+                line-height: 1.25;
               }
-              .sheet-store-address, .sheet-store-contact {
-                font-size: ${isA3 ? '10.5px' : '8.5px'};
+              .sheet-store-badge {
+                font-size: ${isA3 ? '8px' : '6.5px'};
+                font-weight: 700;
+                color: #786f66;
+                letter-spacing: 0.05em;
+                margin-top: 2px;
+              }
+              .sheet-brand-right {
+                text-align: right;
+                flex-shrink: 0;
+                max-width: 44%;
+              }
+              .store-address-box {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 2px;
+              }
+              .store-address-label {
+                display: block;
+                font-size: ${isA3 ? '9px' : '7.5px'};
+                font-weight: 700;
+                color: #8c5d1e;
+                letter-spacing: 0.05em;
+                margin-bottom: 2px;
+              }
+              .sheet-store-address {
+                font-size: ${isA3 ? '10px' : '8px'};
+                color: #333333;
+                margin: 0;
+                line-height: 1.35;
+              }
+              .sheet-store-contact {
+                font-size: ${isA3 ? '9.5px' : '7.5px'};
                 color: #555555;
-                margin: 2px 0;
+                margin: 0;
+                line-height: 1.35;
               }
               .sheet-meta-grid {
                 display: grid;
@@ -1489,27 +1605,35 @@ export default function AdminStoreBilling() {
                   <div className="ornament-line" />
                 </div>
 
-                {/* Brand Header — Centered, Royal Temple Emblem, Prominent Brand Typography */}
+                {/* Brand Header — Left: Shop Branding with Emblem, Right: Showroom Address */}
                 <header className="sheet-brand-header">
-                  <div className="sheet-logo-wrap">
+                  <div className="sheet-brand-left">
                     <img
                       src="/images/ravichandra-emblem.png"
                       alt={BRAND.name}
                       className="sheet-emblem-img"
                     />
+                    <div className="brand-text-block">
+                      <h2 className="sheet-brand-title">RAVICHANDRA TEXTILES</h2>
+                      <p className="sheet-store-tagline">
+                        Authentic Dharmavaram Pure Silk Handlooms &amp; Royal Bridal Pattu
+                      </p>
+                      <span className="sheet-store-badge">NON-GST STORE CASH MEMO &bull; HANDLOOM SILK SHOWROOM</span>
+                    </div>
                   </div>
-                  <h2 className="sheet-brand-title">RAVICHANDRA TEXTILES</h2>
 
-                  <div className="sheet-store-info">
-                    <p className="sheet-store-tagline">
-                      Authentic Dharmavaram Pure Silk Handlooms &amp; Royal Bridal Pattu
-                    </p>
-                    <p className="sheet-store-address">
-                      10-28, Kpt street, near Punjab National Bank, Dharmavaram, Andhra Pradesh - 515671
-                    </p>
-                    <p className="sheet-store-contact">
-                      Phone: +91 83175 51337 &bull; Email: ravichandratextiles39@gmail.com
-                    </p>
+                  <div className="sheet-brand-right">
+                    <div className="store-address-box">
+                      <span className="store-address-label">SHOWROOM &amp; STORE ADDRESS</span>
+                      <p className="sheet-store-address">
+                        10-28, Kpt street, near Punjab National Bank<br />
+                        Dharmavaram, Andhra Pradesh - 515671
+                      </p>
+                      <p className="sheet-store-contact">
+                        <strong>Phone:</strong> +91 83175 51337<br />
+                        <strong>Email:</strong> ravichandratextiles39@gmail.com
+                      </p>
+                    </div>
                   </div>
                 </header>
 
@@ -2838,34 +2962,44 @@ export default function AdminStoreBilling() {
 
         .sheet-brand-header {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          text-align: center;
-          gap: 3px;
+          justify-content: space-between;
+          gap: 16px;
           padding-bottom: 8px;
           border-bottom: 2px solid #581e15;
         }
 
-        .sheet-logo-wrap {
+        .sheet-brand-left {
           display: flex;
-          justify-content: center;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
         }
 
         .sheet-emblem-img,
         .sheet-logo-img {
-          height: 38px;
+          height: 44px;
           width: auto;
+          max-width: 48px;
           object-fit: contain;
-          margin-bottom: 2px;
+          flex-shrink: 0;
         }
 
         .sheet-size-a3 .sheet-emblem-img,
         .sheet-size-a3 .sheet-logo-img {
-          height: 48px;
+          height: 56px;
+          max-width: 60px;
+        }
+
+        .brand-text-block {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          text-align: left;
         }
 
         .sheet-brand-title {
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 800;
           color: #581e15;
           letter-spacing: 0.04em;
@@ -2875,39 +3009,79 @@ export default function AdminStoreBilling() {
         }
 
         .sheet-size-a3 .sheet-brand-title {
-          font-size: 25px;
+          font-size: 23px;
         }
 
-        .sheet-store-info {
-          text-align: center;
+        .sheet-store-tagline {
+          font-size: 9.5px;
+          font-weight: 700;
+          color: #8c5d1e;
+          margin: 0;
+          line-height: 1.25;
         }
 
         .sheet-size-a3 .sheet-store-tagline {
           font-size: 11.5px;
-          font-weight: 700;
-          color: #8c5d1e;
-          margin: 1px 0;
         }
 
-        .sheet-size-a4 .sheet-store-tagline {
-          font-size: 10px;
+        .sheet-store-badge {
+          font-size: 7.5px;
           font-weight: 700;
-          color: #8c5d1e;
-          margin: 1px 0;
+          color: #786f66;
+          letter-spacing: 0.05em;
+          margin-top: 2px;
         }
 
-        .sheet-size-a3 .sheet-store-address,
+        .sheet-size-a3 .sheet-store-badge {
+          font-size: 8.5px;
+        }
+
+        .sheet-brand-right {
+          text-align: right;
+          flex-shrink: 0;
+          max-width: 45%;
+        }
+
+        .store-address-box {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+        }
+
+        .store-address-label {
+          display: block;
+          font-size: 8px;
+          font-weight: 700;
+          color: #8c5d1e;
+          letter-spacing: 0.05em;
+          margin-bottom: 2px;
+        }
+
+        .sheet-size-a3 .store-address-label {
+          font-size: 9.5px;
+        }
+
+        .sheet-store-address {
+          font-size: 8.5px;
+          color: #333333;
+          margin: 0;
+          line-height: 1.35;
+        }
+
+        .sheet-size-a3 .sheet-store-address {
+          font-size: 10.5px;
+        }
+
+        .sheet-store-contact {
+          font-size: 8px;
+          color: #555555;
+          margin: 0;
+          line-height: 1.35;
+        }
+
         .sheet-size-a3 .sheet-store-contact {
           font-size: 10px;
-          color: #555555;
-          margin: 1px 0;
-        }
-
-        .sheet-size-a4 .sheet-store-address,
-        .sheet-size-a4 .sheet-store-contact {
-          font-size: 9px;
-          color: #555555;
-          margin: 1px 0;
         }
 
         .sheet-meta-grid {
@@ -3226,6 +3400,14 @@ export default function AdminStoreBilling() {
             padding: 10mm 14mm !important;
             margin: 0 auto !important;
             page-break-after: avoid !important;
+          }
+
+          .sheet-emblem-img,
+          .sheet-logo-img {
+            height: 44px !important;
+            max-width: 48px !important;
+            width: auto !important;
+            object-fit: contain !important;
           }
 
           * {

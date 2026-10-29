@@ -130,42 +130,54 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
 
   curY += isA3 ? 12 : 9;
 
-  // 2. Centered Sacred Temple Emblem
-  const emblemWidth = isA3 ? 34 : 26;
-  const emblemX = margin + (contentWidth - emblemWidth) / 2;
+  // 2. Header: Left-side Shop Branding & Right-side Showroom Address
+  const emblemWidth = isA3 ? 42 : 32;
+  const leftColWidth = contentWidth * 0.58;
+  const rightColWidth = contentWidth * 0.40;
+  const rightColX = margin + contentWidth - rightColWidth;
+
+  // Left: Sacred Temple Emblem + Brand Title & Subtitle
   try {
-    doc.image(EMBLEM_PATH, emblemX, curY, { width: emblemWidth });
-    curY += isA3 ? 42 : 33;
+    doc.image(EMBLEM_PATH, margin, curY, { width: emblemWidth });
   } catch {
     try {
-      doc.image(LOGO_INVOICE, emblemX, curY, { width: emblemWidth });
-      curY += isA3 ? 42 : 33;
+      doc.image(LOGO_INVOICE, margin, curY, { width: emblemWidth });
     } catch {
-      curY += 2;
+      // fallback if image cannot be read
     }
   }
 
-  // Brand Name Typography: High-contrast, royal, prominent
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 23 : 18)
-     .text(STORE_INFO.name.toUpperCase(), margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 22 : 18;
+  const leftTextX = margin + emblemWidth + (isA3 ? 12 : 9);
+  const leftTextWidth = leftColWidth - emblemWidth - 12;
 
-  // Store Tagline, Address, and Contact (centered below brand name)
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 10.5 : 8.5)
-     .text(STORE_INFO.tagline, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 13 : 11;
+  // Brand Title: Bold Royal Maroon
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 19 : 15)
+     .text(STORE_INFO.name.toUpperCase(), leftTextX, curY + (isA3 ? 2 : 1), { width: leftTextWidth });
 
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 8)
-     .text(STORE_INFO.address, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 12 : 10;
+  // Store Tagline
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9 : 7.2)
+     .text(STORE_INFO.tagline, leftTextX, curY + (isA3 ? 23 : 18), { width: leftTextWidth });
 
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 8)
-     .text(`Phone: ${STORE_INFO.phone}   |   Email: ${STORE_INFO.email}`, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 15 : 12;
+  // Subtitle badge
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8 : 6.5)
+     .text('NON-GST STORE CASH MEMO  *  HANDLOOM SILK SHOWROOM', leftTextX, curY + (isA3 ? 36 : 28), { width: leftTextWidth });
+
+  // Right: Showroom & Store Address
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 8.5 : 7)
+     .text('SHOWROOM & STORE ADDRESS', rightColX, curY + 1, { width: rightColWidth, align: 'right' });
+
+  doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 8.5 : 7)
+     .text(STORE_INFO.address, rightColX, curY + (isA3 ? 13 : 11), { width: rightColWidth, align: 'right' });
+
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8 : 6.5)
+     .text(`Phone: ${STORE_INFO.phone}  |  Email: ${STORE_INFO.email}`, rightColX, curY + (isA3 ? 36 : 30), { width: rightColWidth, align: 'right' });
+
+  // Spacing before separator line
+  curY += isA3 ? 54 : 45;
 
   // Maroon Separator Line
   doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.8).strokeColor(MAROON).stroke();
-  curY += isA3 ? 12 : 9;
+  curY += isA3 ? 10 : 8;
 
   // 3. Customer & Bill Particulars Box
   const boxHeight = isA3 ? 92 : 78;
