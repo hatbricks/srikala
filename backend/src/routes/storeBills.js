@@ -159,12 +159,12 @@ router.get('/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/store-bills/:id/pdf — Download or view Store Bill in PDF format (A3 / A4)
+// GET /api/admin/store-bills/:id/pdf — Download or view Store Bill in PDF format (A4)
 // Publicly accessible with valid bill ID or bill number so receipts & WhatsApp links open seamlessly
 router.get('/:id/pdf', async (req, res) => {
   try {
     const { id } = req.params;
-    const { size = 'A3' } = req.query;
+    const { size = 'A4' } = req.query;
     const isNum = !isNaN(parseInt(id, 10)) && String(parseInt(id, 10)) === String(id).trim();
 
     const { rows } = await query(
@@ -183,7 +183,7 @@ router.get('/:id/pdf', async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `${isInline ? 'inline' : 'attachment'}; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
+      `${isInline ? 'inline' : 'attachment'}; filename="Ravichandra_Textiles_And_Handlooms_Bill_${bill.bill_number}.pdf"`
     );
 
     renderStoreBillPDF(res, bill, size);
@@ -201,7 +201,7 @@ router.get('/:id/pdf', async (req, res) => {
 router.get('/public/:billNumber/pdf', async (req, res) => {
   try {
     const { billNumber } = req.params;
-    const { size = 'A3' } = req.query;
+    const { size = 'A4' } = req.query;
 
     const { rows } = await query(
       `SELECT * FROM store_bills WHERE UPPER(bill_number) = UPPER($1)`,
@@ -216,7 +216,7 @@ router.get('/public/:billNumber/pdf', async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `inline; filename="Ravichandra_Textiles_Bill_${bill.bill_number}.pdf"`
+      `inline; filename="Ravichandra_Textiles_And_Handlooms_Bill_${bill.bill_number}.pdf"`
     );
 
     renderStoreBillPDF(res, bill, size);

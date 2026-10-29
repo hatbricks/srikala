@@ -137,7 +137,6 @@ export default function AdminStoreBilling() {
 
   // Modal State for viewing/printing bill
   const [previewBill, setPreviewBill] = useState(null);
-  const [paperSize, setPaperSize] = useState('A3'); // 'A3' (Showroom default) | 'A4' (Standard)
   const printRef = useRef(null);
 
   // Load next bill number & catalog on mount
@@ -378,7 +377,7 @@ export default function AdminStoreBilling() {
       if (autoPrint) {
         setPreviewBill(savedBill);
         setTimeout(() => {
-          printBillDirect(savedBill, paperSize);
+          printBillDirect(savedBill);
         }, 350);
       }
 
@@ -430,10 +429,10 @@ export default function AdminStoreBilling() {
     }
   }
 
-  async function downloadBillPdf(bill, size = paperSize) {
+  async function downloadBillPdf(bill, size = 'A4') {
     if (!bill) return;
     const billId = bill.id || bill.bill_number;
-    const filename = `Ravichandra_Textiles_Bill_${bill.bill_number}.pdf`;
+    const filename = `Ravichandra_Textiles_And_Handlooms_Bill_${bill.bill_number}.pdf`;
     const token = getToken();
 
     // 1. Primary: fetch binary stream with auth header and trigger direct browser blob download
@@ -480,23 +479,23 @@ export default function AdminStoreBilling() {
     const origin = (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
       ? window.location.origin
       : (BASE_URL && !BASE_URL.includes('localhost') ? BASE_URL : window.location.origin);
-    const pdfUrl = `${origin}/api/store-bills/${bill.bill_number}/pdf?size=${paperSize}&inline=1`;
+    const pdfUrl = `${origin}/api/store-bills/${bill.bill_number}/pdf?size=A4&inline=1`;
 
     const message =
-      `*RAVICHANDRA TEXTILES — DHARMAVARAM*\n` +
+      `*RAVICHANDRA TEXTILES AND HANDLOOMS — DHARMAVARAM*\n` +
       `*Authentic Pure Silk Handlooms & Royal Bridal Pattu*\n\n` +
       `Dear *${bill.customer_name}*,\n` +
       `Here is your official store bill PDF (Bill No: *${bill.bill_number}*):\n\n` +
       `📄 *View / Download Bill PDF:*\n${pdfUrl}\n\n` +
       `Total Payable: *${formatINR(bill.total_amount)}*\n` +
       `Payment Mode: *${bill.payment_method || 'Cash'}*\n\n` +
-      `Thank you for shopping at Ravichandra Textiles, Dharmavaram!`;
+      `Thank you for shopping at Ravichandra Textiles and Handlooms, Dharmavaram!`;
 
     const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
   }
 
-  function printBillDirect(bill, size = paperSize) {
+  function printBillDirect(bill) {
     const sheetEl = document.getElementById('printable-bill-sheet');
     if (!sheetEl) {
       window.print();
@@ -517,10 +516,6 @@ export default function AdminStoreBilling() {
         document.body.appendChild(iframe);
       }
 
-      const isA3 = size === 'A3';
-      const pageSizeCss = isA3 ? '297mm 420mm' : '210mm 297mm';
-      const pageMargin = isA3 ? '12mm' : '8mm';
-
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -529,8 +524,8 @@ export default function AdminStoreBilling() {
             <title>Bill_${bill.bill_number}</title>
             <style>
               @page {
-                size: ${pageSizeCss};
-                margin: ${pageMargin};
+                size: 210mm 297mm;
+                margin: 8mm;
               }
               * {
                 box-sizing: border-box;
@@ -546,19 +541,19 @@ export default function AdminStoreBilling() {
                 color: #1e1e1e;
               }
               .bill-sheet {
-                width: ${isA3 ? '273mm' : '194mm'};
-                max-width: ${isA3 ? '273mm' : '194mm'};
+                width: 194mm;
+                max-width: 194mm;
                 margin: 0 auto;
                 background: #ffffff;
                 border: 1px solid #d5cbbf;
-                padding: ${isA3 ? '24px 28px' : '18px 22px'};
+                padding: 16px 20px;
               }
               .sheet-ornament-header {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 12px;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
               }
               .ornament-line {
                 flex: 1;
@@ -567,41 +562,33 @@ export default function AdminStoreBilling() {
               }
               .ornament-gem {
                 color: #b87d2b;
-                font-size: ${isA3 ? '14px' : '11px'};
+                font-size: 11px;
               }
               .sheet-brand-header {
                 display: flex;
+                flex-direction: column;
                 align-items: center;
-                justify-content: space-between;
-                gap: 14px;
+                text-align: center;
                 padding-bottom: 8px;
                 margin-bottom: 6px;
                 border-bottom: 2px solid #581e15;
               }
-              .sheet-brand-left {
+              .sheet-logo-wrap {
                 display: flex;
+                justify-content: center;
                 align-items: center;
-                gap: 12px;
-                flex: 1;
+                margin-bottom: 3px;
               }
-              .sheet-emblem-img,
-              .sheet-logo-img {
-                height: ${isA3 ? '48px' : '36px'} !important;
-                max-width: ${isA3 ? '52px' : '40px'} !important;
+              .sheet-emblem-img {
+                height: 38px !important;
+                max-width: 42px !important;
                 width: auto !important;
                 object-fit: contain !important;
-                flex-shrink: 0;
                 display: block !important;
-              }
-              .brand-text-block {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                text-align: left;
               }
               .sheet-brand-title {
                 margin: 0;
-                font-size: ${isA3 ? '21px' : '16.5px'};
+                font-size: 15.5px;
                 font-weight: 800;
                 color: #581e15;
                 letter-spacing: 0.04em;
@@ -609,57 +596,45 @@ export default function AdminStoreBilling() {
                 text-transform: uppercase;
               }
               .sheet-store-tagline {
-                font-size: ${isA3 ? '10.5px' : '8.5px'};
+                font-size: 8px;
                 font-weight: 700;
                 color: #8c5d1e;
-                margin: 0;
+                margin: 2px 0 0 0;
                 line-height: 1.25;
               }
-              .sheet-brand-right {
-                text-align: right;
-                flex-shrink: 0;
-                max-width: 44%;
-              }
-              .store-address-box {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                gap: 2px;
-              }
-              .store-address-label {
-                display: block;
-                font-size: ${isA3 ? '9px' : '7.5px'};
-                font-weight: 700;
-                color: #8c5d1e;
-                letter-spacing: 0.05em;
-                margin-bottom: 2px;
-              }
               .sheet-store-address {
-                font-size: ${isA3 ? '10px' : '8px'};
+                font-size: 7.8px;
                 color: #333333;
-                margin: 0;
+                margin: 3px 0 0 0;
                 line-height: 1.35;
               }
               .sheet-store-contact {
-                font-size: ${isA3 ? '9.5px' : '7.5px'};
+                font-size: 7.4px;
                 color: #555555;
-                margin: 0;
+                margin: 2px 0 0 0;
                 line-height: 1.35;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+              }
+              .contact-separator {
+                color: #b87d2b;
               }
               .sheet-meta-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: ${isA3 ? '16px' : '12px'};
-                margin: ${isA3 ? '12px 0' : '10px 0'};
+                gap: 12px;
+                margin: 10px 0;
               }
               .sheet-meta-box {
                 background: #faf7f2;
                 border: 1px solid #e4ddd4;
                 border-radius: 4px;
-                padding: ${isA3 ? '10px 14px' : '8px 10px'};
+                padding: 8px 10px;
               }
               .meta-box-label {
-                font-size: ${isA3 ? '9.5px' : '8px'};
+                font-size: 8px;
                 font-weight: 700;
                 color: #8c5d1e;
                 text-transform: uppercase;
@@ -669,20 +644,20 @@ export default function AdminStoreBilling() {
                 padding-bottom: 2px;
               }
               .customer-print-name {
-                font-size: ${isA3 ? '15px' : '12px'};
+                font-size: 12px;
                 font-weight: 700;
                 color: #2c1810;
                 margin: 0 0 3px;
               }
               .customer-print-detail {
-                font-size: ${isA3 ? '11.5px' : '9.5px'};
+                font-size: 9.5px;
                 color: #444444;
                 margin: 0 0 2px;
               }
               .meta-info-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: ${isA3 ? '11.5px' : '9.5px'};
+                font-size: 9.5px;
               }
               .meta-info-table td {
                 padding: 1.5px 0;
@@ -691,31 +666,31 @@ export default function AdminStoreBilling() {
               .print-bill-no {
                 font-weight: 800;
                 color: #581e15;
-                font-size: ${isA3 ? '13px' : '11px'};
+                font-size: 11px;
               }
               .print-pay-mode {
                 font-weight: 700;
                 color: #2e7d32;
               }
               .sheet-items-section {
-                margin: ${isA3 ? '12px 0 0' : '8px 0 0'};
+                margin: 8px 0 0;
               }
               .sheet-items-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: ${isA3 ? '12px' : '10px'};
+                font-size: 10px;
               }
               .sheet-items-table th {
                 background: #581e15;
                 color: #ffffff;
-                padding: ${isA3 ? '8px 10px' : '6px 8px'};
-                font-size: ${isA3 ? '10.5px' : '9px'};
+                padding: 6px 8px;
+                font-size: 9px;
                 font-weight: 700;
                 text-transform: uppercase;
                 letter-spacing: 0.03em;
               }
               .sheet-items-table td {
-                padding: ${isA3 ? '8px 10px' : '6px 8px'};
+                padding: 6px 8px;
                 border-bottom: 1px solid #e4ddd4;
                 color: #222222;
               }
@@ -724,19 +699,19 @@ export default function AdminStoreBilling() {
               }
               .sheet-summary-grid {
                 display: grid;
-                grid-template-columns: 1fr ${isA3 ? '290px' : '230px'};
-                gap: ${isA3 ? '16px' : '12px'};
-                margin: ${isA3 ? '12px 0 0' : '8px 0 0'};
+                grid-template-columns: 1fr 230px;
+                gap: 12px;
+                margin: 8px 0 0;
               }
               .amount-words-box {
                 background: #fdfaf5;
                 border: 1px dashed #cbbdae;
                 border-radius: 4px;
-                padding: ${isA3 ? '8px 12px' : '6px 8px'};
+                padding: 6px 8px;
                 margin-bottom: 6px;
               }
               .words-title {
-                font-size: ${isA3 ? '9.5px' : '8px'};
+                font-size: 8px;
                 font-weight: 700;
                 color: #8c5d1e;
                 text-transform: uppercase;
@@ -744,13 +719,13 @@ export default function AdminStoreBilling() {
                 margin-bottom: 2px;
               }
               .words-text {
-                font-size: ${isA3 ? '12.5px' : '10.5px'};
+                font-size: 10.5px;
                 color: #581e15;
                 line-height: 1.35;
                 font-weight: 700;
               }
               .sheet-terms-box {
-                font-size: ${isA3 ? '10px' : '8.5px'};
+                font-size: 8.5px;
                 color: #555555;
                 line-height: 1.4;
               }
@@ -767,7 +742,7 @@ export default function AdminStoreBilling() {
               .sheet-totals-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: ${isA3 ? '12px' : '10px'};
+                font-size: 10px;
               }
               .sheet-totals-table td {
                 padding: 3px 4px;
@@ -780,12 +755,12 @@ export default function AdminStoreBilling() {
               .grand-total-row td {
                 border-top: 2px solid #581e15;
                 border-bottom: 2px solid #581e15;
-                padding: ${isA3 ? '8px 6px' : '6px 4px'};
+                padding: 6px 4px;
                 background: #fdf2ea;
                 color: #581e15;
               }
               .grand-total-val {
-                font-size: ${isA3 ? '18px' : '14px'};
+                font-size: 14px;
                 font-weight: 800;
                 color: #581e15;
               }
@@ -793,28 +768,28 @@ export default function AdminStoreBilling() {
                 display: flex;
                 align-items: flex-end;
                 justify-content: space-between;
-                padding-top: ${isA3 ? '20px' : '14px'};
-                margin-top: ${isA3 ? '14px' : '10px'};
+                padding-top: 14px;
+                margin-top: 10px;
                 border-top: 1px solid #e4ddd4;
               }
               .sheet-sig-box {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                width: ${isA3 ? '180px' : '140px'};
-                font-size: ${isA3 ? '10.5px' : '8.5px'};
+                width: 140px;
+                font-size: 8.5px;
                 color: #555555;
                 text-align: center;
               }
               .sig-line {
-                width: ${isA3 ? '140px' : '110px'};
+                width: 110px;
                 height: 1px;
                 border-top: 1px dashed #666666;
                 margin-bottom: 4px;
               }
               .store-sig strong {
                 color: #581e15;
-                font-size: ${isA3 ? '11px' : '9px'};
+                font-size: 9px;
               }
               .sheet-seal-badge {
                 text-align: center;
@@ -824,13 +799,13 @@ export default function AdminStoreBilling() {
                 border: 1px solid #b87d2b;
                 background: #fbf7f2;
                 color: #8c5d1e;
-                font-size: ${isA3 ? '9px' : '7.5px'};
+                font-size: 7.5px;
                 font-weight: 700;
                 padding: 2px 8px;
                 border-radius: 999px;
               }
               .thank-you-note {
-                font-size: ${isA3 ? '9.5px' : '8px'};
+                font-size: 8px;
                 color: #777777;
                 margin: 3px 0 0;
                 font-style: italic;
@@ -1505,46 +1480,26 @@ export default function AdminStoreBilling() {
             {/* Modal Screen-Only Control Bar */}
             <div className="bill-modal-screen-bar screen-only">
               <div className="modal-title-left">
-                <strong>Ravichandra Textiles — Store Bill</strong>
+                <strong>Ravichandra Textiles and Handlooms — Store Bill</strong>
                 <span>#{previewBill.bill_number}</span>
-              </div>
-
-              {/* Paper Size Switcher */}
-              <div className="paper-size-toolbar">
-                <span className="paper-label">Paper:</span>
-                <button
-                  type="button"
-                  className={`size-btn ${paperSize === 'A3' ? 'active' : ''}`}
-                  onClick={() => setPaperSize('A3')}
-                  title="A3 Showroom Large Paper format"
-                >
-                  A3 (Showroom)
-                </button>
-                <button
-                  type="button"
-                  className={`size-btn ${paperSize === 'A4' ? 'active' : ''}`}
-                  onClick={() => setPaperSize('A4')}
-                  title="A4 Standard format"
-                >
-                  A4 (Standard)
-                </button>
+                <span className="format-badge-a4">A4 Print Standard</span>
               </div>
 
               <div className="modal-actions-right">
                 <button
                   type="button"
                   className="btn-print-action"
-                  onClick={() => printBillDirect(previewBill, paperSize)}
-                  title="Print directly to connected printer"
+                  onClick={() => printBillDirect(previewBill)}
+                  title="Print directly to connected A4 printer"
                 >
                   <PrinterIcon width={14} height={14} />
-                  <span>Print Bill</span>
+                  <span>Print Bill (A4)</span>
                 </button>
 
                 <button
                   type="button"
                   className="btn-pdf-action"
-                  onClick={() => downloadBillPdf(previewBill, paperSize)}
+                  onClick={() => downloadBillPdf(previewBill)}
                   title="Download bill in vector PDF format"
                 >
                   <DownloadIcon width={14} height={14} />
@@ -1578,7 +1533,7 @@ export default function AdminStoreBilling() {
             <div className="bill-sheet-container" ref={printRef}>
               <div
                 id="printable-bill-sheet"
-                className={`bill-sheet ${paperSize === 'A3' ? 'sheet-size-a3' : 'sheet-size-a4'}`}
+                className="bill-sheet sheet-size-a4"
               >
                 {/* Traditional Ornament Line */}
                 <div className="sheet-ornament-header">
@@ -1587,35 +1542,27 @@ export default function AdminStoreBilling() {
                   <div className="ornament-line" />
                 </div>
 
-                {/* Brand Header — Left: Shop Branding with Emblem, Right: Showroom Address */}
-                <header className="sheet-brand-header">
-                  <div className="sheet-brand-left">
+                {/* Brand Header — Middle Top Logo, Centered Brand & Showroom Details */}
+                <header className="sheet-brand-header centered-brand-header">
+                  <div className="sheet-logo-wrap">
                     <img
                       src="/images/ravichandra-emblem.png"
-                      alt={BRAND.name}
+                      alt="Ravichandra Textiles and Handlooms"
                       className="sheet-emblem-img"
                     />
-                    <div className="brand-text-block">
-                      <h2 className="sheet-brand-title">RAVICHANDRA TEXTILES</h2>
-                      <p className="sheet-store-tagline">
-                        Authentic Dharmavaram Pure Silk Handlooms &amp; Royal Bridal Pattu
-                      </p>
-                    </div>
                   </div>
-
-                  <div className="sheet-brand-right">
-                    <div className="store-address-box">
-                      <span className="store-address-label">SHOWROOM &amp; STORE ADDRESS</span>
-                      <p className="sheet-store-address">
-                        10-28, Kpt street, near Punjab National Bank<br />
-                        Dharmavaram, Andhra Pradesh - 515671
-                      </p>
-                      <p className="sheet-store-contact">
-                        <strong>Phone:</strong> +91 83175 51337<br />
-                        <strong>Email:</strong> ravichandratextiles39@gmail.com
-                      </p>
-                    </div>
-                  </div>
+                  <h2 className="sheet-brand-title">RAVICHANDRA TEXTILES AND HANDLOOMS</h2>
+                  <p className="sheet-store-tagline">
+                    Authentic Dharmavaram Pure Silk Handlooms &amp; Royal Bridal Pattu
+                  </p>
+                  <p className="sheet-store-address">
+                    10-28, Kpt street, near Punjab National Bank, Dharmavaram, Andhra Pradesh - 515671
+                  </p>
+                  <p className="sheet-store-contact">
+                    <span><strong>Phone:</strong> +91 83175 51337</span>
+                    <span className="contact-separator">•</span>
+                    <span><strong>Email:</strong> ravichandratextiles39@gmail.com</span>
+                  </p>
                 </header>
 
                 {/* Details Meta Block */}
@@ -1757,7 +1704,7 @@ export default function AdminStoreBilling() {
 
                   <div className="sheet-sig-box store-sig">
                     <div className="sig-line" />
-                    <strong>For RAVICHANDRA TEXTILES</strong>
+                    <strong>For RAVICHANDRA TEXTILES AND HANDLOOMS</strong>
                     <span>Authorized Signatory</span>
                   </div>
                 </footer>
@@ -2834,44 +2781,19 @@ export default function AdminStoreBilling() {
           color: rgba(255, 255, 255, 0.7);
         }
 
-        .paper-size-toolbar {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          background: rgba(255, 255, 255, 0.1);
-          padding: 3px 6px;
-          border-radius: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .paper-label {
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.75);
-          margin-right: 4px;
-          font-weight: 600;
-        }
-
-        .size-btn {
-          background: transparent;
-          border: none;
-          color: rgba(255, 255, 255, 0.8);
-          font-size: 11.5px;
-          font-weight: 600;
-          padding: 3px 8px;
+        .format-badge-a4 {
+          background: rgba(184, 125, 43, 0.25);
+          color: #fce2b8;
+          border: 1px solid rgba(184, 125, 43, 0.4);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          padding: 2px 7px;
           border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .size-btn:hover {
-          color: #ffffff;
-          background: rgba(255, 255, 255, 0.15);
-        }
-
-        .size-btn.active {
-          background: #b87d2b;
-          color: #ffffff;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+          margin-top: 2px;
+          display: inline-block;
+          width: fit-content;
         }
 
         .modal-actions-right {
@@ -2956,30 +2878,20 @@ export default function AdminStoreBilling() {
           align-items: flex-start;
         }
 
-        /* ======================== PRINTABLE SHEET ======================== */
+        /* ======================== PRINTABLE SHEET (A4 STANDARD) ======================== */
         .bill-sheet {
           background: #ffffff;
           color: #1e1e1e;
           width: 100%;
+          max-width: 760px;
           height: auto;
           min-height: auto;
           box-sizing: border-box;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.18);
           border: 1px solid #d5cbbf;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-          transition: max-width 0.2s ease;
-        }
-
-        /* A3 Format Sheet */
-        .bill-sheet.sheet-size-a3 {
-          max-width: 900px;
-          padding: 24px 28px;
-        }
-
-        /* A4 Format Sheet */
-        .bill-sheet.sheet-size-a4 {
-          max-width: 740px;
-          padding: 16px 20px;
+          padding: 18px 22px;
+          margin: 0 auto;
         }
 
         .sheet-ornament-header {
@@ -2987,7 +2899,7 @@ export default function AdminStoreBilling() {
           align-items: center;
           justify-content: center;
           gap: 12px;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
 
         .ornament-line {
@@ -3001,117 +2913,70 @@ export default function AdminStoreBilling() {
           font-size: 11px;
         }
 
+        /* Centered Brand Header: Middle Top Logo, Centered Store Details */
         .sheet-brand-header {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          padding-bottom: 8px;
+          text-align: center;
+          padding-bottom: 10px;
+          margin-bottom: 8px;
           border-bottom: 2px solid #581e15;
         }
 
-        .sheet-brand-left {
+        .sheet-logo-wrap {
           display: flex;
+          justify-content: center;
           align-items: center;
-          gap: 12px;
-          flex: 1;
+          margin-bottom: 4px;
         }
 
-        .sheet-emblem-img,
-        .sheet-logo-img {
-          height: 36px;
+        .sheet-emblem-img {
+          height: 42px;
           width: auto;
-          max-width: 40px;
+          max-width: 44px;
           object-fit: contain;
-          flex-shrink: 0;
           display: block;
         }
 
-        .sheet-size-a3 .sheet-emblem-img,
-        .sheet-size-a3 .sheet-logo-img {
-          height: 48px;
-          max-width: 52px;
-        }
-
-        .brand-text-block {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-          text-align: left;
-        }
-
         .sheet-brand-title {
-          font-size: 18px;
+          font-size: 17.5px;
           font-weight: 800;
           color: #581e15;
           letter-spacing: 0.04em;
           margin: 0;
-          line-height: 1.15;
+          line-height: 1.2;
           text-transform: uppercase;
         }
 
-        .sheet-size-a3 .sheet-brand-title {
-          font-size: 23px;
-        }
-
         .sheet-store-tagline {
-          font-size: 9.5px;
+          font-size: 8.8px;
           font-weight: 700;
           color: #8c5d1e;
-          margin: 0;
+          margin: 2px 0 0 0;
           line-height: 1.25;
-        }
-
-        .sheet-size-a3 .sheet-store-tagline {
-          font-size: 11.5px;
-        }
-
-        .sheet-brand-right {
-          text-align: right;
-          flex-shrink: 0;
-          max-width: 45%;
-        }
-
-        .store-address-box {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 2px;
-        }
-
-        .store-address-label {
-          display: block;
-          font-size: 8px;
-          font-weight: 700;
-          color: #8c5d1e;
-          letter-spacing: 0.05em;
-          margin-bottom: 2px;
-        }
-
-        .sheet-size-a3 .store-address-label {
-          font-size: 9.5px;
         }
 
         .sheet-store-address {
           font-size: 8.5px;
           color: #333333;
-          margin: 0;
+          margin: 3px 0 0 0;
           line-height: 1.35;
-        }
-
-        .sheet-size-a3 .sheet-store-address {
-          font-size: 10.5px;
         }
 
         .sheet-store-contact {
           font-size: 8px;
           color: #555555;
-          margin: 0;
+          margin: 2px 0 0 0;
           line-height: 1.35;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
         }
 
-        .sheet-size-a3 .sheet-store-contact {
-          font-size: 10px;
+        .contact-separator {
+          color: #b87d2b;
         }
 
         .sheet-meta-grid {

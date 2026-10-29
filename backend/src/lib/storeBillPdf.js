@@ -15,7 +15,7 @@ const RULE = '#E4DDD4';
 const BG_ALT = '#FAF7F2';
 
 const STORE_INFO = {
-  name: 'Ravichandra Textiles',
+  name: 'Ravichandra Textiles and Handlooms',
   tagline: 'Authentic Dharmavaram Pure Silk Handlooms & Royal Bridal Pattu',
   address: '10-28, Kpt street, near Punjab National Bank, Dharmavaram, Andhra Pradesh - 515671',
   phone: '+91 83175 51337',
@@ -80,16 +80,16 @@ function numberToWordsINR(amount) {
 
 /**
  * Generates and pipes a pristine, print-ready Store Bill PDF directly onto `res`.
- * Supports both 'A3' (large showroom format) and 'A4' (compact counter format).
+ * Formatted exclusively for standard A4 counter printing.
  */
-export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
+export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
   const isA3 = String(requestedSize).toUpperCase() === 'A3';
   const pageSize = isA3 ? 'A3' : 'A4';
   
   // Page margins & dimensions:
   // A4: 595.28 x 841.89 pt
   // A3: 841.89 x 1190.55 pt
-  const margin = isA3 ? 50 : 36;
+  const margin = isA3 ? 46 : 34;
   const pageWidth = isA3 ? 841.89 : 595.28;
   const contentWidth = pageWidth - (margin * 2);
 
@@ -97,8 +97,8 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
     size: pageSize,
     margin,
     info: {
-      Title: `Store Bill ${bill.bill_number} — Ravichandra Textiles`,
-      Author: 'Ravichandra Textiles',
+      Title: `Store Bill ${bill.bill_number} — ${STORE_INFO.name}`,
+      Author: STORE_INFO.name,
       Subject: 'Store Bill & Cash Memo',
     },
   });
@@ -111,7 +111,7 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
      .strokeColor(GOLD)
      .stroke();
 
-  let curY = margin + 10;
+  let curY = margin + 8;
 
   // 1. Top Decorative Ornament
   doc.moveTo(margin + 40, curY)
@@ -130,48 +130,42 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
 
   curY += isA3 ? 12 : 9;
 
-  // 2. Header: Left-side Shop Branding & Right-side Showroom Address
-  // Proportional emblem: aspect ratio ~ 1 : 1.506
-  const emblemWidth = isA3 ? 32 : 24;
-  const emblemHeight = isA3 ? 48 : 36;
-  const leftColWidth = contentWidth * 0.54;
-  const rightColWidth = contentWidth * 0.44;
-  const rightColX = margin + contentWidth - rightColWidth;
+  // 2. Middle Top Logo (Proportional Sacred Temple Emblem)
+  const emblemWidth = isA3 ? 34 : 26;
+  const emblemHeight = isA3 ? 51 : 39;
+  const emblemX = margin + (contentWidth - emblemWidth) / 2;
 
-  // Left: Sacred Temple Emblem (vertically aligned with brand typography)
   try {
-    doc.image(EMBLEM_PATH, margin, curY, { width: emblemWidth, height: emblemHeight });
+    doc.image(EMBLEM_PATH, emblemX, curY, { width: emblemWidth, height: emblemHeight });
   } catch {
     try {
-      doc.image(LOGO_INVOICE, margin, curY, { width: emblemWidth, height: emblemHeight });
+      doc.image(LOGO_INVOICE, emblemX, curY, { width: emblemWidth, height: emblemHeight });
     } catch {
       // fallback
     }
   }
 
-  const leftTextX = margin + emblemWidth + (isA3 ? 12 : 9);
-  const leftTextWidth = leftColWidth - emblemWidth - 12;
+  curY += emblemHeight + (isA3 ? 7 : 5);
 
-  // Brand Title: Bold Royal Maroon
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 19.5 : 15.5)
-     .text(STORE_INFO.name.toUpperCase(), leftTextX, curY + (isA3 ? 5 : 3), { width: leftTextWidth });
+  // Brand Name: Centered Bold Royal Maroon
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 20 : 15.5)
+     .text(STORE_INFO.name.toUpperCase(), margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 22 : 17;
 
-  // Store Tagline (Gold)
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 7.6)
-     .text(STORE_INFO.tagline, leftTextX, curY + (isA3 ? 28 : 22), { width: leftTextWidth });
+  // Store Tagline (Gold, Centered)
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 10 : 8)
+     .text(STORE_INFO.tagline, margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 13 : 11;
 
-  // Right: Showroom & Store Address
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 8.5 : 7.2)
-     .text('SHOWROOM & STORE ADDRESS', rightColX, curY + 2, { width: rightColWidth, align: 'right' });
+  // Store Address (Centered)
+  doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 9 : 7.6)
+     .text(STORE_INFO.address, margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 12 : 10;
 
-  doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 8.5 : 7)
-     .text("10-28, Kpt street, near Punjab National Bank\nDharmavaram, Andhra Pradesh - 515671", rightColX, curY + (isA3 ? 15 : 12), { width: rightColWidth, align: 'right' });
-
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8 : 6.5)
-     .text(`Phone: ${STORE_INFO.phone}  |  Email: ${STORE_INFO.email}`, rightColX, curY + (isA3 ? 35 : 28), { width: rightColWidth, align: 'right' });
-
-  // Clear breathing room below emblem and text before separator line
-  curY += isA3 ? 56 : 44;
+  // Store Phone & Email (Centered)
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8.5 : 7.2)
+     .text(`Phone: ${STORE_INFO.phone}   |   Email: ${STORE_INFO.email}`, margin, curY, { width: contentWidth, align: 'center' });
+  curY += isA3 ? 14 : 11;
 
   // Maroon Separator Line
   doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.6).strokeColor(MAROON).stroke();
@@ -423,8 +417,8 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A3') {
 
   // Authorized Signatory
   const authX = margin + contentWidth - sigWidth - 10;
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 8)
-     .text('For RAVICHANDRA TEXTILES', authX, curY + (isA3 ? 14 : 10), { width: sigWidth, align: 'center' });
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 7.6)
+     .text('For RAVICHANDRA TEXTILES AND HANDLOOMS', authX, curY + (isA3 ? 10 : 8), { width: sigWidth, align: 'center' });
   doc.moveTo(authX, sigLineY).lineTo(authX + sigWidth, sigLineY).lineWidth(0.8).strokeColor(INK_LIGHT).stroke();
   doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9 : 7.5)
      .text('Authorized Signatory', authX, sigLineY + 6, { width: sigWidth, align: 'center' });
