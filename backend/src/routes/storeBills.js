@@ -87,6 +87,7 @@ router.get('/', requireAdmin, async (req, res) => {
       SELECT id, bill_number, bill_date, customer_name, customer_phone,
              customer_city, customer_address, items, subtotal, discount,
              round_off, total_amount, payment_method, payment_ref,
+             split_cash_amount, split_upi_amount,
              notes, created_by, created_at, updated_at
       FROM store_bills
       ${whereClause}
@@ -247,6 +248,8 @@ router.post('/', requireAdmin, async (req, res) => {
       total_amount,
       payment_method = 'Cash',
       payment_ref,
+      split_cash_amount = 0,
+      split_upi_amount = 0,
       notes,
     } = req.body;
 
@@ -308,8 +311,9 @@ router.post('/', requireAdmin, async (req, res) => {
         bill_number, bill_date, customer_name, customer_phone,
         customer_city, customer_address, items, subtotal, discount,
         round_off, total_amount, payment_method, payment_ref,
+        split_cash_amount, split_upi_amount,
         notes, created_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
       RETURNING *
     `;
 
@@ -327,6 +331,8 @@ router.post('/', requireAdmin, async (req, res) => {
       finalTotal,
       payment_method || 'Cash',
       payment_ref ? payment_ref.trim() : null,
+      Number(split_cash_amount || 0),
+      Number(split_upi_amount || 0),
       notes ? notes.trim() : null,
       createdBy,
     ];
@@ -361,6 +367,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       total_amount,
       payment_method,
       payment_ref,
+      split_cash_amount,
+      split_upi_amount,
       notes,
     } = req.body;
 
@@ -383,9 +391,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
         total_amount = COALESCE($10, total_amount),
         payment_method = COALESCE($11, payment_method),
         payment_ref = $12,
-        notes = $13,
+        split_cash_amount = COALESCE($13, split_cash_amount),
+        split_upi_amount = COALESCE($14, split_upi_amount),
+        notes = $15,
         updated_at = NOW()
-      WHERE id = $14
+      WHERE id = $16
       RETURNING *
     `;
 
@@ -402,6 +412,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       total_amount !== undefined ? Number(total_amount) : null,
       payment_method || null,
       payment_ref !== undefined ? (payment_ref ? payment_ref.trim() : null) : existing[0].payment_ref,
+      split_cash_amount !== undefined ? Number(split_cash_amount) : null,
+      split_upi_amount !== undefined ? Number(split_upi_amount) : null,
       notes !== undefined ? (notes ? notes.trim() : null) : existing[0].notes,
       id,
     ];

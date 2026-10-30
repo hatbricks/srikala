@@ -194,14 +194,23 @@ export function renderGstBillPDF(res, bill) {
   doc.rect(margin, curY, contentWidth, 0.8).fillColor(BLACK).fill();
   curY += 1;
 
-  // 2. INVOICE PARTICULARS 2-COLUMN GRID (3 ROWS)
-  const partRowH = 15;
+  // 2. INVOICE PARTICULARS 2-COLUMN GRID (4 ROWS)
+  const isSplit = String(bill.payment_method || '').toLowerCase().includes('split') ||
+    (Number(bill.split_cash_amount || 0) > 0 && Number(bill.split_upi_amount || 0) > 0);
+
+  const paymentLeftVal = isSplit ? 'Split (Cash + UPI)' : (bill.payment_method || 'Bank Transfer');
+  const paymentRightVal = isSplit
+    ? `Cash: ₹${formatINR(bill.split_cash_amount)} | UPI: ₹${formatINR(bill.split_upi_amount)}${bill.payment_ref ? ` (${bill.payment_ref})` : ''}`
+    : (bill.payment_ref ? `Ref / UTR: ${bill.payment_ref}` : 'Full Settlement');
+
+  const partRowH = 14;
   const halfW = contentWidth / 2;
 
   const partRows = [
     { leftLabel: 'Invoice No :', leftVal: bill.invoice_number, rightLabel: 'Invoice Date :', rightVal: formatDate(bill.invoice_date) },
     { leftLabel: 'Vehicle No :', leftVal: bill.vehicle_no || '', rightLabel: 'Transporter :', rightVal: bill.transporter || '' },
-    { leftLabel: 'Reverse Charge :', leftVal: bill.reverse_charge || 'No', rightLabel: 'Agent Name :', rightVal: bill.agent_name || '' }
+    { leftLabel: 'Reverse Charge :', leftVal: bill.reverse_charge || 'No', rightLabel: 'Agent Name :', rightVal: bill.agent_name || '' },
+    { leftLabel: 'Payment Mode :', leftVal: paymentLeftVal, rightLabel: isSplit ? 'Split Received :' : 'Payment Note :', rightVal: paymentRightVal },
   ];
 
   partRows.forEach((r, idx) => {
@@ -211,12 +220,12 @@ export function renderGstBillPDF(res, bill) {
     doc.rect(margin + halfW, y, halfW, partRowH).lineWidth(0.6).strokeColor(BLACK).stroke();
 
     // Left cell text
-    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.5).text(r.leftLabel, margin + 4, y + 4);
-    doc.fillColor(INK_DARK).font('Helvetica').fontSize(8.5).text(r.leftVal, margin + 74, y + 4);
+    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.2).text(r.leftLabel, margin + 4, y + 3.5);
+    doc.fillColor(INK_DARK).font('Helvetica').fontSize(8.2).text(r.leftVal, margin + 74, y + 3.5);
 
     // Right cell text
-    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.5).text(r.rightLabel, margin + halfW + 4, y + 4);
-    doc.fillColor(INK_DARK).font('Helvetica').fontSize(8.5).text(r.rightVal, margin + halfW + 74, y + 4);
+    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.2).text(r.rightLabel, margin + halfW + 4, y + 3.5);
+    doc.fillColor(INK_DARK).font('Helvetica').fontSize(8.2).text(r.rightVal, margin + halfW + 74, y + 3.5);
   });
 
   curY += partRows.length * partRowH;
@@ -446,6 +455,19 @@ export function renderGstBillPDF(res, bill) {
   doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(9.5).text('TOTAL AMOUNT', rightColX + 8, bRightY + 5);
   doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(10).text(formatINR(bill.total_amount), rightColX + labelW, bRightY + 4.5, { width: valW - 8, align: 'right' });
   bRightY += gtRowH;
+
+  if (isSplit) {
+    const splitRowH = 13;
+    doc.rect(rightColX, bRightY, rightColW, splitRowH).lineWidth(0.5).strokeColor(BLACK).stroke();
+    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(7.5).text('Paid via Cash :', rightColX + 8, bRightY + 3.2);
+    doc.fillColor(INK_DARK).font('Helvetica-Bold').fontSize(7.5).text(formatINR(bill.split_cash_amount), rightColX + labelW, bRightY + 3.2, { width: valW - 8, align: 'right' });
+    bRightY += splitRowH;
+
+    doc.rect(rightColX, bRightY, rightColW, splitRowH).lineWidth(0.5).strokeColor(BLACK).stroke();
+    doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(7.5).text('Paid via UPI :', rightColX + 8, bRightY + 3.2);
+    doc.fillColor(INK_DARK).font('Helvetica-Bold').fontSize(7.5).text(formatINR(bill.split_upi_amount), rightColX + labelW, bRightY + 3.2, { width: valW - 8, align: 'right' });
+    bRightY += splitRowH;
+  }
 
   // For : RAVICHANDRA HANDLOOMS (in Bold Royal Maroon)
   doc.fillColor(BLACK).font('Helvetica-Bold').fontSize(8.5)

@@ -465,6 +465,8 @@ CREATE TABLE IF NOT EXISTS store_bills (
   total_amount     NUMERIC(12, 2) NOT NULL DEFAULT 0,
   payment_method   TEXT NOT NULL DEFAULT 'Cash', -- 'Cash' | 'UPI' | 'Card' | 'Bank Transfer' | 'Split'
   payment_ref      TEXT,
+  split_cash_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  split_upi_amount  NUMERIC(12, 2) NOT NULL DEFAULT 0,
   notes            TEXT,
   created_by       TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -512,8 +514,10 @@ CREATE TABLE IF NOT EXISTS gst_bills (
   store_cell       TEXT DEFAULT '9493049274, 8317551337',
   store_tagline    TEXT DEFAULT 'Pure Silk Sarees Manufacturers',
   store_address    TEXT DEFAULT '# 10/28, K.P.T. Street, DHARMAVARAM-515671. Sri Sathyasai Dist. A.P.',
-  payment_method   TEXT DEFAULT 'Bank Transfer', -- 'Bank Transfer' | 'Cash' | 'UPI' | 'Cheque'
+  payment_method   TEXT DEFAULT 'Bank Transfer', -- 'Bank Transfer' | 'Cash' | 'UPI' | 'Cheque' | 'Split'
   payment_ref      TEXT,
+  split_cash_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  split_upi_amount  NUMERIC(12, 2) NOT NULL DEFAULT 0,
   notes            TEXT,
   created_by       TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -524,5 +528,12 @@ CREATE INDEX IF NOT EXISTS idx_gst_bills_created ON gst_bills(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_gst_bills_date ON gst_bills(invoice_date DESC);
 CREATE INDEX IF NOT EXISTS idx_gst_bills_number ON gst_bills(invoice_number);
 CREATE INDEX IF NOT EXISTS idx_gst_bills_receiver ON gst_bills(receiver_name, receiver_gstin);
+
+-- Resilient migrations for existing databases
+ALTER TABLE store_bills ADD COLUMN IF NOT EXISTS split_cash_amount NUMERIC(12, 2) NOT NULL DEFAULT 0;
+ALTER TABLE store_bills ADD COLUMN IF NOT EXISTS split_upi_amount NUMERIC(12, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE gst_bills ADD COLUMN IF NOT EXISTS split_cash_amount NUMERIC(12, 2) NOT NULL DEFAULT 0;
+ALTER TABLE gst_bills ADD COLUMN IF NOT EXISTS split_upi_amount NUMERIC(12, 2) NOT NULL DEFAULT 0;
 
 

@@ -141,6 +141,8 @@ export default function AdminGstBilling() {
   // Payment Method
   const [paymentMethod, setPaymentMethod] = useState('Bank Transfer');
   const [paymentRef, setPaymentRef] = useState('');
+  const [splitCashAmount, setSplitCashAmount] = useState(0);
+  const [splitUpiAmount, setSplitUpiAmount] = useState(0);
   const [notes, setNotes] = useState('');
 
   // UI state
@@ -352,6 +354,8 @@ export default function AdminGstBilling() {
     setTaxType('INTRA_STATE');
     setPaymentMethod('Bank Transfer');
     setPaymentRef('');
+    setSplitCashAmount(0);
+    setSplitUpiAmount(0);
     setNotes('');
     setFeedback(null);
   }
@@ -402,6 +406,8 @@ export default function AdminGstBilling() {
         store_address: settings.store_address,
         payment_method: paymentMethod,
         payment_ref: paymentRef,
+        split_cash_amount: Number(splitCashAmount || 0),
+        split_upi_amount: Number(splitUpiAmount || 0),
         notes,
       };
 
@@ -560,6 +566,12 @@ export default function AdminGstBilling() {
       : (BASE_URL && !BASE_URL.includes('localhost') ? BASE_URL : window.location.origin);
     const pdfUrl = `${origin}/api/gst-bills/${bill.invoice_number}/pdf?inline=1`;
 
+    const isSplit = String(bill.payment_method || '').toLowerCase().includes('split') ||
+      (Number(bill.split_cash_amount || 0) > 0 && Number(bill.split_upi_amount || 0) > 0);
+    const payModeText = isSplit
+      ? `Split Payment (Cash: ₹${formatINR(bill.split_cash_amount)} + UPI: ₹${formatINR(bill.split_upi_amount)})`
+      : (bill.payment_method || 'Bank Transfer');
+
     const storeTitle = (bill.store_name || 'RAVICHANDRA HANDLOOMS').toUpperCase();
     const message =
       `*${storeTitle} — DHARMAVARAM*\n` +
@@ -569,7 +581,7 @@ export default function AdminGstBilling() {
       `📄 *View / Download GST Invoice PDF:*\n${pdfUrl}\n\n` +
       `Taxable Value: *₹${formatINR(bill.taxable_amount)}*\n` +
       `Total Payable: *₹${formatINR(bill.total_amount)}*\n` +
-      `Payment Mode: *${bill.payment_method || 'Bank Transfer'}*\n\n` +
+      `Payment Mode: *${payModeText}*\n\n` +
       `Thank you for patronizing authentic Dharmavaram silk handlooms!`;
 
     const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
@@ -916,6 +928,8 @@ export default function AdminGstBilling() {
     store_address: settings.store_address,
     payment_method: paymentMethod,
     payment_ref: paymentRef,
+    split_cash_amount: Number(splitCashAmount || 0),
+    split_upi_amount: Number(splitUpiAmount || 0),
   };
 
   return (
@@ -1313,12 +1327,24 @@ export default function AdminGstBilling() {
                     <label>Payment Method</label>
                     <select
                       value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      onChange={(e) => {
+                        const nextMode = e.target.value;
+                        if (nextMode === 'Split') {
+                          const half = Math.floor(totalAmount / 2);
+                          const rem = Math.max(0, totalAmount - half);
+                          setPaymentMethod(nextMode);
+                          setSplitCashAmount(splitCashAmount || half);
+                          setSplitUpiAmount(splitUpiAmount || rem);
+                        } else {
+                          setPaymentMethod(nextMode);
+                        }
+                      }}
                     >
                       <option value="Bank Transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
                       <option value="UPI">UPI / QR Code</option>
                       <option value="Cash">Cash</option>
                       <option value="Cheque">Cheque</option>
+                      <option value="Split">Split (Cash + UPI)</option>
                     </select>
                   </div>
                   <div className="form-field">
@@ -1331,6 +1357,98 @@ export default function AdminGstBilling() {
                     />
                   </div>
                 </div>
+
+                {paymentMethod === 'Split' && (
+                  <div className="split-pay-panel" style={{
+                    background: '#fdf9f4',
+                    border: '1px solid #ebd9c8',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    marginTop: '12px',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#581e15' }}>
+                          ⚡ Split Payment Distribution
+                        </span>
+                        <span style={{ fontSize: '11px', background: '#ebd9c8', color: '#581e15', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                          Invoice Total: ₹{formatINR(totalAmount)}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const half = Math.floor(totalAmount / 2);
+                          const rem = Math.max(0, totalAmount - half);
+                          setSplitCashAmount(half);
+                          setSplitUpiAmount(rem);
+                        }}
+                        style={{
+                          background: '#581e15',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '5px 12px',
+                          borderRadius: '5px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Quick 50 / 50 Split (₹{formatINR(Math.floor(totalAmount / 2))} each)
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div className="form-field" style={{ marginBottom: 0 }}>
+                        <label>💵 Cash Portion (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="e.g. 5000"
+                          value={splitCashAmount === 0 ? '' : splitCashAmount}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0);
+                            const autoUpi = typeof val === 'number' ? Math.max(0, totalAmount - val) : splitUpiAmount;
+                            setSplitCashAmount(val);
+                            setSplitUpiAmount(autoUpi);
+                          }}
+                          style={{ fontWeight: 700, color: '#1a1a1a' }}
+                        />
+                      </div>
+
+                      <div className="form-field" style={{ marginBottom: 0 }}>
+                        <label>📱 UPI / Online Portion (₹)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="e.g. 5000"
+                          value={splitUpiAmount === 0 ? '' : splitUpiAmount}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : Math.max(0, parseFloat(e.target.value) || 0);
+                            setSplitUpiAmount(val);
+                          }}
+                          style={{ fontWeight: 700, color: '#1a1a1a' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '10px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #ebd9c8', paddingTop: '8px' }}>
+                      <span>
+                        Cash: <strong>₹{formatINR(Number(splitCashAmount || 0))}</strong> + UPI: <strong>₹{formatINR(Number(splitUpiAmount || 0))}</strong> = <strong>₹{formatINR(Number(splitCashAmount || 0) + Number(splitUpiAmount || 0))}</strong>
+                      </span>
+                      {Math.abs((Number(splitCashAmount || 0) + Number(splitUpiAmount || 0)) - totalAmount) < 0.01 ? (
+                        <span style={{ color: '#2e7d32', fontWeight: 800 }}>✓ Settled: Exactly matches Invoice Total (₹{formatINR(totalAmount)})</span>
+                      ) : (
+                        <span style={{ color: '#c2410c', fontWeight: 700 }}>
+                          ⚠️ Difference: ₹{formatINR(Math.abs(totalAmount - (Number(splitCashAmount || 0) + Number(splitUpiAmount || 0))))} {totalAmount > (Number(splitCashAmount || 0) + Number(splitUpiAmount || 0)) ? 'remaining' : 'over'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Right: Totals Box */}
@@ -1610,7 +1728,18 @@ export default function AdminGstBilling() {
                           <td>{itemsCount} {itemsCount === 1 ? 'saree' : 'sarees'}</td>
                           <td className="text-right font-medium">₹{formatINR(bill.taxable_amount)}</td>
                           <td className="text-right font-medium text-tax">₹{formatINR(totalGst)}</td>
-                          <td className="text-right font-bold text-total">₹{formatINR(bill.total_amount)}</td>
+                          <td className="text-right">
+                            <strong className="text-total" style={{ display: 'block', fontSize: '13.5px' }}>₹{formatINR(bill.total_amount)}</strong>
+                            {(String(bill.payment_method || '').toLowerCase().includes('split') || (Number(bill.split_cash_amount || 0) > 0 && Number(bill.split_upi_amount || 0) > 0)) ? (
+                              <span style={{ fontSize: '10px', background: '#fdf2ea', color: '#581e15', padding: '1px 5px', borderRadius: '3px', fontWeight: 700, display: 'inline-block', marginTop: '2px' }}>
+                                Split: ₹{formatINR(bill.split_cash_amount)} C + ₹{formatINR(bill.split_upi_amount)} U
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '10.5px', color: '#6b7280', display: 'block', marginTop: '2px' }}>
+                                {bill.payment_method || 'Bank Transfer'}
+                              </span>
+                            )}
+                          </td>
                           <td>
                             <div className="table-actions-cell">
                               <button
@@ -1965,6 +2094,28 @@ export default function AdminGstBilling() {
                         <td><strong>Reverse Charge :</strong> {activeBillData.reverse_charge || 'No'}</td>
                         <td><strong>Agent Name :</strong> {activeBillData.agent_name || ''}</td>
                       </tr>
+                      <tr>
+                        <td>
+                          <strong>Payment Mode :</strong>{' '}
+                          {(String(activeBillData.payment_method || '').toLowerCase().includes('split') || (Number(activeBillData.split_cash_amount || 0) > 0 && Number(activeBillData.split_upi_amount || 0) > 0)) ? (
+                            <span style={{ color: '#581e15', fontWeight: 800 }}>Split (Cash + UPI)</span>
+                          ) : (
+                            activeBillData.payment_method || 'Bank Transfer'
+                          )}
+                        </td>
+                        <td>
+                          {(String(activeBillData.payment_method || '').toLowerCase().includes('split') || (Number(activeBillData.split_cash_amount || 0) > 0 && Number(activeBillData.split_upi_amount || 0) > 0)) ? (
+                            <span>
+                              <strong>Cash:</strong> ₹{formatINR(activeBillData.split_cash_amount)} | <strong>UPI:</strong> ₹{formatINR(activeBillData.split_upi_amount)}
+                              {activeBillData.payment_ref ? ` (${activeBillData.payment_ref})` : ''}
+                            </span>
+                          ) : (
+                            <span>
+                              <strong>Payment Ref :</strong> {activeBillData.payment_ref || 'Full Settlement'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
 
@@ -2082,6 +2233,18 @@ export default function AdminGstBilling() {
                               <td><strong>TOTAL AMOUNT</strong></td>
                               <td>₹{formatINR(activeBillData.total_amount)}</td>
                             </tr>
+                            {(String(activeBillData.payment_method || '').toLowerCase().includes('split') || (Number(activeBillData.split_cash_amount || 0) > 0 && Number(activeBillData.split_upi_amount || 0) > 0)) && (
+                              <>
+                                <tr style={{ background: '#fdf8f4', color: '#581e15', fontSize: '9px', fontWeight: 700 }}>
+                                  <td>Paid via Cash :</td>
+                                  <td style={{ textAlign: 'right' }}>₹{formatINR(activeBillData.split_cash_amount)}</td>
+                                </tr>
+                                <tr style={{ background: '#fdf8f4', color: '#581e15', fontSize: '9px', fontWeight: 700 }}>
+                                  <td>Paid via UPI :</td>
+                                  <td style={{ textAlign: 'right' }}>₹{formatINR(activeBillData.split_upi_amount)}</td>
+                                </tr>
+                              </>
+                            )}
                           </tbody>
                         </table>
 

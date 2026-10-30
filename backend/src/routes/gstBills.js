@@ -320,6 +320,8 @@ router.post('/', requireAdmin, async (req, res) => {
       store_address,
       payment_method = 'Bank Transfer',
       payment_ref = '',
+      split_cash_amount = 0,
+      split_upi_amount = 0,
       notes = '',
     } = req.body;
 
@@ -448,6 +450,8 @@ router.post('/', requireAdmin, async (req, res) => {
         store_address,
         payment_method,
         payment_ref,
+        split_cash_amount,
+        split_upi_amount,
         notes,
         created_by,
         created_at,
@@ -456,7 +460,7 @@ router.post('/', requireAdmin, async (req, res) => {
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
         $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
         $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
-        $31, $32, $33, $34, $35, $36, $37, now(), now()
+        $31, $32, $33, $34, $35, $36, $37, $38, $39, now(), now()
       )
       RETURNING *
     `;
@@ -497,6 +501,8 @@ router.post('/', requireAdmin, async (req, res) => {
       (store_address || settings.store_address).trim(),
       payment_method,
       payment_ref.trim(),
+      Number(split_cash_amount || 0),
+      Number(split_upi_amount || 0),
       notes.trim(),
       req.user?.email || 'admin'
     ];
@@ -547,6 +553,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       store_address = current.store_address,
       payment_method = current.payment_method,
       payment_ref = current.payment_ref,
+      split_cash_amount = current.split_cash_amount,
+      split_upi_amount = current.split_upi_amount,
       notes = current.notes,
     } = req.body;
 
@@ -632,9 +640,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
         store_address = $32,
         payment_method = $33,
         payment_ref = $34,
-        notes = $35,
+        split_cash_amount = $35,
+        split_upi_amount = $36,
+        notes = $37,
         updated_at = now()
-      WHERE id = $36
+      WHERE id = $38
       RETURNING *
     `;
 
@@ -673,6 +683,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
       store_address,
       payment_method,
       payment_ref,
+      Number(split_cash_amount || 0),
+      Number(split_upi_amount || 0),
       notes,
       id
     ];

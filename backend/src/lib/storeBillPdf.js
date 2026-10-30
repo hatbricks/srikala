@@ -172,7 +172,9 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
   curY += isA3 ? 10 : 8;
 
   // 3. Customer & Bill Particulars Box
-  const boxHeight = isA3 ? 92 : 78;
+  const isSplit = String(bill.payment_method || '').toLowerCase().includes('split') ||
+    (Number(bill.split_cash_amount || 0) > 0 && Number(bill.split_upi_amount || 0) > 0);
+  const boxHeight = isSplit ? (isA3 ? 108 : 90) : (isA3 ? 92 : 78);
   const colWidth = (contentWidth - 14) / 2;
 
   // Left Box: Billed To
@@ -223,25 +225,36 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
     ['Bill No:', bill.bill_number, true],
     ['Bill Date:', formatDate(bill.bill_date), false],
     ['Bill Time:', bill.created_at ? formatTime(bill.created_at) : '—', false],
-    ['Payment Mode:', bill.payment_method || 'Cash', true],
+    ['Payment Mode:', isSplit ? 'Split (Cash + UPI)' : (bill.payment_method || 'Cash'), true],
   ];
 
-  let partY = curY + 25;
+  if (isSplit) {
+    particulars.push(['Paid by Cash:', `₹${formatINR(bill.split_cash_amount)}`, false]);
+    particulars.push(['Paid by UPI:', `₹${formatINR(bill.split_upi_amount)}${bill.payment_ref ? ` (Ref: ${bill.payment_ref})` : ''}`, false]);
+  } else if (bill.payment_ref) {
+    particulars.push(['Payment Ref:', bill.payment_ref, false]);
+  }
+
+  const lineStep = isSplit ? (isA3 ? 12 : 9.8) : (isA3 ? 14 : 11.5);
+  let partY = curY + 24;
   for (const [lbl, val, bold] of particulars) {
-    doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8)
+    doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 7.8)
        .text(lbl, rightBoxX + 12, partY);
 
     if (bold && lbl === 'Bill No:') {
       doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 11 : 9)
          .text(String(val), rightBoxX + 110, partY);
     } else if (bold && lbl === 'Payment Mode:') {
-      doc.fillColor('#2e7d32').font('Helvetica-Bold').fontSize(isA3 ? 10 : 8)
+      doc.fillColor(isSplit ? MAROON : '#2e7d32').font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 7.8)
+         .text(String(val), rightBoxX + 110, partY);
+    } else if (lbl.startsWith('Paid by')) {
+      doc.fillColor(INK).font('Helvetica-Bold').fontSize(isA3 ? 9.5 : 7.8)
          .text(String(val), rightBoxX + 110, partY);
     } else {
-      doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 10 : 8)
+      doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 9.5 : 7.8)
          .text(String(val), rightBoxX + 110, partY);
     }
-    partY += isA3 ? 14 : 11.5;
+    partY += lineStep;
   }
 
   curY += boxHeight + (isA3 ? 16 : 12);
@@ -391,7 +404,15 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
   doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 16 : 13)
      .text(formatINR(bill.total_amount), rightX, totalsY + (isA3 ? 8 : 7), { width: sumRightWidth - 8, align: 'right' });
 
-  curY = Math.max(tY, totalsY + gtHeight) + (isA3 ? 30 : 20);
+  let bottomBlockY = totalsY + gtHeight;
+  if (isSplit) {
+    const splitNoteY = bottomBlockY + 4;
+    doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 9 : 7.4)
+       .text(`Paid: Cash ₹${formatINR(bill.split_cash_amount)}  |  UPI ₹${formatINR(bill.split_upi_amount)}${bill.payment_ref ? ` (${bill.payment_ref})` : ''}`, rightX, splitNoteY, { width: sumRightWidth, align: 'right' });
+    bottomBlockY += isA3 ? 14 : 12;
+  }
+
+  curY = Math.max(tY, bottomBlockY) + (isA3 ? 24 : 18);
 
   // 6. Signatures & Authenticity Seal Footer
   doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(0.5).strokeColor(RULE).stroke();
