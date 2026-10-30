@@ -335,15 +335,30 @@ router.post('/', requireAdmin, async (req, res) => {
     let finalInvoiceNumber = customInvoiceNumber && customInvoiceNumber.trim();
     if (!finalInvoiceNumber) {
       finalInvoiceNumber = await generateNextInvoiceNumber();
-    } else {
+    }
+    let candidateNumber = finalInvoiceNumber;
+    let collisionCount = 0;
+    while (true) {
       const { rows: existing } = await query(
         `SELECT id FROM gst_bills WHERE invoice_number = $1`,
-        [finalInvoiceNumber]
+        [candidateNumber]
       );
-      if (existing.length > 0) {
-        return res.status(409).json({ error: `Invoice number "${finalInvoiceNumber}" already exists.` });
+      if (existing.length === 0) break;
+      if (customInvoiceNumber) {
+        return res.status(409).json({ error: `Invoice number "${customInvoiceNumber}" already exists.` });
       }
+      collisionCount++;
+      const nextSuggested = await generateNextInvoiceNumber();
+      if (nextSuggested === candidateNumber) {
+        const parts = candidateNumber.split('-');
+        const lastPart = parseInt(parts[parts.length - 1], 10) || 0;
+        candidateNumber = parts.slice(0, -1).join('-') + '-' + String(lastPart + collisionCount).padStart(4, '0');
+      } else {
+        candidateNumber = nextSuggested;
+      }
+      if (collisionCount > 10) break;
     }
+    finalInvoiceNumber = candidateNumber;
 
     // Normalize items
     const normalizedItems = items.map((it, idx) => {
@@ -394,7 +409,7 @@ router.post('/', requireAdmin, async (req, res) => {
     const totalAmount = roundedTotal;
     const amountInWords = numberToWordsINR(totalAmount);
 
-    const invoiceDateVal = invoice_date || new Date().toISOString().split('T')[0];
+    const invoiceDateVal = invoice_date || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
     const insertSql = `
       INSERT INTO gst_bills (

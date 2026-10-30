@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, getToken, BASE_URL } from '../../data/api';
-import BRAND from '../../config/brand';
 import Seo from '../../components/Seo';
 import {
   BillingIcon,

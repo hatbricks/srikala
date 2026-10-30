@@ -188,8 +188,23 @@ export const api = {
   createStoreBill: (payload) => request('/api/admin/store-bills', { method: 'POST', body: payload }),
   updateStoreBill: (id, payload) => request(`/api/admin/store-bills/${id}`, { method: 'PUT', body: payload }),
   deleteStoreBill: (id) => request(`/api/admin/store-bills/${id}`, { method: 'DELETE' }),
-  getStoreBillPdfUrl: (idOrNumber, size = 'A3') => `${BASE_URL}/api/admin/store-bills/${idOrNumber}/pdf?size=${size}`,
-  getPublicStoreBillPdfUrl: (billNumber, size = 'A3') => `${BASE_URL}/api/store-bills/${billNumber}/pdf?size=${size}`,
+  getStoreBillPdfUrl: (idOrNumber, size = 'A4') => `${BASE_URL}/api/admin/store-bills/${idOrNumber}/pdf?size=${size}`,
+  getPublicStoreBillPdfUrl: (billNumber, size = 'A4') => `${BASE_URL}/api/store-bills/${billNumber}/pdf?size=${size}`,
+
+  // official GST tax billing (Tax Invoices with HSN, SGST/CGST/IGST, Receiver GSTIN)
+  getNextGstInvoiceNumber: () => request('/api/admin/gst-bills/next-number'),
+  getGstSettings: () => request('/api/admin/gst-bills/settings'),
+  updateGstSettings: (payload) => request('/api/admin/gst-bills/settings', { method: 'PUT', body: payload }),
+  getGstBills: (params) => {
+    const q = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return request(`/api/admin/gst-bills${q}`);
+  },
+  getGstBill: (id) => request(`/api/admin/gst-bills/${id}`),
+  createGstBill: (payload) => request('/api/admin/gst-bills', { method: 'POST', body: payload }),
+  updateGstBill: (id, payload) => request(`/api/admin/gst-bills/${id}`, { method: 'PUT', body: payload }),
+  deleteGstBill: (id) => request(`/api/admin/gst-bills/${id}`, { method: 'DELETE' }),
+  getGstBillPdfUrl: (idOrNumber) => `${BASE_URL}/api/admin/gst-bills/${idOrNumber}/pdf`,
+  getPublicGstBillPdfUrl: (invoiceNumber) => `${BASE_URL}/api/gst-bills/${invoiceNumber}/pdf`,
 };
 
 export { BASE_URL };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Seo from '../../components/Seo';
-import { getToken } from '../../data/api';
+import { getToken, BASE_URL } from '../../data/api';
 import {
   GstBillingIcon,
   PrinterIcon,
@@ -9,17 +9,13 @@ import {
   CloseIcon,
   SearchIcon,
   CalendarIcon,
-  RupeeIcon,
   PlusIcon,
   TrashIcon,
   RefreshIcon,
   SaveIcon,
   EyeIcon,
   SettingsIcon,
-  StoreIcon
 } from '../../components/admin/AdminIcons';
-
-const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 function formatINR(amount) {
   const num = Number(amount || 0);

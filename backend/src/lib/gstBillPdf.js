@@ -302,7 +302,11 @@ export function renderGstBillPDF(res, bill) {
   }
 
   // Draw item rows and empty grid lines
-  const items = Array.isArray(bill.items) ? bill.items : [];
+  let rawItems = bill.items;
+  if (typeof rawItems === 'string') {
+    try { rawItems = JSON.parse(rawItems); } catch { rawItems = []; }
+  }
+  const items = Array.isArray(rawItems) ? rawItems : [];
   for (let i = 0; i < tableRowsCount; i++) {
     const rowY = tableTopY + (i * rowH);
     const it = items[i];
@@ -315,9 +319,9 @@ export function renderGstBillPDF(res, bill) {
       // S.No
       doc.text(String(i + 1), margin, rowY + 3.5, { width: colWidths.sno, align: 'center' });
       // HSN
-      doc.text(it.hsn_code || '5007', margin + colWidths.sno + 4, rowY + 3.5, { width: colWidths.hsn - 8 });
+      doc.text(it.hsn_code || it.hsn || '5007', margin + colWidths.sno + 4, rowY + 3.5, { width: colWidths.hsn - 8 });
       // Description
-      doc.text(it.description || 'Pure Silk Sarees', margin + colWidths.sno + colWidths.hsn + 4, rowY + 3.5, { width: colWidths.desc - 8, ellipsis: true });
+      doc.text(it.description || it.name || 'Pure Silk Sarees', margin + colWidths.sno + colWidths.hsn + 4, rowY + 3.5, { width: colWidths.desc - 8, ellipsis: true });
       // Qty
       doc.text(String(it.qty || 1), margin + colWidths.sno + colWidths.hsn + colWidths.desc, rowY + 3.5, { width: colWidths.qty, align: 'center' });
       // Rate
