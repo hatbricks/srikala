@@ -638,13 +638,20 @@ export default function AdminStoreBilling() {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 12px;
-                margin: 10px 0;
+                margin: 8px 0;
+                align-items: stretch;
               }
               .sheet-meta-box {
                 background: #faf7f2;
                 border: 1px solid #e4ddd4;
                 border-radius: 4px;
-                padding: 8px 10px;
+                padding: 6px 10px;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-start;
+                box-sizing: border-box;
+                height: 100%;
+                min-height: 68px;
               }
               .meta-box-label {
                 font-size: 8px;
@@ -657,23 +664,26 @@ export default function AdminStoreBilling() {
                 padding-bottom: 2px;
               }
               .customer-print-name {
-                font-size: 12px;
+                font-size: 11.5px;
                 font-weight: 700;
                 color: #2c1810;
-                margin: 0 0 3px;
+                margin: 0 0 2px;
+                line-height: 1.25;
               }
               .customer-print-detail {
-                font-size: 9.5px;
+                font-size: 9px;
                 color: #444444;
                 margin: 0 0 2px;
+                line-height: 1.3;
               }
               .meta-info-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: 9.5px;
+                font-size: 9px;
+                line-height: 1.3;
               }
               .meta-info-table td {
-                padding: 1.5px 0;
+                padding: 1px 0;
                 color: #444444;
               }
               .print-bill-no {
@@ -1728,12 +1738,8 @@ export default function AdminStoreBilling() {
                           <td><span className="print-bill-no">{previewBill.bill_number}</span></td>
                         </tr>
                         <tr>
-                          <td><strong>Date:</strong></td>
-                          <td>{formatDate(previewBill.bill_date)}</td>
-                        </tr>
-                        <tr>
-                          <td><strong>Time:</strong></td>
-                          <td>{previewBill.created_at ? formatDateTime(previewBill.created_at) : '—'}</td>
+                          <td><strong>Date &amp; Time:</strong></td>
+                          <td>{previewBill.created_at ? formatDateTime(previewBill.created_at) : formatDate(previewBill.bill_date)}</td>
                         </tr>
                         {String(previewBill.payment_method || '').toLowerCase().includes('split') || (Number(previewBill.split_cash_amount || 0) > 0 && Number(previewBill.split_upi_amount || 0) > 0) ? (
                           <>
@@ -3153,17 +3159,24 @@ export default function AdminStoreBilling() {
           grid-template-columns: 1fr 1fr;
           gap: 10px;
           margin: 8px 0;
+          align-items: stretch;
         }
 
         .sheet-meta-box {
           background: #faf7f2;
           border: 1px solid #e4ddd4;
           border-radius: 5px;
-          padding: 7px 10px;
+          padding: 6px 10px;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          box-sizing: border-box;
+          height: 100%;
+          min-height: 68px;
         }
 
         .meta-box-label {
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 700;
           color: #8c5d1e;
           text-transform: uppercase;
@@ -3174,14 +3187,15 @@ export default function AdminStoreBilling() {
         }
 
         .customer-print-name {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           color: #2c1810;
           margin: 0 0 2px;
+          line-height: 1.25;
         }
 
         .customer-print-detail {
-          font-size: 10.5px;
+          font-size: 9.5px;
           color: #444444;
           margin: 0 0 2px;
           line-height: 1.3;
@@ -3190,7 +3204,8 @@ export default function AdminStoreBilling() {
         .meta-info-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 10.5px;
+          font-size: 9.5px;
+          line-height: 1.3;
         }
 
         .meta-info-table td {

@@ -590,9 +590,15 @@ export default function AdminGstBilling() {
 
   // Direct Browser Printing (A4 driver)
   function printBillDirect(bill) {
-    const sheetEl = document.getElementById('printable-gst-bill-sheet');
-    if (!sheetEl) {
-      window.print();
+    if (!bill) return;
+
+    // Ensure previewBill is active so the printable document sheet mounts in the DOM
+    let sheetEl = document.getElementById('printable-gst-bill-sheet');
+    if (!sheetEl || (previewBill && previewBill.id !== bill.id)) {
+      setPreviewBill(bill);
+      setTimeout(() => {
+        printBillDirect(bill);
+      }, 250);
       return;
     }
 
@@ -602,11 +608,12 @@ export default function AdminGstBilling() {
         iframe = document.createElement('iframe');
         iframe.id = 'gst-print-iframe-target';
         iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
+        iframe.style.top = '-9999px';
+        iframe.style.left = '-9999px';
+        iframe.style.width = '1000px';
+        iframe.style.height = '1400px';
         iframe.style.border = '0';
+        iframe.style.visibility = 'hidden';
         document.body.appendChild(iframe);
       }
 
@@ -882,9 +889,14 @@ export default function AdminGstBilling() {
       doc.close();
 
       setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      }, 300);
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (err) {
+          console.warn('Iframe print error fallback:', err);
+          window.print();
+        }
+      }, 350);
     } catch (e) {
       console.warn('Iframe print error fallback:', e);
       window.print();
@@ -1754,7 +1766,10 @@ export default function AdminGstBilling() {
                               <button
                                 type="button"
                                 className="action-btn print"
-                                onClick={() => printBillDirect(bill)}
+                                onClick={() => {
+                                  setPreviewBill(bill);
+                                  setTimeout(() => printBillDirect(bill), 250);
+                                }}
                                 title="Direct Print A4"
                               >
                                 <PrinterIcon width={14} height={14} />
@@ -3326,6 +3341,94 @@ export default function AdminGstBilling() {
           }
           .gst-summary-split {
             grid-template-columns: 1fr;
+          }
+        }
+
+        /* ======================== PRINT MEDIA QUERIES FOR A4 ======================== */
+        @media print {
+          .screen-only,
+          .admin-sidebar,
+          .admin-header,
+          .admin-mobile-quicknav,
+          .gst-topbar,
+          .gst-tab-pills,
+          .feedback-alert,
+          .form-card,
+          .history-stats-grid,
+          .history-filter-bar,
+          .history-table-card,
+          .bill-modal-screen-bar {
+            display: none !important;
+          }
+
+          body, html {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            overflow: visible !important;
+          }
+
+          .gst-billing-page {
+            padding: 0 !important;
+          }
+
+          .admin-shell, .admin-main, .admin-main-container {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .bill-modal-backdrop {
+            position: static !important;
+            background: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+          }
+
+          .bill-modal-window {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+
+          .bill-sheet-container {
+            background: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            width: 100% !important;
+          }
+
+          .gst-bill-outer-border {
+            width: 194mm !important;
+            max-width: 194mm !important;
+            margin: 0 auto !important;
+            border: 2px solid #000000 !important;
+            padding: 3px !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          @page {
+            size: A4 portrait;
+            margin: 6mm 8mm;
           }
         }
       `}</style>

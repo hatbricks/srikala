@@ -36,6 +36,13 @@ function formatTime(d) {
   return new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
+function formatDateTime(d) {
+  if (!d) return '—';
+  const dateStr = new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = new Date(d).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return `${dateStr}, ${timeStr}`;
+}
+
 function numberToWordsINR(amount) {
   const num = Math.round(Number(amount) || 0);
   if (num === 0) return 'Rupees Zero Only';
@@ -174,7 +181,7 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
   // 3. Customer & Bill Particulars Box
   const isSplit = String(bill.payment_method || '').toLowerCase().includes('split') ||
     (Number(bill.split_cash_amount || 0) > 0 && Number(bill.split_upi_amount || 0) > 0);
-  const boxHeight = isSplit ? (isA3 ? 108 : 90) : (isA3 ? 92 : 78);
+  const boxHeight = isSplit ? (isA3 ? 98 : 80) : (isA3 ? 82 : 68);
   const colWidth = (contentWidth - 14) / 2;
 
   // Left Box: Billed To
@@ -190,19 +197,19 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
      .strokeColor(RULE)
      .stroke();
 
-  doc.fillColor(INK).font('Helvetica-Bold').fontSize(isA3 ? 13 : 10.5)
+  doc.fillColor(INK).font('Helvetica-Bold').fontSize(isA3 ? 12 : 10)
      .text(bill.customer_name || 'Valued Customer', leftBoxX + 12, curY + 25);
 
-  let custDetailY = curY + (isA3 ? 43 : 39);
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 10 : 8);
+  let custDetailY = curY + (isA3 ? 41 : 37);
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 7.8);
 
   if (bill.customer_phone) {
     doc.text(`Phone / Mobile: +91 ${bill.customer_phone}`, leftBoxX + 12, custDetailY);
-    custDetailY += isA3 ? 13 : 11;
+    custDetailY += isA3 ? 12 : 10;
   }
   if (bill.customer_city) {
     doc.text(`City / Town: ${bill.customer_city}`, leftBoxX + 12, custDetailY);
-    custDetailY += isA3 ? 13 : 11;
+    custDetailY += isA3 ? 12 : 10;
   }
   if (bill.customer_address) {
     doc.text(`Address: ${bill.customer_address}`, leftBoxX + 12, custDetailY, { width: colWidth - 24, lineBreak: false, ellipsis: true });
@@ -221,10 +228,13 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
      .strokeColor(RULE)
      .stroke();
 
+  const dateTimeVal = bill.created_at
+    ? formatDateTime(bill.created_at)
+    : formatDate(bill.bill_date);
+
   const particulars = [
     ['Bill No:', bill.bill_number, true],
-    ['Bill Date:', formatDate(bill.bill_date), false],
-    ['Bill Time:', bill.created_at ? formatTime(bill.created_at) : '—', false],
+    ['Date & Time:', dateTimeVal, false],
     ['Payment Mode:', isSplit ? 'Split (Cash + UPI)' : (bill.payment_method || 'Cash'), true],
   ];
 
@@ -235,7 +245,7 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
     particulars.push(['Payment Ref:', bill.payment_ref, false]);
   }
 
-  const lineStep = isSplit ? (isA3 ? 12 : 9.8) : (isA3 ? 14 : 11.5);
+  const lineStep = isSplit ? (isA3 ? 12 : 9.8) : (isA3 ? 13 : 10.5);
   let partY = curY + 24;
   for (const [lbl, val, bold] of particulars) {
     doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 9.5 : 7.8)
