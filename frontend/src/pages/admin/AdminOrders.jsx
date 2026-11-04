@@ -11,6 +11,7 @@ import {
   EditIcon,
   TruckIcon,
   DocumentIcon,
+  TrashIcon,
 } from '../../components/admin/AdminIcons';
 
 const statusLabels = {
@@ -121,6 +122,37 @@ export default function AdminOrders() {
     }
   }
 
+  async function handleDeleteOrder(orderId, orderNum) {
+    if (!window.confirm(`Permanently delete order ${orderNum || '#' + orderId}? This cannot be undone.`)) {
+      return;
+    }
+    setActionBusy((prev) => ({ ...prev, [orderId]: true }));
+    try {
+      await api.deleteOrder(orderId);
+      loadOrders();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionBusy((prev) => ({ ...prev, [orderId]: false }));
+    }
+  }
+
+  async function handleClearAllTestOrders() {
+    const confirmText = window.prompt(
+      'Are you sure you want to delete ALL trial and test orders? This will reset your dashboard revenue, orders count, and recent orders to 0.\n\nType DELETE to confirm:'
+    );
+    if (confirmText !== 'DELETE') return;
+    setLoading(true);
+    try {
+      const res = await api.clearTestOrders();
+      loadOrders();
+      alert(res.message || 'All test orders have been cleared successfully. Dashboard is ready for live launch.');
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
   function openShippingEditor(order) {
     setEditingShippingOrder(order);
     setShippingForm({
@@ -172,25 +204,37 @@ export default function AdminOrders() {
             <h1>Orders &amp; Shipments</h1>
             <p>Every prepaid transaction across the store with manual courier dispatch tracking, Razorpay payment verification, and customer cancellation approvals.</p>
           </div>
-          <div className="filter-tabs">
-            {[
-              { id: 'ALL', label: 'All Orders' },
-              { id: 'CANCELLATION_REQUESTS', label: `Cancel Requests${cancellationCount > 0 ? ` (${cancellationCount})` : ''}`, highlight: cancellationCount > 0 },
-              { id: 'PAID', label: 'Paid' },
-              { id: 'PENDING_SHIP', label: 'Pending Ship' },
-              { id: 'SHIPPED', label: 'Shipped' },
-              { id: 'DELIVERED', label: 'Delivered' },
-              { id: 'CANCELLED', label: 'Cancelled' },
-            ].map((tab) => (
+          <div className="head-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {orders.length > 0 && (
               <button
-                key={tab.id}
                 type="button"
-                className={`tab-btn ${filter === tab.id ? 'active' : ''} ${tab.highlight ? 'tab-highlight' : ''}`}
-                onClick={() => setFilter(tab.id)}
+                className="btn-clear-test-orders"
+                onClick={handleClearAllTestOrders}
+                title="Permanently remove all test/trial orders before making the store live"
               >
-                {tab.label}
+                <TrashIcon width={13} height={13} /> Clear All Test Orders
               </button>
-            ))}
+            )}
+            <div className="filter-tabs">
+              {[
+                { id: 'ALL', label: 'All Orders' },
+                { id: 'CANCELLATION_REQUESTS', label: `Cancel Requests${cancellationCount > 0 ? ` (${cancellationCount})` : ''}`, highlight: cancellationCount > 0 },
+                { id: 'PAID', label: 'Paid' },
+                { id: 'PENDING_SHIP', label: 'Pending Ship' },
+                { id: 'SHIPPED', label: 'Shipped' },
+                { id: 'DELIVERED', label: 'Delivered' },
+                { id: 'CANCELLED', label: 'Cancelled' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`tab-btn ${filter === tab.id ? 'active' : ''} ${tab.highlight ? 'tab-highlight' : ''}`}
+                  onClick={() => setFilter(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -396,6 +440,17 @@ export default function AdminOrders() {
                       {invoiceId === o.id ? 'Preparing…' : <><DocumentIcon width={14} height={14} /> Invoice</>}
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm btn-delete-order"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#b91c1c', borderColor: '#fee2e2', background: '#fef2f2' }}
+                    disabled={actionBusy[o.id]}
+                    onClick={() => handleDeleteOrder(o.id, o.order_number)}
+                    title="Permanently delete this order"
+                  >
+                    <TrashIcon width={13} height={13} /> Delete
+                  </button>
                 </div>
               </div>
 
@@ -528,6 +583,32 @@ export default function AdminOrders() {
           background: var(--maroon-900);
           color: #fff;
           border-color: var(--maroon-900);
+        }
+
+        .btn-clear-test-orders {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fecaca;
+          padding: 6px 12px;
+          border-radius: 999px;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s ease;
+        }
+        .btn-clear-test-orders:hover {
+          background: #fee2e2;
+          border-color: #f87171;
+          color: #991b1b;
+        }
+        .btn-delete-order:hover {
+          background: #fee2e2 !important;
+          border-color: #fca5a5 !important;
+          color: #991b1b !important;
         }
 
         .admin-error { font-size: 12.5px; color: #a13a3a; margin-bottom: 16px; }

@@ -49,10 +49,10 @@ import AdminTestimonials from './pages/admin/AdminTestimonials';
 import AdminUsers from './pages/admin/AdminUsers';
 
 // ============================================================================
-// TEMPORARY COMING SOON MODE
-// Set COMING_SOON_ACTIVE = false to remove the coming soon layout when ready!
+// STOREFRONT STATUS: FULLY LIVE
+// Set COMING_SOON_ACTIVE = false makes the website live for all visitors!
 // ============================================================================
-const COMING_SOON_ACTIVE = true;
+const COMING_SOON_ACTIVE = false;
 
 function PublicSite() {
   const [previewBypassed, setPreviewBypassed] = useState(() => {

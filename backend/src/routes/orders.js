@@ -636,6 +636,65 @@ router.put('/admin/:id/status', requireAdmin, async (req, res) => {
   res.json({ order: rows[0] });
 });
 
+// DELETE /api/orders/admin/:id — Admin permanently removes a test/dummy order
+router.delete('/admin/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await query('DELETE FROM coupon_redemptions WHERE order_id = $1', [id]);
+    await query('DELETE FROM refunds WHERE order_id = $1', [id]);
+    await query('DELETE FROM return_requests WHERE order_id = $1', [id]);
+    await query('DELETE FROM order_items WHERE order_id = $1', [id]);
+    const { rowCount } = await query('DELETE FROM orders WHERE id = $1', [id]);
+    if (!rowCount) return res.status(404).json({ error: 'Order not found.' });
+
+    await query(
+      `INSERT INTO audit_logs (action, target_type, target_id, user_id, details)
+       VALUES ('order_deleted', 'order', $1, $2, $3)`,
+      [id, req.user.id, JSON.stringify({ deletedBy: req.user.email })]
+    ).catch(() => {});
+
+    res.json({ ok: true, message: `Order #${id} deleted successfully.` });
+  } catch (err) {
+    console.error('[orders/admin/:id] delete error:', err);
+    res.status(500).json({ error: 'Failed to delete order.' });
+  }
+});
+
+// POST /api/orders/admin/clear-test-orders — Clear all trial/test orders before going live
+router.post('/admin/clear-test-orders', requireAdmin, async (req, res) => {
+  try {
+    const { clearStoreBills } = req.body || {};
+    await query('DELETE FROM refunds');
+    await query('DELETE FROM return_requests');
+    await query('DELETE FROM order_items');
+    await query('DELETE FROM coupon_redemptions');
+    const { rowCount } = await query('DELETE FROM orders');
+
+    let billsCleared = 0;
+    if (clearStoreBills) {
+      const b1 = await query('DELETE FROM store_bills');
+      const b2 = await query('DELETE FROM gst_bills');
+      billsCleared = (b1.rowCount || 0) + (b2.rowCount || 0);
+    }
+
+    await query(
+      `INSERT INTO audit_logs (action, target_type, target_id, user_id, details)
+       VALUES ('test_orders_cleared', 'orders', 'all', $1, $2)`,
+      [req.user.id, JSON.stringify({ ordersCleared: rowCount, billsCleared, clearedBy: req.user.email })]
+    ).catch(() => {});
+
+    res.json({
+      ok: true,
+      message: `Cleared ${rowCount} test orders successfully. Dashboard metrics reset to 0 for production live.`,
+      ordersCleared: rowCount,
+      billsCleared,
+    });
+  } catch (err) {
+    console.error('[orders/admin/clear-test-orders] error:', err);
+    res.status(500).json({ error: 'Failed to clear test orders.' });
+  }
+});
+
 // GET /api/orders/:id/invoice — PDF Invoice
 router.get('/:id/invoice', requireAuth, async (req, res) => {
   const { rows } = await query('SELECT * FROM orders WHERE id = $1', [req.params.id]);

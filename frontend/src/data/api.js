@@ -129,6 +129,8 @@ export const api = {
   trackOrder: (id) => request(`/api/orders/${id}/track`),
   updateOrderStatus: (id, payload) => request(`/api/orders/admin/${id}/status`, { method: 'PUT', body: payload }),
   assignOrderAWB: (id) => request(`/api/orders/admin/${id}/assign-awb`, { method: 'POST' }),
+  deleteOrder: (id) => request(`/api/orders/admin/${id}`, { method: 'DELETE' }),
+  clearTestOrders: (payload) => request('/api/orders/admin/clear-test-orders', { method: 'POST', body: payload || {} }),
   downloadInvoice: (id) => downloadFile(`/api/orders/${id}/invoice`, `RavichandraTextiles-Invoice-${id}.pdf`),
 
   // shipping & logistics
