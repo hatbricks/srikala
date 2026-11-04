@@ -79,6 +79,8 @@ export default function AdminProducts() {
   const fileInput = useRef(null);
   const hoverFileInput = useRef(null);
   const galleryInput = useRef(null);
+  const formRef = useRef(null);
+  const nameInputRef = useRef(null);
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [movingId, setMovingId] = useState(null);
 
@@ -433,6 +435,40 @@ export default function AdminProducts() {
     }
   }
 
+  function scrollToFormTop() {
+    // 1. Scroll the admin main container (.admin-main) smoothly to the form
+    const adminMain = document.querySelector('.admin-main');
+    if (adminMain) {
+      if (formRef.current) {
+        const mainRect = adminMain.getBoundingClientRect();
+        const formRect = formRef.current.getBoundingClientRect();
+        const offset = formRect.top - mainRect.top + adminMain.scrollTop - 20;
+        adminMain.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+      } else {
+        adminMain.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // 2. Also ensure form element is scrolled into view across any layout/viewport
+    if (formRef.current) {
+      try {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch {
+        /* fallback handled */
+      }
+    }
+
+    // 3. Fallback for mobile / native window scrolling
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 4. Focus product name input for immediate interactivity
+    setTimeout(() => {
+      if (nameInputRef.current) {
+        nameInputRef.current.focus({ preventScroll: true });
+      }
+    }, 350);
+  }
+
   async function handleEdit(product) {
     pricingEditRef.current = null;
     setForm({
@@ -463,7 +499,7 @@ export default function AdminProducts() {
       variants: normalizeVariantsForForm(product.variants || []),
     });
     setEditingId(product.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToFormTop();
     try {
       const { product: full } = await api.getProduct(product.id);
       setForm((f) => ({
@@ -630,14 +666,30 @@ export default function AdminProducts() {
       </div>
 
       <div className="cms-layout">
-        <form className="cms-form" onSubmit={handleSubmit}>
-          <h3>{editingId ? 'Edit product' : 'Add a product'}</h3>
+        <form className="cms-form" ref={formRef} onSubmit={handleSubmit}>
+          <div className="form-header-bar">
+            <div>
+              {editingId && <span className="form-mode-tag">EDITING PRODUCT</span>}
+              <h3 className="form-title">{editingId ? `Edit product: ${form.name || ''}` : 'Add a product'}</h3>
+            </div>
+            {editingId && (
+              <button
+                type="button"
+                className="btn-cancel-edit"
+                onClick={resetForm}
+                title="Cancel edit mode and create a new product"
+              >
+                + New Product
+              </button>
+            )}
+          </div>
 
           <div className="form-section">
             <p className="section-label">Basic details</p>
             <label>
               Product name
               <input
+                ref={nameInputRef}
                 type="text"
                 value={form.name}
                 placeholder="e.g. Purple Kanjivaram with Gold Zari"
@@ -752,56 +804,6 @@ export default function AdminProducts() {
             )}
           </div>
 
-          <div className="form-section">
-            <p className="section-label">Shipping &amp; dimensions</p>
-            <p className="field-hint">Used by Shiprocket to determine courier availability and dynamic shipping rates.</p>
-            <div className="form-row">
-              <label>
-                Weight (grams) *
-                <input
-                  type="number"
-                  min="50"
-                  step="50"
-                  value={form.weightGrams}
-                  placeholder="e.g. 600"
-                  onChange={(e) => setForm((f) => ({ ...f, weightGrams: e.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Length (cm)
-                <input
-                  type="number"
-                  min="1"
-                  value={form.lengthCm}
-                  placeholder="e.g. 30"
-                  onChange={(e) => setForm((f) => ({ ...f, lengthCm: e.target.value }))}
-                />
-              </label>
-            </div>
-            <div className="form-row">
-              <label>
-                Width (cm)
-                <input
-                  type="number"
-                  min="1"
-                  value={form.widthCm}
-                  placeholder="e.g. 20"
-                  onChange={(e) => setForm((f) => ({ ...f, widthCm: e.target.value }))}
-                />
-              </label>
-              <label>
-                Height (cm)
-                <input
-                  type="number"
-                  min="1"
-                  value={form.heightCm}
-                  placeholder="e.g. 5"
-                  onChange={(e) => setForm((f) => ({ ...f, heightCm: e.target.value }))}
-                />
-              </label>
-            </div>
-          </div>
 
           <div className="form-section">
             <p className="section-label">Return &amp; cancellation policies</p>
@@ -1210,15 +1212,43 @@ export default function AdminProducts() {
         </form>
 
         <div className="cms-list">
+          <div className="cms-list-header">
+            <div>
+              <h4 className="cms-list-title">All Products ({products.length})</h4>
+              <p className="cms-list-subtitle">Click Edit or any product card to update details</p>
+            </div>
+            {editingId && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm add-new-product-btn"
+                onClick={() => {
+                  resetForm();
+                  scrollToFormTop();
+                }}
+              >
+                + Add New Product
+              </button>
+            )}
+          </div>
+
           {products.length === 0 && <p className="empty">No products yet.</p>}
           {products.map((p) => {
             const hasDiscount = p.mrp > p.price;
             const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
             const hasHover = Boolean(p.hoverImage || p.hover_image);
+            const isEditing = editingId === p.id;
             return (
-              <div className={`cms-row ${p.active === false ? 'is-hidden' : ''}`} key={p.id}>
+              <div
+                className={`cms-row ${p.active === false ? 'is-hidden' : ''} ${isEditing ? 'is-editing' : ''}`}
+                key={p.id}
+              >
                 {/* Main info section */}
-                <div className="cms-row-main">
+                <div
+                  className="cms-row-main"
+                  onClick={() => handleEdit(p)}
+                  title={`Click to edit ${p.name}`}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div
                     className="admin-row-thumb-container"
                     title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
@@ -1267,6 +1297,7 @@ export default function AdminProducts() {
                   </div>
 
                   <div className="row-status-badges">
+                    {isEditing && <span className="editing-badge">Editing</span>}
                     {p.active === false && <span className="hidden-badge">Hidden</span>}
                     <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
                   </div>
@@ -1291,8 +1322,12 @@ export default function AdminProducts() {
                   </div>
 
                   <div className="row-action-btns">
-                    <button type="button" className="btn-row-action edit-btn" onClick={() => handleEdit(p)}>
-                      Edit
+                    <button
+                      type="button"
+                      className={`btn-row-action edit-btn ${isEditing ? 'is-active' : ''}`}
+                      onClick={() => handleEdit(p)}
+                    >
+                      {isEditing ? 'Editing' : 'Edit'}
                     </button>
                     <button
                       type="button"
@@ -1341,7 +1376,41 @@ export default function AdminProducts() {
           box-sizing: border-box;
           overflow: hidden;
         }
-        .cms-form h3 { font-family: var(--font-display); font-size: 18px; color: var(--maroon-900); margin: 0; }
+        .form-header-bar {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .form-mode-tag {
+          display: inline-block;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          color: var(--maroon-700);
+          background: #fbf1e8;
+          padding: 2px 8px;
+          border-radius: 4px;
+          margin-bottom: 4px;
+        }
+        .form-title { font-family: var(--font-display); font-size: 18px; color: var(--maroon-900); margin: 0; }
+        .btn-cancel-edit {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--maroon-900);
+          background: var(--stone-100);
+          border: 1px solid var(--stone-200);
+          padding: 5px 11px;
+          border-radius: 6px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: all 0.15s ease;
+        }
+        .btn-cancel-edit:hover {
+          background: var(--maroon-900);
+          color: #fff;
+          border-color: var(--maroon-900);
+        }
 
         .form-section { display: flex; flex-direction: column; gap: 14px; padding-top: 18px; border-top: 1px solid var(--stone-100); min-width: 0; }
         .form-section:first-of-type { padding-top: 0; border-top: none; }
@@ -1842,6 +1911,33 @@ export default function AdminProducts() {
         .form-actions .btn { padding: 11px 20px; font-size: 13px; }
 
         .cms-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+        .cms-list-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 4px 2px 10px;
+          border-bottom: 1px solid var(--stone-200);
+          margin-bottom: 2px;
+        }
+        .cms-list-title {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--maroon-900);
+          margin: 0;
+        }
+        .cms-list-subtitle {
+          font-size: 12px;
+          color: var(--ink-500);
+          margin: 2px 0 0;
+        }
+        .add-new-product-btn {
+          font-size: 12px;
+          padding: 5px 12px;
+          border-radius: 6px;
+          white-space: nowrap;
+          cursor: pointer;
+        }
         .cms-row {
           background: var(--paper);
           border-radius: var(--radius-md);
@@ -1852,11 +1948,16 @@ export default function AdminProducts() {
           min-width: 0;
           border: 1px solid var(--stone-200);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
         .cms-row:hover {
           border-color: var(--stone-300);
           box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+        }
+        .cms-row.is-editing {
+          border-color: var(--maroon-700);
+          background: #fffafa;
+          box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.25), 0 4px 14px rgba(128, 0, 32, 0.08);
         }
 
         .cms-row-main {
@@ -1865,6 +1966,11 @@ export default function AdminProducts() {
           gap: 14px;
           min-width: 0;
           width: 100%;
+          cursor: pointer;
+        }
+        .cms-row-main:hover .row-product-name {
+          color: var(--maroon-800);
+          text-decoration: underline;
         }
 
         .admin-row-thumb-container {
@@ -2009,6 +2115,19 @@ export default function AdminProducts() {
         .stock-low { background: #fef3d6; color: #8a5a10; }
         .stock-out { background: #fee2e2; color: #b91c1c; }
 
+        .editing-badge {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: #fff;
+          background: var(--maroon-900);
+          border-radius: 999px;
+          padding: 2px 8px;
+          white-space: nowrap;
+          display: inline-block;
+        }
+
         .hidden-badge {
           font-size: 10px;
           font-weight: 600;
@@ -2086,6 +2205,12 @@ export default function AdminProducts() {
           background: #fbf1e8;
           border-color: rgba(184, 125, 43, 0.35);
           color: #8c5d1e;
+        }
+        .btn-row-action.edit-btn.is-active {
+          background: var(--maroon-900);
+          border-color: var(--maroon-900);
+          color: #fff;
+          font-weight: 600;
         }
         .btn-row-action.delete-btn {
           color: #b91c1c;
