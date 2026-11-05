@@ -18,6 +18,19 @@ function parseJsonArray(val) {
   return [];
 }
 
+function parseNum(val, fallback = null) {
+  if (val == null || val === '') return fallback;
+  const cleaned = typeof val === 'string' ? val.replace(/[^0-9.-]/g, '') : val;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? Math.round(n) : fallback;
+}
+
+function parseId(val) {
+  if (val == null || val === '') return null;
+  const n = Number(val);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 function mapProduct(p, variants = []) {
   return {
     id: p.id,
@@ -190,18 +203,23 @@ router.get('/admin/all', requireAdmin, async (_req, res) => {
 
 // GET /api/products/:id — single product with full gallery and all variants
 router.get('/:id', async (req, res) => {
-  const isAdmin = req.user?.isAdmin;
-  const { rows } = isAdmin
-    ? await query('SELECT * FROM products WHERE id = $1', [req.params.id])
-    : await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
+  try {
+    const isAdmin = req.user?.isAdmin;
+    const { rows } = isAdmin
+      ? await query('SELECT * FROM products WHERE id = $1', [req.params.id])
+      : await query('SELECT * FROM products WHERE id = $1 AND active = true', [req.params.id]);
 
-  if (!rows[0]) return res.status(404).json({ error: 'Product not found.' });
+    if (!rows[0]) return res.status(404).json({ error: 'Product not found.' });
 
-  const { rows: variantRows } = isAdmin
-    ? await query('SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC', [req.params.id])
-    : await query('SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC', [req.params.id]);
+    const { rows: variantRows } = isAdmin
+      ? await query('SELECT * FROM product_variants WHERE product_id = $1 ORDER BY id ASC', [req.params.id])
+      : await query('SELECT * FROM product_variants WHERE product_id = $1 AND active = true ORDER BY id ASC', [req.params.id]);
 
-  res.json({ product: mapProduct(rows[0], variantRows) });
+    res.json({ product: mapProduct(rows[0], variantRows) });
+  } catch (err) {
+    console.error('[products/getById]', err);
+    res.status(500).json({ error: 'Could not load product. ' + err.message });
+  }
 });
 
 // POST /api/products — admin create product with optional initial variants
@@ -365,6 +383,15 @@ router.put('/:id', requireAdmin, async (req, res) => {
     variants,
   } = req.body || {};
 
+  const cleanPrice = parseNum(price);
+  const cleanMrp = parseNum(mrp, cleanPrice);
+  const cleanStock = parseNum(stock);
+  const cleanWeight = parseNum(weightGrams);
+  const cleanLength = parseNum(lengthCm);
+  const cleanWidth = parseNum(widthCm);
+  const cleanHeight = parseNum(heightCm);
+  const cleanReturnHours = parseNum(returnWindowHours);
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -405,29 +432,29 @@ router.put('/:id', requireAdmin, async (req, res) => {
          updated_at = now()
        WHERE id = $25 RETURNING *`,
       [
-        name,
-        category,
-        price != null ? Number(price) : null,
-        mrp != null ? Number(mrp) : null,
-        stock != null ? Number(stock) : null,
-        sku,
-        shortDescription,
-        description,
+        name ? String(name).trim() : null,
+        category || null,
+        cleanPrice,
+        cleanMrp,
+        cleanStock,
+        sku || null,
+        shortDescription || null,
+        description || null,
         savedImage,
         savedHover,
         savedImages !== undefined ? JSON.stringify(savedImages) : null,
-        weightGrams != null ? Number(weightGrams) : null,
-        lengthCm != null ? Number(lengthCm) : null,
-        widthCm != null ? Number(widthCm) : null,
-        heightCm != null ? Number(heightCm) : null,
+        cleanWeight,
+        cleanLength,
+        cleanWidth,
+        cleanHeight,
         returnAvailable,
-        returnWindowHours != null ? Number(returnWindowHours) : null,
+        cleanReturnHours,
         cancellationAvailable,
-        tags,
+        Array.isArray(tags) ? tags : null,
         attributes !== undefined ? JSON.stringify(attributes) : null,
-        seoTitle,
-        seoDescription,
-        slug,
+        seoTitle || null,
+        seoDescription || null,
+        slug || null,
         active,
         req.params.id,
       ]
@@ -440,7 +467,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
     // If variants array is provided, sync variants
     if (Array.isArray(variants)) {
-      const incomingIds = variants.filter((v) => v.id).map((v) => v.id);
+      const incomingIds = variants
+        .map((v) => parseId(v.id))
+        .filter(Boolean);
+
       if (incomingIds.length) {
         await client.query('DELETE FROM product_variants WHERE product_id = $1 AND id != ALL($2)', [req.params.id, incomingIds]);
       } else {
@@ -452,11 +482,13 @@ router.put('/:id', requireAdmin, async (req, res) => {
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
-        const vPrice = price != null ? Number(price) : (v.price != null && v.price !== '' ? Number(v.price) : null);
-        const vMrp = mrp != null ? Number(mrp) : (v.mrp != null && v.mrp !== '' ? Number(v.mrp) : vPrice);
-        const vWeight = v.weightGrams != null && v.weightGrams !== '' ? Number(v.weightGrams) : null;
+        const vPrice = cleanPrice != null ? cleanPrice : parseNum(v.price);
+        const vMrp = cleanMrp != null ? cleanMrp : parseNum(v.mrp, vPrice);
+        const vStock = parseNum(v.stock, 0);
+        const vWeight = parseNum(v.weightGrams ?? v.weight_grams, cleanWeight || 500);
+        const validId = parseId(v.id);
 
-        if (v.id) {
+        if (validId) {
           await client.query(
             `UPDATE product_variants SET
                color_name = $1, color_code = $2, sku = $3, price = $4, mrp = $5, stock = $6,
@@ -468,12 +500,12 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.sku || '',
               vPrice,
               vMrp,
-              Number(v.stock) || 0,
+              vStock,
               vWeight,
               JSON.stringify(vImages),
               vHover,
               v.active !== false,
-              v.id,
+              validId,
               req.params.id,
             ]
           );
@@ -489,7 +521,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.sku || '',
               vPrice,
               vMrp,
-              Number(v.stock) || 0,
+              vStock,
               vWeight,
               JSON.stringify(vImages),
               vHover,
@@ -500,14 +532,14 @@ router.put('/:id', requireAdmin, async (req, res) => {
       }
     }
 
-    if (price != null) {
+    if (cleanPrice != null) {
       await client.query(
         `UPDATE product_variants SET
            price = $1,
            mrp = COALESCE($2, $1),
            updated_at = now()
          WHERE product_id = $3`,
-        [Number(price), mrp != null ? Number(mrp) : Number(price), req.params.id]
+        [cleanPrice, cleanMrp != null ? cleanMrp : cleanPrice, req.params.id]
       );
     }
 
