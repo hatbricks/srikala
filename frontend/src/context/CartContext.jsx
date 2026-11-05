@@ -29,8 +29,12 @@ export function CartProvider({ children }) {
               variantColor: variant?.color_code || variant?.colorCode || null,
               sku: variant?.sku || product.sku || null,
               name: product.name,
-              price: Number(variant?.price || product.price),
-              mrp: Number(variant?.mrp || product.mrp || product.price),
+              price: (variant?.price != null && variant.price !== '' && Number(variant.price) > 0 && Number(variant.price) !== Number(product.price))
+                ? Number(variant.price)
+                : Number(product.price),
+              mrp: (variant?.mrp != null && variant.mrp !== '' && Number(variant.mrp) > 0 && Number(variant.mrp) !== Number(product.mrp || product.price))
+                ? Number(variant.mrp)
+                : Number(product.mrp || product.price),
               image: (variant?.images && variant.images[0]) || product.image,
               weightGrams: Number(variant?.weight_grams || product.weight_grams || product.weightGrams || 500),
               returnAvailable: Boolean(product.return_available ?? product.returnAvailable ?? true),

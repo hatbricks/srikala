@@ -100,10 +100,11 @@ export default function ProductDetail() {
     return <div className="detail-page" style={{ minHeight: '100vh' }} />;
   }
 
-  const currentPrice = selectedVariant?.price != null && selectedVariant.price !== ''
+  const hasVariantPriceOverride = selectedVariant?.price != null && selectedVariant.price !== '' && Number(selectedVariant.price) > 0 && Number(selectedVariant.price) !== Number(product.price);
+  const currentPrice = hasVariantPriceOverride
     ? Number(selectedVariant.price)
     : Number(product.price);
-  const currentMrp = selectedVariant?.mrp != null && selectedVariant.mrp !== ''
+  const currentMrp = hasVariantPriceOverride && selectedVariant?.mrp
     ? Number(selectedVariant.mrp)
     : Number(product.mrp || product.price);
   const currentStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);

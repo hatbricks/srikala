@@ -38,10 +38,17 @@ const COLOR_MAP = [
 ];
 
 // Module-scoped cache to render catalog immediately on back navigation without layout jump
-const productsPageCache = {
+export const productsPageCache = {
   categories: null,
   products: null,
+  hero: null,
 };
+
+export function clearProductsCache() {
+  productsPageCache.categories = null;
+  productsPageCache.products = null;
+  productsPageCache.hero = null;
+}
 
 export default function Products() {
   const location = useLocation();

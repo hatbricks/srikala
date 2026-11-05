@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../data/api';
-import { formatINR } from '../../data/store';
+import { formatINR, saveProducts } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
 import { clearHomeCache } from '../Home';
+import { clearProductsCache } from '../Products';
 import {
   CloseIcon,
   CheckIcon,
@@ -130,7 +131,10 @@ export default function AdminProducts() {
   }, []);
 
   function refresh() {
-    api.getAllProductsAdmin().then(({ products }) => setProducts(products)).catch((err) => setError(err.message));
+    api.getAllProductsAdmin().then(({ products }) => {
+      setProducts(products);
+      try { saveProducts(products); } catch {}
+    }).catch((err) => setError(err.message));
   }
 
   // Handle escape key to close modal
@@ -160,6 +164,8 @@ export default function AdminProducts() {
         content: heroDraft,
         sortOrder: 15,
       });
+      clearProductsCache();
+      clearHomeCache();
       setHeroSaved(true);
       setTimeout(() => setHeroSaved(false), 2000);
     } catch (err) {
@@ -238,8 +244,8 @@ export default function AdminProducts() {
           colorCode: '#8B0000',
           sku: '',
           stock: Number(f.stock) || 5,
-          price: f.price || '',
-          mrp: f.mrp || '',
+          price: '',
+          mrp: '',
           weightGrams: f.weightGrams || 500,
           images: [],
           hoverImage: '',
@@ -372,20 +378,24 @@ export default function AdminProducts() {
     }));
   }
 
-  function normalizeVariantsForForm(variants = []) {
-    return variants.map((v) => ({
-      ...v,
-      colorName: v.colorName ?? v.color_name ?? '',
-      colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
-      sku: v.sku ?? '',
-      stock: v.stock ?? 0,
-      price: v.price ?? '',
-      mrp: v.mrp ?? '',
-      weightGrams: v.weightGrams ?? v.weight_grams ?? 500,
-      images: Array.isArray(v.images) ? v.images : [],
-      hoverImage: v.hoverImage ?? v.hover_image ?? '',
-      active: v.active !== false,
-    }));
+  function normalizeVariantsForForm(variants = [], basePrice = null, baseMrp = null) {
+    return variants.map((v) => {
+      const hasCustomPrice = (v.price != null && v.price !== '' && basePrice != null && Number(v.price) !== Number(basePrice));
+      const hasCustomMrp = (v.mrp != null && v.mrp !== '' && baseMrp != null && Number(v.mrp) !== Number(baseMrp));
+      return {
+        ...v,
+        colorName: v.colorName ?? v.color_name ?? '',
+        colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
+        sku: v.sku ?? '',
+        stock: v.stock ?? 0,
+        price: hasCustomPrice ? v.price : '',
+        mrp: hasCustomMrp ? v.mrp : '',
+        weightGrams: v.weightGrams ?? v.weight_grams ?? 500,
+        images: Array.isArray(v.images) ? v.images : [],
+        hoverImage: v.hoverImage ?? v.hover_image ?? '',
+        active: v.active !== false,
+      };
+    });
   }
 
   // Filtered & Sorted Products List
@@ -480,7 +490,7 @@ export default function AdminProducts() {
       hoverImage: product.hoverImage || product.hover_image || '',
       images: product.images || [],
       active: product.active !== false,
-      variants: normalizeVariantsForForm(product.variants || []),
+      variants: normalizeVariantsForForm(product.variants || [], product.price, product.mrp),
     });
     setEditingId(product.id);
     setIsModalOpen(true);
@@ -510,7 +520,7 @@ export default function AdminProducts() {
           image: full.image || f.image,
           hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
           images: Array.isArray(full.images) ? full.images : (typeof full.images === 'string' ? (() => { try { return JSON.parse(full.images); } catch { return f.images; } })() : f.images),
-          variants: full.variants ? normalizeVariantsForForm(full.variants) : f.variants,
+          variants: full.variants ? normalizeVariantsForForm(full.variants, full.price ?? f.price, full.mrp ?? f.mrp) : f.variants,
           returnAvailable: full.returnAvailable ?? full.return_available ?? f.returnAvailable,
           returnWindowHours: full.returnWindowHours ?? full.return_window_hours ?? f.returnWindowHours,
           cancellationAvailable: full.cancellationAvailable ?? full.cancellation_available ?? f.cancellationAvailable,
@@ -587,13 +597,21 @@ export default function AdminProducts() {
       hoverImage: form.hoverImage || firstVariantHover || '',
       images: form.images || [],
       active: form.active !== false,
-      variants: (form.variants || []).map((v) => ({
-        ...v,
-        colorName: v.colorName ?? v.color_name ?? '',
-        colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
-        images: Array.isArray(v.images) ? v.images : [],
-        hoverImage: v.hoverImage ?? v.hover_image ?? '',
-      })),
+      variants: (form.variants || []).map((v) => {
+        const hasCustomPrice = v.price != null && v.price !== '' && Number(v.price) > 0 && Number(v.price) !== (Number(form.price) || 0);
+        const finalPrice = hasCustomPrice ? Number(v.price) : (Number(form.price) || 0);
+        const hasCustomMrp = v.mrp != null && v.mrp !== '' && Number(v.mrp) > 0 && Number(v.mrp) !== (Number(form.mrp) || finalPrice);
+        const finalMrp = hasCustomMrp ? Number(v.mrp) : (Number(form.mrp) || finalPrice);
+        return {
+          ...v,
+          price: finalPrice,
+          mrp: finalMrp,
+          colorName: v.colorName ?? v.color_name ?? '',
+          colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
+          images: Array.isArray(v.images) ? v.images : [],
+          hoverImage: v.hoverImage ?? v.hover_image ?? '',
+        };
+      }),
     };
 
     try {
@@ -605,6 +623,7 @@ export default function AdminProducts() {
         setSaveToast(`✓ Added "${form.name}"`);
       }
       clearHomeCache();
+      clearProductsCache();
       setTimeout(() => setSaveToast(''), 3000);
       refresh();
 
@@ -627,6 +646,7 @@ export default function AdminProducts() {
       await api.deleteProduct(id);
       if (editingId === id) closeModal();
       clearHomeCache();
+      clearProductsCache();
       refresh();
       setSaveToast('✓ Product deleted.');
       setTimeout(() => setSaveToast(''), 2500);
@@ -641,6 +661,7 @@ export default function AdminProducts() {
     try {
       await api.updateProduct(product.id, { category: newCategoryId });
       clearHomeCache();
+      clearProductsCache();
       refresh();
       setSaveToast(`✓ Moved to ${categoryName(newCategoryId)}`);
       setTimeout(() => setSaveToast(''), 2500);
@@ -656,6 +677,7 @@ export default function AdminProducts() {
     try {
       await api.updateProduct(product.id, { active: !product.active });
       clearHomeCache();
+      clearProductsCache();
       refresh();
     } catch (err) {
       setError(err.message);
@@ -1403,6 +1425,26 @@ export default function AdminProducts() {
                                 value={v.sku}
                                 placeholder="e.g. SK-DHR-001-MRN"
                                 onChange={(e) => updateVariantField(vIdx, 'sku', e.target.value)}
+                              />
+                            </label>
+                            <label className="modal-field">
+                              <span>Color Price (₹, optional override)</span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={`Base: ₹${form.price || 0}`}
+                                value={v.price ?? ''}
+                                onChange={(e) => updateVariantField(vIdx, 'price', e.target.value)}
+                              />
+                            </label>
+                            <label className="modal-field">
+                              <span>Color MRP (₹, optional override)</span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={`Base: ₹${form.mrp || form.price || 0}`}
+                                value={v.mrp ?? ''}
+                                onChange={(e) => updateVariantField(vIdx, 'mrp', e.target.value)}
                               />
                             </label>
                           </div>
