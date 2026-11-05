@@ -423,7 +423,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
          return_available = COALESCE($16, return_available),
          return_window_hours = COALESCE($17, return_window_hours),
          cancellation_available = COALESCE($18, cancellation_available),
-         tags = COALESCE($19, tags),
+         tags = COALESCE($19::text[], tags),
          attributes = COALESCE($20::jsonb, attributes),
          seo_title = COALESCE($21, seo_title),
          seo_description = COALESCE($22, seo_description),
@@ -472,7 +472,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
         .filter(Boolean);
 
       if (incomingIds.length) {
-        await client.query('DELETE FROM product_variants WHERE product_id = $1 AND id != ALL($2)', [req.params.id, incomingIds]);
+        await client.query('DELETE FROM product_variants WHERE product_id = $1 AND id != ALL($2::int[])', [req.params.id, incomingIds]);
       } else {
         await client.query('DELETE FROM product_variants WHERE product_id = $1', [req.params.id]);
       }
@@ -533,13 +533,14 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     if (cleanPrice != null) {
+      const targetMrp = cleanMrp != null ? cleanMrp : cleanPrice;
       await client.query(
         `UPDATE product_variants SET
-           price = $1,
-           mrp = COALESCE($2, $1),
+           price = $1::integer,
+           mrp = $2::integer,
            updated_at = now()
          WHERE product_id = $3`,
-        [cleanPrice, cleanMrp != null ? cleanMrp : cleanPrice, req.params.id]
+        [cleanPrice, targetMrp, req.params.id]
       );
     }
 
