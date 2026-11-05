@@ -132,7 +132,7 @@ const homeCache = {
   process: null,
   processEnabled: true,
   shopByStyle: null,
-  shopByStyleEnabled: true,
+  shopByStyleEnabled: false,
   recommended: null,
   story: null,
   promo: null,
@@ -153,7 +153,7 @@ export default function Home() {
   const [processData, setProcessData] = useState(() => homeCache.process || defaults.process);
   const [processEnabled, setProcessEnabled] = useState(() => homeCache.processEnabled ?? true);
   const [shopByStyle, setShopByStyle] = useState(() => homeCache.shopByStyle || defaults.shop_by_style);
-  const [shopByStyleEnabled, setShopByStyleEnabled] = useState(() => homeCache.shopByStyleEnabled);
+  const [shopByStyleEnabled, setShopByStyleEnabled] = useState(false);
   const [recommended, setRecommended] = useState(() => homeCache.recommended || defaults.recommended);
   const [story, setStory] = useState(() => homeCache.story || defaults.story);
   const [promo, setPromo] = useState(() => homeCache.promo || null);
@@ -264,7 +264,7 @@ export default function Home() {
         const styleSection = sections.find((s) => s.section_key === 'shop_by_style' || s.section_key === 'featured_styles');
         if (styleSection) {
           const sbs = { ...defaults.shop_by_style, ...styleSection.content };
-          const enabled = styleSection.enabled !== false;
+          const enabled = false; // Temporarily hidden per user request
           homeCache.shopByStyle = sbs;
           homeCache.shopByStyleEnabled = enabled;
           setShopByStyle(sbs);
@@ -273,7 +273,9 @@ export default function Home() {
           if (byKey.shop_by_style) {
             const sbs = { ...defaults.shop_by_style, ...byKey.shop_by_style };
             homeCache.shopByStyle = sbs;
+            homeCache.shopByStyleEnabled = false;
             setShopByStyle(sbs);
+            setShopByStyleEnabled(false);
           }
         }
 
@@ -375,6 +377,7 @@ export default function Home() {
         />
       )}
 
+      {/* Shop by Style section temporarily hidden per user request */}
       {shopByStyleEnabled && (
         <ShopByStyle
           categories={categories}

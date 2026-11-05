@@ -17,6 +17,10 @@ export default function ShopByStyle({
   heading = 'Shop by Style',
   eyebrow = '',
 }) {
+  // Temporarily hidden per user request
+  const HIDDEN_FOR_NOW = true;
+  if (HIDDEN_FOR_NOW) return null;
+
   // If items are passed directly from CMS or defaults
   let displayedStyles = items && items.length > 0 ? items : null;
 
