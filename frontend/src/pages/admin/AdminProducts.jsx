@@ -1552,45 +1552,17 @@ export default function AdminProducts() {
                   </div>
                 </div>
 
-                {/* 6. Full Description & Dimensions */}
+                {/* 6. Full Description */}
                 <div className="modal-form-section">
-                  <h4 className="modal-section-title">6. Description &amp; Specifications</h4>
+                  <h4 className="modal-section-title">6. Full Product Description</h4>
                   <label className="modal-field full-width">
-                    <span>Full Product Description</span>
                     <textarea
-                      rows={4}
+                      rows={5}
                       value={form.description}
                       placeholder="Detailed craftsmanship story, fabric purity, border details, zari work, blouse piece..."
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     />
                   </label>
-
-                  <div className="dimensions-grid">
-                    <label className="modal-field">
-                      <span>Weight (grams)</span>
-                      <input
-                        type="number"
-                        value={form.weightGrams}
-                        onChange={(e) => setForm((f) => ({ ...f, weightGrams: e.target.value }))}
-                      />
-                    </label>
-                    <label className="modal-field">
-                      <span>Length (cm)</span>
-                      <input
-                        type="number"
-                        value={form.lengthCm}
-                        onChange={(e) => setForm((f) => ({ ...f, lengthCm: e.target.value }))}
-                      />
-                    </label>
-                    <label className="modal-field">
-                      <span>Width (cm)</span>
-                      <input
-                        type="number"
-                        value={form.widthCm}
-                        onChange={(e) => setForm((f) => ({ ...f, widthCm: e.target.value }))}
-                      />
-                    </label>
-                  </div>
                 </div>
 
                 {/* 7. SEO & Discovery */}
@@ -2808,12 +2780,6 @@ export default function AdminProducts() {
           width: 17px;
           height: 17px;
           accent-color: var(--maroon-900);
-        }
-        .dimensions-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-top: 12px;
         }
 
         /* Modal Footer */

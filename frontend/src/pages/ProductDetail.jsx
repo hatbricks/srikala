@@ -280,15 +280,6 @@ export default function ProductDetail() {
                 <p>{product.return_available !== false ? 'Eligible for return request after delivery via My Orders' : 'Handloom piece — final sale'}</p>
               </div>
             </div>
-            {product.weight_grams && (
-              <div className="spec-badge">
-                <span className="badge-icon">📦</span>
-                <div>
-                  <strong>{product.weight_grams}g Package Weight</strong>
-                  <p>Dimensions: {product.length_cm || 30} × {product.width_cm || 20} × {product.height_cm || 5} cm</p>
-                </div>
-              </div>
-            )}
           </div>
 
           <CancellationPolicyCard />
