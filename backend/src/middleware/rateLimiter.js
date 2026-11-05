@@ -105,3 +105,35 @@ export const authApiRateLimiter = rateLimit({
     error: 'Too many authentication requests from this IP address. Please wait a few minutes before trying again.',
   },
 });
+
+/**
+ * Strict Rate Limiter for Password Reset Endpoints.
+ * Caps password reset requests to 6 per 15-minute window per IP to prevent spamming.
+ */
+export const passwordResetRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 6, // Limit each IP to 6 reset requests per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many password reset requests. Please wait 15 minutes before requesting another reset link.',
+  },
+});
+
+/**
+ * General Global API Rate Limiter.
+ * Caps overall requests to 600 requests per 15-minute window per IP to block scraping/flooding.
+ */
+export const globalApiRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 600, // Limit each IP to 600 API requests per 15 min (~40 req/min)
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting on liveness health check
+    return req.path === '/api/health';
+  },
+  message: {
+    error: 'Too many requests from this IP address. Please slow down and try again shortly.',
+  },
+});

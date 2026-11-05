@@ -1,21 +1,26 @@
-// PM2 process file. From /server, run:  pm2 start ecosystem.config.cjs
+// PM2 process file. From backend/, run: pm2 reload ecosystem.config.cjs || pm2 start ecosystem.config.cjs
 module.exports = {
   apps: [
     {
-      name: 'srikala-api',
+      name: 'ravichandra-api',
       script: 'src/index.js',
       cwd: __dirname,
+      // Cluster mode load balances HTTP requests across all CPU cores automatically
+      instances: process.env.PM2_INSTANCES || 'max',
+      exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
+        PORT: 4000,
       },
-      // Restart on crash, but don't restart-loop forever if it's broken
-      // (e.g. bad DATABASE_URL) — cap it and let `pm2 logs` show why.
+      // Automatically restart a worker if it leaks memory beyond 500MB
+      max_memory_restart: '500M',
+      // Restart on crash, capped at 10 to avoid loop if DB is down
       max_restarts: 10,
       min_uptime: '10s',
-      // Node's built-in file watcher (used for `npm run dev`) stays off in
-      // production — PM2 restarts are triggered by `pm2 restart`, not by
-      // file changes, so a stray edit or log write can't bounce the API.
       watch: false,
+      // Zero-downtime rolling reload configuration
+      listen_timeout: 8000,
+      kill_timeout: 4000,
     },
   ],
 };

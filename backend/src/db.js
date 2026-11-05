@@ -18,6 +18,14 @@ export const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('sslmode=require')
     ? { rejectUnauthorized: false }
     : undefined,
+  max: parseInt(process.env.DB_POOL_MAX || '15', 10),
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
+
+// Resiliency: Prevent idle client network errors from causing unhandled node crashes
+pool.on('error', (err) => {
+  console.error('[db:pool] Unexpected error on idle database client:', err.message);
 });
 
 export async function query(text, params) {

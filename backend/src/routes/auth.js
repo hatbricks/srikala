@@ -5,7 +5,13 @@ import { OAuth2Client } from 'google-auth-library';
 import { query } from '../db.js';
 import { signToken, requireAuth } from '../middleware/auth.js';
 import { sendLoginEmail, sendPasswordResetEmail, sendWelcomeEmail } from '../lib/email.js';
-import { authApiRateLimiter, checkLoginLockout, recordFailedLogin, recordSuccessfulLogin } from '../middleware/rateLimiter.js';
+import {
+  authApiRateLimiter,
+  passwordResetRateLimiter,
+  checkLoginLockout,
+  recordFailedLogin,
+  recordSuccessfulLogin,
+} from '../middleware/rateLimiter.js';
 
 const router = Router();
 const ADMIN_EMAILS = [
@@ -21,7 +27,7 @@ const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SITE_URL = (process.env.CLIENT_URL || 'http://localhost:5173').split(',')[0].trim();
 const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', authApiRateLimiter, async (req, res) => {
   const { name, email, password, mobile } = req.body || {};
   if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
     return res.status(400).json({ error: 'Name, email and a password (6+ chars) are required.' });
@@ -102,7 +108,7 @@ router.post('/login', authApiRateLimiter, checkLoginLockout, async (req, res) =>
 // token is verified here against Google's own keys before we trust
 // anything in it, so a forged/tampered token is rejected before it ever
 // reaches a database query.
-router.post('/google', async (req, res) => {
+router.post('/google', authApiRateLimiter, async (req, res) => {
   const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
   if (!clientId) {
     return res.status(503).json({ error: 'Google sign-in is not configured yet. Server is missing GOOGLE_CLIENT_ID.' });
@@ -164,7 +170,7 @@ router.post('/google', async (req, res) => {
 // otherwise the response itself would let someone check which emails have
 // an account (a common "user enumeration" issue with forgot-password
 // endpoints).
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', passwordResetRateLimiter, async (req, res) => {
   const { email } = req.body || {};
   if (!email?.trim()) return res.status(400).json({ error: 'Email is required.' });
 
@@ -192,7 +198,7 @@ router.post('/forgot-password', async (req, res) => {
   res.json({ ok: true, message: "If an account exists for that email, we've sent a password reset link." });
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authApiRateLimiter, async (req, res) => {
   const { token, newPassword } = req.body || {};
   if (!token || !newPassword) return res.status(400).json({ error: 'Reset token and new password are required.' });
   if (newPassword.length < 6) return res.status(400).json({ error: 'New password must be at least 6 characters.' });

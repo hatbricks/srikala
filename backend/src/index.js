@@ -24,8 +24,10 @@ import settingsRoutes from './routes/settings.js';
 import adminRoutes from './routes/admin.js';
 import storeBillRoutes from './routes/storeBills.js';
 import gstBillRoutes from './routes/gstBills.js';
+import { globalApiRateLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 // Security Headers Layer
@@ -35,6 +37,7 @@ app.use((_req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   next();
 });
 
@@ -78,6 +81,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 // frontend (Vercel) proxies /sitemap.xml to this exact path (see vercel.json).
 app.use(sitemapRoutes);
 
+app.use('/api', globalApiRateLimiter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
@@ -119,8 +124,16 @@ app.get('*', (req, res, next) => {
   });
 });
 app.use((err, _req, res, _next) => {
-  console.error(err);
+  console.error('[server error]', err);
   res.status(500).json({ error: 'Something went wrong on our end.' });
+});
+
+// Process resilience: catch unhandled rejections to prevent silent node process crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[process] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[process] Uncaught Exception:', err);
 });
 
 const PORT = process.env.PORT || 4000;
