@@ -100,13 +100,9 @@ export default function ProductDetail() {
     return <div className="detail-page" style={{ minHeight: '100vh' }} />;
   }
 
-  const hasVariantPriceOverride = selectedVariant?.price != null && selectedVariant.price !== '' && Number(selectedVariant.price) > 0 && Number(selectedVariant.price) !== Number(product.price);
-  const currentPrice = hasVariantPriceOverride
-    ? Number(selectedVariant.price)
-    : Number(product.price);
-  const currentMrp = hasVariantPriceOverride && selectedVariant?.mrp
-    ? Number(selectedVariant.mrp)
-    : Number(product.mrp || product.price);
+  // Authoritative saree pricing always comes directly from product.price and product.mrp
+  const currentPrice = Number(product.price);
+  const currentMrp = Number(product.mrp || product.price);
   const currentStock = selectedVariant ? Number(selectedVariant.stock) : Number(product.stock);
   const outOfStock = currentStock <= 0;
 

@@ -104,8 +104,6 @@ router.post('/create', requireAuth, async (req, res) => {
       if (!variant) return res.status(400).json({ error: `Color variant not found for ${prod.name}.` });
       if (variant.stock < qty) return res.status(400).json({ error: `${prod.name} (${variant.color_name}) is out of stock.` });
 
-      if (variant.price != null && Number(variant.price) > 0 && Number(variant.price) !== Number(prod.price)) price = Number(variant.price);
-      if (variant.mrp != null && Number(variant.mrp) > 0 && Number(variant.mrp) !== Number(prod.mrp || prod.price)) mrp = Number(variant.mrp);
       if (variant.sku) sku = variant.sku;
       if (variant.weight_grams) weightGrams = Number(variant.weight_grams);
       variantName = variant.color_name;

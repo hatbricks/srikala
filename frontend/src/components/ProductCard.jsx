@@ -10,10 +10,9 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
   const { addItem } = useCart();
 
   const activeVariant = selectedVariant || (variants.length > 0 ? variants[0] : null);
-  // Variant price is an override only if explicitly set and differs from base product price
-  const hasVariantPriceOverride = activeVariant?.price != null && activeVariant.price !== '' && Number(activeVariant.price) > 0 && Number(activeVariant.price) !== Number(product.price);
-  const displayPrice = hasVariantPriceOverride ? Number(activeVariant.price) : Number(product.price);
-  const displayMrp = hasVariantPriceOverride && activeVariant?.mrp ? Number(activeVariant.mrp) : Number(product.mrp || product.price);
+  // Authoritative saree pricing always comes directly from product.price and product.mrp
+  const displayPrice = Number(product.price);
+  const displayMrp = Number(product.mrp || product.price);
   const outOfStock = activeVariant ? Number(activeVariant.stock) <= 0 : product.stock === 0;
   const showNewBadge = (isNew || product.isNew) && !outOfStock;
   const discount = displayMrp > displayPrice

@@ -297,9 +297,8 @@ router.post('/', requireAdmin, async (req, res) => {
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
-        const vHasCustom = v.price != null && v.price !== '' && Number(v.price) > 0 && Number(v.price) !== Number(price);
-        const vPrice = vHasCustom ? Number(v.price) : (price != null ? Number(price) : null);
-        const vMrp = (vHasCustom && v.mrp != null && v.mrp !== '') ? Number(v.mrp) : (mrp != null ? Number(mrp) : vPrice);
+        const vPrice = price != null ? Number(price) : (v.price != null && v.price !== '' ? Number(v.price) : null);
+        const vMrp = mrp != null ? Number(mrp) : (v.mrp != null && v.mrp !== '' ? Number(v.mrp) : vPrice);
         const vWeight = v.weightGrams != null && v.weightGrams !== '' ? Number(v.weightGrams) : null;
 
         const vResult = await client.query(
@@ -453,9 +452,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
-        const vHasCustom = v.price != null && v.price !== '' && Number(v.price) > 0 && Number(v.price) !== Number(price);
-        const vPrice = vHasCustom ? Number(v.price) : (price != null ? Number(price) : null);
-        const vMrp = (vHasCustom && v.mrp != null && v.mrp !== '') ? Number(v.mrp) : (mrp != null ? Number(mrp) : vPrice);
+        const vPrice = price != null ? Number(price) : (v.price != null && v.price !== '' ? Number(v.price) : null);
+        const vMrp = mrp != null ? Number(mrp) : (v.mrp != null && v.mrp !== '' ? Number(v.mrp) : vPrice);
         const vWeight = v.weightGrams != null && v.weightGrams !== '' ? Number(v.weightGrams) : null;
 
         if (v.id) {
@@ -500,7 +498,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
           );
         }
       }
-    } else if (price != null) {
+    }
+
+    if (price != null) {
       await client.query(
         `UPDATE product_variants SET
            price = $1,

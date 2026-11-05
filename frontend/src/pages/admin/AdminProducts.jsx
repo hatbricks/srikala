@@ -597,21 +597,15 @@ export default function AdminProducts() {
       hoverImage: form.hoverImage || firstVariantHover || '',
       images: form.images || [],
       active: form.active !== false,
-      variants: (form.variants || []).map((v) => {
-        const hasCustomPrice = v.price != null && v.price !== '' && Number(v.price) > 0 && Number(v.price) !== (Number(form.price) || 0);
-        const finalPrice = hasCustomPrice ? Number(v.price) : (Number(form.price) || 0);
-        const hasCustomMrp = v.mrp != null && v.mrp !== '' && Number(v.mrp) > 0 && Number(v.mrp) !== (Number(form.mrp) || finalPrice);
-        const finalMrp = hasCustomMrp ? Number(v.mrp) : (Number(form.mrp) || finalPrice);
-        return {
-          ...v,
-          price: finalPrice,
-          mrp: finalMrp,
-          colorName: v.colorName ?? v.color_name ?? '',
-          colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
-          images: Array.isArray(v.images) ? v.images : [],
-          hoverImage: v.hoverImage ?? v.hover_image ?? '',
-        };
-      }),
+      variants: (form.variants || []).map((v) => ({
+        ...v,
+        price: Number(form.price) || 0,
+        mrp: Number(form.mrp) || Number(form.price) || 0,
+        colorName: v.colorName ?? v.color_name ?? '',
+        colorCode: v.colorCode ?? v.color_code ?? '#8B0000',
+        images: Array.isArray(v.images) ? v.images : [],
+        hoverImage: v.hoverImage ?? v.hover_image ?? '',
+      })),
     };
 
     try {
