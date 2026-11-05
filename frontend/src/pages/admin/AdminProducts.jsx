@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
-import { CloseIcon, CheckIcon } from '../../components/admin/AdminIcons';
+import {
+  CloseIcon,
+  CheckIcon,
+  EditIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+  EyeIcon,
+  CategoriesIcon,
+} from '../../components/admin/AdminIcons';
 
 const emptyForm = {
   name: '',
@@ -32,9 +41,6 @@ const emptyForm = {
   variants: [],
 };
 
-// Keeps MRP / discount % / price in sync with each other, whichever one the
-// admin actually typed into. Rounds to whole rupees since that's what the
-// rest of the site displays.
 function discountFromPrices(mrp, price) {
   const m = Number(mrp);
   const p = Number(price);
@@ -75,15 +81,32 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveToast, setSaveToast] = useState('');
   const [error, setError] = useState('');
+
+  // Category & Filter Controls
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [stockFilter, setStockFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
+
+  // Input refs for modal
   const fileInput = useRef(null);
   const hoverFileInput = useRef(null);
   const galleryInput = useRef(null);
-  const formRef = useRef(null);
-  const nameInputRef = useRef(null);
+  const pricingEditRef = useRef(null);
+  const modalBodyRef = useRef(null);
+
   const [galleryBusy, setGalleryBusy] = useState(false);
   const [movingId, setMovingId] = useState(null);
+  const [variantImgBusy, setVariantImgBusy] = useState(null);
+  const [variantHoverBusy, setVariantHoverBusy] = useState(null);
 
+  // Hero Banner CMS State
   const defaultHero = {
     badge: 'HERITAGE HANDLOOMS',
     title: 'Our Collection',
@@ -92,6 +115,7 @@ export default function AdminProducts() {
   };
   const [heroDraft, setHeroDraft] = useState(defaultHero);
   const [heroSaved, setHeroSaved] = useState(false);
+  const [showHeroBannerCMS, setShowHeroBannerCMS] = useState(false);
   const heroFileInput = useRef(null);
 
   useEffect(() => {
@@ -103,6 +127,21 @@ export default function AdminProducts() {
       })
       .catch(() => {});
   }, []);
+
+  function refresh() {
+    api.getAllProductsAdmin().then(({ products }) => setProducts(products)).catch((err) => setError(err.message));
+  }
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape' && isModalOpen) {
+        closeModal();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
 
   async function handleHeroImageUpload(e) {
     const file = e.target.files?.[0];
@@ -125,12 +164,6 @@ export default function AdminProducts() {
     } catch (err) {
       setError(err.message);
     }
-  }
-
-  function refresh() {
-    // The admin list needs to see hidden products too (to unhide them),
-    // unlike the public storefront endpoint used everywhere else.
-    api.getAllProductsAdmin().then(({ products }) => setProducts(products)).catch((err) => setError(err.message));
   }
 
   function handleImage(e) {
@@ -167,16 +200,6 @@ export default function AdminProducts() {
     setForm((f) => ({ ...f, images: (f.images || []).filter((_, idx) => idx !== i) }));
   }
 
-  function resetForm() {
-    setForm(emptyForm);
-    setEditingId(null);
-    pricingEditRef.current = null;
-    if (fileInput.current) fileInput.current.value = '';
-    if (hoverFileInput.current) hoverFileInput.current.value = '';
-  }
-
-  const pricingEditRef = useRef(null);
-
   function computeField(target, f) {
     if (target === 'price') return priceFromDiscount(f.mrp, f.discountPercent);
     if (target === 'mrp') return mrpFromDiscount(f.price, f.discountPercent);
@@ -203,21 +226,6 @@ export default function AdminProducts() {
       return next;
     });
   }
-
-  function handleMrpChange(value) {
-    handlePricingFieldChange('mrp', value);
-  }
-
-  function handleDiscountChange(value) {
-    handlePricingFieldChange('discountPercent', value);
-  }
-
-  function handlePriceChange(value) {
-    handlePricingFieldChange('price', value);
-  }
-
-  const [variantImgBusy, setVariantImgBusy] = useState(null);
-  const [variantHoverBusy, setVariantHoverBusy] = useState(null);
 
   function addVariant() {
     setForm((f) => ({
@@ -379,10 +387,156 @@ export default function AdminProducts() {
     }));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.name.trim() || !form.category) return;
+  // Filtered & Sorted Products List
+  const filteredProducts = useMemo(() => {
+    let result = [...products];
+
+    // Category filter
+    if (selectedCategory !== 'all') {
+      result = result.filter((p) => p.category === selectedCategory || p.categoryId === selectedCategory);
+    }
+
+    // Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(q) ||
+          p.sku?.toLowerCase().includes(q) ||
+          (Array.isArray(p.tags) && p.tags.some((t) => t.toLowerCase().includes(q))) ||
+          (typeof p.tags === 'string' && p.tags.toLowerCase().includes(q))
+      );
+    }
+
+    // Stock filter
+    if (stockFilter === 'out') {
+      result = result.filter((p) => p.stock === 0);
+    } else if (stockFilter === 'low') {
+      result = result.filter((p) => p.stock > 0 && p.stock <= 5);
+    } else if (stockFilter === 'in') {
+      result = result.filter((p) => p.stock > 5);
+    }
+
+    // Active / Status filter
+    if (statusFilter === 'active') {
+      result = result.filter((p) => p.active !== false);
+    } else if (statusFilter === 'hidden') {
+      result = result.filter((p) => p.active === false);
+    }
+
+    // Sorting
+    if (sortBy === 'price-asc') {
+      result.sort((a, b) => Number(a.price) - Number(b.price));
+    } else if (sortBy === 'price-desc') {
+      result.sort((a, b) => Number(b.price) - Number(a.price));
+    } else if (sortBy === 'stock-asc') {
+      result.sort((a, b) => Number(a.stock) - Number(b.stock));
+    } else if (sortBy === 'name-asc') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      // Default: newest
+      result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    }
+
+    return result;
+  }, [products, selectedCategory, searchQuery, stockFilter, statusFilter, sortBy]);
+
+  // Index of product currently in modal (for Previous/Next saree navigation)
+  const currentModalIndex = useMemo(() => {
+    if (!editingId) return -1;
+    return filteredProducts.findIndex((p) => p.id === editingId);
+  }, [editingId, filteredProducts]);
+
+  const hasPrev = currentModalIndex > 0;
+  const hasNext = currentModalIndex >= 0 && currentModalIndex < filteredProducts.length - 1;
+
+  // Open modal in edit mode
+  async function handleOpenEdit(product) {
+    pricingEditRef.current = null;
     setError('');
+    setForm({
+      name: product.name,
+      category: product.category || product.categoryId || categories[0]?.id || '',
+      price: product.price,
+      mrp: product.mrp,
+      discountPercent: discountFromPrices(product.mrp, product.price),
+      stock: product.stock,
+      sku: product.sku || '',
+      shortDescription: product.shortDescription || '',
+      description: product.description || '',
+      weightGrams: product.weightGrams ?? 500,
+      lengthCm: product.lengthCm ?? 30,
+      widthCm: product.widthCm ?? 20,
+      heightCm: product.heightCm ?? 5,
+      returnAvailable: product.returnAvailable ?? true,
+      returnWindowHours: product.returnWindowHours ?? 24,
+      cancellationAvailable: product.cancellationAvailable ?? true,
+      tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
+      seoTitle: product.seoTitle || '',
+      seoDescription: product.seoDescription || '',
+      slug: product.slug || '',
+      image: product.image,
+      hoverImage: product.hoverImage || product.hover_image || '',
+      images: product.images || [],
+      active: product.active !== false,
+      variants: normalizeVariantsForForm(product.variants || []),
+    });
+    setEditingId(product.id);
+    setIsModalOpen(true);
+
+    if (modalBodyRef.current) {
+      modalBodyRef.current.scrollTop = 0;
+    }
+
+    try {
+      const { product: full } = await api.getProduct(product.id);
+      setForm((f) => ({
+        ...f,
+        hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
+        images: full.images || f.images,
+        variants: full.variants ? normalizeVariantsForForm(full.variants) : f.variants,
+      }));
+    } catch {
+      /* fallback to row data */
+    }
+  }
+
+  // Open modal in create mode
+  function handleOpenCreate() {
+    pricingEditRef.current = null;
+    setError('');
+    setForm({
+      ...emptyForm,
+      category: selectedCategory !== 'all' ? selectedCategory : (categories[0]?.id || ''),
+    });
+    setEditingId(null);
+    setIsModalOpen(true);
+    if (modalBodyRef.current) {
+      modalBodyRef.current.scrollTop = 0;
+    }
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    pricingEditRef.current = null;
+  }
+
+  function handleNavigateModal(targetIndex) {
+    if (targetIndex >= 0 && targetIndex < filteredProducts.length) {
+      handleOpenEdit(filteredProducts[targetIndex]);
+    }
+  }
+
+  async function handleSaveForm(e, andNext = false) {
+    if (e) e.preventDefault();
+    if (!form.name.trim() || !form.category) {
+      setError('Product Name and Category are required.');
+      return;
+    }
+    setError('');
+    setIsSaving(true);
 
     const firstVariantImg = (form.variants || []).find((v) => Array.isArray(v.images) && v.images.length > 0)?.images?.[0];
     const firstVariantHover = (form.variants || []).find((v) => v.hoverImage || v.hover_image)?.hoverImage
@@ -425,114 +579,48 @@ export default function AdminProducts() {
     try {
       if (editingId) {
         await api.updateProduct(editingId, payload);
+        setSaveToast(`✓ Saved "${form.name}"`);
       } else {
         await api.createProduct(payload);
+        setSaveToast(`✓ Added "${form.name}"`);
       }
-      resetForm();
+      setTimeout(() => setSaveToast(''), 3000);
       refresh();
+
+      if (andNext && hasNext) {
+        // Move directly to next saree in list
+        handleNavigateModal(currentModalIndex + 1);
+      } else {
+        closeModal();
+      }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsSaving(false);
     }
   }
 
-  function scrollToFormTop() {
-    // 1. Scroll the admin main container (.admin-main) smoothly to the form
-    const adminMain = document.querySelector('.admin-main');
-    if (adminMain) {
-      if (formRef.current) {
-        const mainRect = adminMain.getBoundingClientRect();
-        const formRect = formRef.current.getBoundingClientRect();
-        const offset = formRect.top - mainRect.top + adminMain.scrollTop - 20;
-        adminMain.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
-      } else {
-        adminMain.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-
-    // 2. Also ensure form element is scrolled into view across any layout/viewport
-    if (formRef.current) {
-      try {
-        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch {
-        /* fallback handled */
-      }
-    }
-
-    // 3. Fallback for mobile / native window scrolling
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // 4. Focus product name input for immediate interactivity
-    setTimeout(() => {
-      if (nameInputRef.current) {
-        nameInputRef.current.focus({ preventScroll: true });
-      }
-    }, 350);
-  }
-
-  async function handleEdit(product) {
-    pricingEditRef.current = null;
-    setForm({
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      mrp: product.mrp,
-      discountPercent: discountFromPrices(product.mrp, product.price),
-      stock: product.stock,
-      sku: product.sku || '',
-      shortDescription: product.shortDescription || '',
-      description: product.description || '',
-      weightGrams: product.weightGrams ?? 500,
-      lengthCm: product.lengthCm ?? 30,
-      widthCm: product.widthCm ?? 20,
-      heightCm: product.heightCm ?? 5,
-      returnAvailable: product.returnAvailable ?? true,
-      returnWindowHours: product.returnWindowHours ?? 24,
-      cancellationAvailable: product.cancellationAvailable ?? true,
-      tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
-      seoTitle: product.seoTitle || '',
-      seoDescription: product.seoDescription || '',
-      slug: product.slug || '',
-      image: product.image,
-      hoverImage: product.hoverImage || product.hover_image || '',
-      images: product.images || [],
-      active: product.active,
-      variants: normalizeVariantsForForm(product.variants || []),
-    });
-    setEditingId(product.id);
-    scrollToFormTop();
-    try {
-      const { product: full } = await api.getProduct(product.id);
-      setForm((f) => ({
-        ...f,
-        hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
-        images: full.images || f.images,
-        variants: full.variants ? normalizeVariantsForForm(full.variants) : f.variants,
-      }));
-    } catch {
-      /* list data already populated form */
-    }
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('Remove this product?')) return;
+  async function handleDelete(id, name) {
+    if (!window.confirm(`Are you sure you want to delete "${name || 'this saree'}"?`)) return;
     try {
       await api.deleteProduct(id);
-      if (editingId === id) resetForm();
+      if (editingId === id) closeModal();
       refresh();
+      setSaveToast('✓ Product deleted.');
+      setTimeout(() => setSaveToast(''), 2500);
     } catch (err) {
       setError(err.message);
     }
   }
 
-  // Quick recategorize straight from the list, for when a product was
-  // uploaded under the wrong category — no need to open the full edit
-  // form just to fix that one field.
   async function handleMoveCategory(product, newCategoryId) {
     if (!newCategoryId || newCategoryId === product.category) return;
     setMovingId(product.id);
     try {
       await api.updateProduct(product.id, { category: newCategoryId });
       refresh();
+      setSaveToast(`✓ Moved to ${categoryName(newCategoryId)}`);
+      setTimeout(() => setSaveToast(''), 2500);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -540,11 +628,6 @@ export default function AdminProducts() {
     }
   }
 
-  // Hide/show — an alternative to deleting when a product just shouldn't
-  // be on the live site right now (out of season, temporarily unavailable,
-  // etc). Hidden products disappear from the storefront (listing, search,
-  // category pages, and direct links) but stay fully visible and editable
-  // here, and keep their order/review history intact.
   async function handleToggleActive(product) {
     setMovingId(product.id);
     try {
@@ -561,1755 +644,2252 @@ export default function AdminProducts() {
     return categories.find((c) => c.id === id)?.name || id;
   }
 
-  const stockNum = form.stock === '' ? null : Number(form.stock) || 0;
-  const productsInCategory = form.category
-    ? products.filter((p) => p.category === form.category && p.id !== editingId)
-    : [];
+  // Count products by category for tabs
+  const categoryCounts = useMemo(() => {
+    const map = {};
+    for (const p of products) {
+      const cId = p.category || p.categoryId;
+      map[cId] = (map[cId] || 0) + 1;
+    }
+    return map;
+  }, [products]);
 
   return (
-    <div>
-      <div className="admin-page-head">
-        <h1>Products</h1>
-        <p>Add sarees to a category, set price, MRP and stock. Set stock to 0 to intentionally mark a product out of stock.</p>
-      </div>
-
-      {error && <p className="admin-error">{error}</p>}
-
-      {/* --- Products Page Curved Hero Banner CMS Card --- */}
-      <div className="section-card" style={{
-        background: 'var(--paper)',
-        borderRadius: 'var(--radius-md)',
-        padding: '24px 28px',
-        marginBottom: '28px',
-        border: '1px solid rgba(197, 139, 56, 0.22)',
-        boxShadow: '0 8px 24px rgba(44, 24, 16, 0.04)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div>
-            <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--brand-primary)' }}>
-              Products Page Hero Banner
-            </h3>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--ink-600)' }}>
-              Customize the curved editorial hero banner displayed at the top of the All Sarees / Products catalog page.
-            </p>
-          </div>
+    <div className="admin-products-page">
+      {/* Toast Notification */}
+      {saveToast && (
+        <div className="admin-save-toast">
+          <CheckIcon width={16} height={16} />
+          <span>{saveToast}</span>
         </div>
+      )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px 24px' }}>
-          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
-            Badge Text
-            <input
-              type="text"
-              value={heroDraft.badge || ''}
-              placeholder="e.g. HERITAGE HANDLOOMS"
-              style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14 }}
-              onChange={(e) => setHeroDraft((h) => ({ ...h, badge: e.target.value }))}
-            />
-          </label>
-
-          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
-            Header Title
-            <input
-              type="text"
-              value={heroDraft.title || ''}
-              placeholder="e.g. Our Collection"
-              style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14 }}
-              onChange={(e) => setHeroDraft((h) => ({ ...h, title: e.target.value }))}
-            />
-          </label>
+      {/* Page Header */}
+      <div className="admin-page-head-row">
+        <div>
+          <h1 className="admin-page-title">Saree Catalog &amp; Products</h1>
+          <p className="admin-page-desc">
+            Manage your store inventory ({products.length} sarees). Click <strong>Edit</strong> on any saree to update details in the pop-up modal.
+          </p>
         </div>
-
-        <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)', marginTop: 14 }}>
-          Subtitle Description
-          <textarea
-            rows={2}
-            value={heroDraft.description || ''}
-            placeholder="Rooted in Andhra Pradesh's weaving heritage, our sarees are crafted slowly, thoughtfully..."
-            style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid var(--brand-border)', fontFamily: 'var(--font-body)', fontSize: 14, resize: 'vertical' }}
-            onChange={(e) => setHeroDraft((h) => ({ ...h, description: e.target.value }))}
-          />
-        </label>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 14, alignItems: 'center' }}>
-          <label className="field-label" style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>
-            Banner Image
-            <input type="file" accept="image/*" ref={heroFileInput} onChange={handleHeroImageUpload} />
-            <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink-600)' }}>
-              Upload any photo (master artisans, silk models) — auto-compressed and scaled into the curved banner.
-            </span>
-          </label>
-
-          {(heroDraft.image || '/images/collection-hero-artisan.jpg') && (
-            <div style={{ position: 'relative', width: '100%', maxWidth: 280, height: 110, borderRadius: '8px 45px 45px 8px', overflow: 'hidden', border: '1px solid rgba(197, 139, 56, 0.3)' }}>
-              <img
-                src={heroDraft.image || '/images/collection-hero-artisan.jpg'}
-                alt="Products Hero Preview"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <span style={{ position: 'absolute', bottom: 4, left: 6, fontSize: 10, background: 'rgba(0,0,0,0.65)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>
-                Curved Header Preview
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--brand-border)' }}>
-          <button type="button" className="btn btn-primary" onClick={handleSaveHeroBanner}>
-            Save Hero Banner
+        <div className="admin-head-actions">
+          <button
+            type="button"
+            className="btn btn-outline btn-hero-toggle"
+            onClick={() => setShowHeroBannerCMS(!showHeroBannerCMS)}
+          >
+            {showHeroBannerCMS ? 'Hide Hero Banner' : 'Edit Hero Banner'}
           </button>
-          {heroSaved && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#2e7d32', fontWeight: 600, fontSize: 13 }}>
-              <CheckIcon width={14} height={14} /> Banner Saved
-            </span>
-          )}
+          <button type="button" className="btn btn-primary btn-add-product" onClick={handleOpenCreate}>
+            <PlusIcon width={16} height={16} />
+            <span>+ Add New Saree</span>
+          </button>
         </div>
       </div>
 
-      <div className="cms-layout">
-        <form className="cms-form" ref={formRef} onSubmit={handleSubmit}>
-          <div className="form-header-bar">
+      {error && <div className="admin-error-banner">{error}</div>}
+
+      {/* --- Collapsible Products Page Curved Hero Banner CMS Card --- */}
+      {showHeroBannerCMS && (
+        <div className="hero-cms-card">
+          <div className="hero-cms-header">
             <div>
-              {editingId && <span className="form-mode-tag">EDITING PRODUCT</span>}
-              <h3 className="form-title">{editingId ? `Edit product: ${form.name || ''}` : 'Add a product'}</h3>
+              <h3 className="hero-cms-title">Products Page Curved Hero Banner</h3>
+              <p className="hero-cms-sub">Customize the editorial hero banner at the top of the customer-facing sarees catalog.</p>
             </div>
-            {editingId && (
-              <button
-                type="button"
-                className="btn-cancel-edit"
-                onClick={resetForm}
-                title="Cancel edit mode and create a new product"
-              >
-                + New Product
-              </button>
-            )}
-          </div>
-
-          <div className="form-section">
-            <p className="section-label">Basic details</p>
-            <label>
-              Product name
-              <input
-                ref={nameInputRef}
-                type="text"
-                value={form.name}
-                placeholder="e.g. Purple Kanjivaram with Gold Zari"
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                required
-              />
-            </label>
-
-            <div className="category-picker">
-              <label>
-                Category
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  required
-                >
-                  <option value="" disabled>Choose a category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </label>
-
-              {form.category && (
-                <div className="category-preview">
-                  <p className="category-preview-title">
-                    Already in {categoryName(form.category)} ({productsInCategory.length})
-                  </p>
-                  {productsInCategory.length === 0 ? (
-                    <p className="category-preview-empty">Nothing here yet — this'll be the first.</p>
-                  ) : (
-                    <div className="category-preview-list">
-                      {productsInCategory.map((p) => (
-                        <div className="category-preview-item" key={p.id}>
-                          <img src={p.image} alt="" />
-                          <span>{p.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="form-row">
-              <label>
-                SKU
-                <input
-                  type="text"
-                  value={form.sku}
-                  placeholder="e.g. SK-KANJI-001"
-                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-                />
-              </label>
-              <label>
-                Short description
-                <input
-                  type="text"
-                  value={form.shortDescription}
-                  placeholder="One-line summary for cards"
-                  onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
-                />
-              </label>
-            </div>
-
-            <label>
-              Full Description
-              <textarea
-                rows="3"
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Weave, colour, occasion, blouse details, care instructions..."
-              />
-            </label>
-          </div>
-
-          <div className="form-section">
-            <p className="section-label">Pricing &amp; inventory</p>
-            <p className="field-hint pricing-hint">Fill in any two of MRP, Discount %, and Price — the third fills itself in.</p>
-            <div className="form-row">
-              <label>
-                MRP (₹)
-                <input type="number" min="0" value={form.mrp} placeholder="Original price" onChange={(e) => handleMrpChange(e.target.value)} />
-              </label>
-              <label>
-                Discount %
-                <input type="number" min="0" max="99" value={form.discountPercent} placeholder="e.g. 20" onChange={(e) => handleDiscountChange(e.target.value)} />
-              </label>
-            </div>
-
-            <div className="form-row">
-              <label>
-                Price (₹) <span className="required-mark">*</span>
-                <input type="number" min="0" value={form.price} onChange={(e) => handlePriceChange(e.target.value)} required />
-              </label>
-              <label>
-                Total Stock <span className="required-mark">*</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock}
-                  placeholder="e.g. 25"
-                  onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                  required
-                />
-              </label>
-            </div>
-            {stockNum === 0 && (
-              <p className="stock-warning">
-                Stock is set to 0 — this product will show as <strong>Out of Stock</strong> on the site the moment you save it.
-              </p>
-            )}
-          </div>
-
-
-          <div className="form-section">
-            <p className="section-label">Return &amp; cancellation policies</p>
-            <div className="policy-checkboxes">
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={Boolean(form.returnAvailable)}
-                  onChange={(e) => setForm((f) => ({ ...f, returnAvailable: e.target.checked }))}
-                />
-                <span>Return Available for this product</span>
-              </label>
-
-              {form.returnAvailable && (
-                <label className="return-window-select">
-                  Return Window
-                  <select
-                    value={form.returnWindowHours}
-                    onChange={(e) => setForm((f) => ({ ...f, returnWindowHours: Number(e.target.value) }))}
-                  >
-                    <option value={8}>8 hours after delivery</option>
-                    <option value={24}>24 hours after delivery (standard)</option>
-                    <option value={48}>48 hours after delivery</option>
-                    <option value={72}>72 hours after delivery</option>
-                    <option value={168}>7 days after delivery</option>
-                  </select>
-                </label>
-              )}
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={Boolean(form.cancellationAvailable)}
-                  onChange={(e) => setForm((f) => ({ ...f, cancellationAvailable: e.target.checked }))}
-                />
-                <span>Cancellation Allowed before dispatch</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="form-section">
-            <div className="section-head-row">
-              <div>
-                <p className="section-label">Product color variants</p>
-                <p className="field-hint">Add selectable color options with their own inventory, SKU, color swatch, and color-specific saree photos.</p>
-              </div>
-              <button type="button" className="btn btn-outline btn-sm add-variant-btn" onClick={addVariant}>
-                + Add Color
-              </button>
-            </div>
-
-            {(!form.variants || form.variants.length === 0) ? (
-              <p className="empty-hint">No color variants added yet. Customers will buy this as a single product.</p>
-            ) : (
-              <div className="variants-list">
-                {form.variants.map((v, i) => {
-                  const vImgs = Array.isArray(v.images) ? v.images : [];
-                  return (
-                    <div className="variant-item-card" key={i}>
-                      <div className="variant-top-row">
-                        <div className="color-swatch-picker">
-                          <input
-                            type="color"
-                            value={v.colorCode || '#8B0000'}
-                            onChange={(e) => updateVariantField(i, 'colorCode', e.target.value)}
-                            title="Pick swatch color"
-                          />
-                          <span className="swatch-code">{v.colorCode || '#8B0000'}</span>
-                        </div>
-                        <input
-                          type="text"
-                          className="variant-name-input"
-                          placeholder="Color Name (e.g. Royal Red)"
-                          value={v.colorName || ''}
-                          onChange={(e) => updateVariantField(i, 'colorName', e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="variant-remove-btn"
-                          onClick={() => removeVariant(i)}
-                          title="Remove color"
-                        >
-                          <CloseIcon width={12} height={12} />
-                        </button>
-                      </div>
-                      <div className="variant-fields-grid">
-                        <label>
-                          SKU
-                          <input
-                            type="text"
-                            placeholder="e.g. SK-P1-RED"
-                            value={v.sku || ''}
-                            onChange={(e) => updateVariantField(i, 'sku', e.target.value)}
-                          />
-                        </label>
-                        <label>
-                          Stock
-                          <input
-                            type="number"
-                            min="0"
-                            value={v.stock ?? ''}
-                            onChange={(e) => updateVariantField(i, 'stock', Number(e.target.value))}
-                          />
-                        </label>
-                        <label>
-                          Price (₹) <span className="opt-tag">optional</span>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Inherit"
-                            value={v.price ?? ''}
-                            onChange={(e) => updateVariantField(i, 'price', e.target.value ? Number(e.target.value) : '')}
-                          />
-                        </label>
-                      </div>
-
-                      <div className="variant-photos-box">
-                        <div className="variant-photos-head">
-                          <span className="variant-photos-label">
-                            <span
-                              className="variant-dot-inline"
-                              style={{ backgroundColor: v.colorCode || '#8B0000' }}
-                            />
-                            Photos for {v.colorName || `Color #${i + 1}`}
-                          </span>
-                        </div>
-
-                        <div className="variant-dual-photos">
-                          {/* Slot 1: Main Saree Photo for this color */}
-                          <div className="variant-photo-slot">
-                            <div className="variant-slot-top">
-                              <span className="variant-slot-title">Main Saree Photo</span>
-                              <label className="variant-upload-btn">
-                                {variantImgBusy === i ? 'Uploading…' : vImgs[0] ? 'Change' : '+ Upload'}
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  hidden
-                                  disabled={variantImgBusy === i}
-                                  onChange={(e) => handleVariantMainImage(i, e)}
-                                />
-                              </label>
-                            </div>
-                            {vImgs[0] ? (
-                              <div className="variant-slot-preview">
-                                <img src={vImgs[0]} alt={`${v.colorName || 'Color'} Main`} />
-                                <span className="variant-slot-badge badge-main">Main View</span>
-                                <button
-                                  type="button"
-                                  className="variant-thumb-remove"
-                                  onClick={() => removeVariantImage(i, 0)}
-                                  title="Remove main photo"
-                                >
-                                  <CloseIcon width={10} height={10} />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="variant-slot-empty">
-                                No main photo yet
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Slot 2: Separate Hover Photo (Model Wearing) for this color */}
-                          <div className="variant-photo-slot">
-                            <div className="variant-slot-top">
-                              <span className="variant-slot-title">Hover Photo (Model)</span>
-                              <label className="variant-upload-btn">
-                                {variantHoverBusy === i ? 'Uploading…' : (v.hoverImage || v.hover_image) ? 'Change' : '+ Upload'}
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  hidden
-                                  disabled={variantHoverBusy === i}
-                                  onChange={(e) => handleVariantHoverImage(i, e)}
-                                />
-                              </label>
-                            </div>
-                            {(v.hoverImage || v.hover_image) ? (
-                              <div className="variant-slot-preview">
-                                <img src={v.hoverImage || v.hover_image} alt={`${v.colorName || 'Color'} Hover`} />
-                                <span className="variant-slot-badge badge-hover">Hover / Model</span>
-                                <button
-                                  type="button"
-                                  className="variant-thumb-remove"
-                                  onClick={() => removeVariantHoverImage(i)}
-                                  title="Remove hover photo"
-                                >
-                                  <CloseIcon width={10} height={10} />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="variant-slot-empty">
-                                Optional hover model photo
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Optional extra gallery angles for this specific color */}
-                        <div className="variant-extra-gallery">
-                          <div className="variant-photos-head">
-                            <span className="field-hint" style={{ fontSize: 11 }}>
-                              Extra gallery angles for {v.colorName || `Color #${i + 1}`} (optional)
-                            </span>
-                            <label className="variant-upload-btn">
-                              {variantImgBusy === i ? 'Uploading…' : '+ Extra Photos'}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                hidden
-                                disabled={variantImgBusy === i}
-                                onChange={(e) => handleVariantImages(i, e)}
-                              />
-                            </label>
-                          </div>
-
-                          {vImgs.length > 1 && (
-                            <div className="variant-thumbs-row">
-                              {vImgs.slice(1).map((src, extraIdx) => {
-                                const actualIdx = extraIdx + 1;
-                                return (
-                                  <div
-                                    key={actualIdx}
-                                    className="variant-thumb-item"
-                                    title="Click to make main photo for this color"
-                                    onClick={() => setVariantPrimaryImage(i, actualIdx)}
-                                  >
-                                    <img src={src} alt={`${v.colorName || 'Variant'} extra ${actualIdx}`} />
-                                    <button
-                                      type="button"
-                                      className="variant-thumb-remove"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeVariantImage(i, actualIdx);
-                                      }}
-                                      aria-label="Remove color photo"
-                                    >
-                                      <CloseIcon width={10} height={10} />
-                                    </button>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="form-section">
-            <p className="section-label">
-              {form.variants?.length > 0 ? 'Default Fallback Photo & Shared Gallery' : 'Photos & Hover Preview'}
-            </p>
-            {form.variants?.length > 0 ? (
-              <>
-                <p className="field-hint" style={{ marginTop: -6 }}>
-                  Each color variant above has its own <strong>Main Saree Photo</strong> and <strong>Hover Photo (Model Wearing)</strong>. The first color&apos;s photos are used automatically as the default product card preview unless you override the fallback cover photo below.
-                </p>
-                <div className="photo-input-card">
-                  <label>
-                    <span className="photo-field-title">Fallback Cover Photo (Optional when using Color Variants)</span>
-                    <span className="field-hint">Automatically uses your first color variant&apos;s Main Photo if left empty.</span>
-                    <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
-                  </label>
-                  {form.image ? (
-                    <div className="preview-thumb-card">
-                      <img src={form.image} alt="Main Saree Preview" />
-                      <span className="preview-chip chip-primary">Default Saree View</span>
-                    </div>
-                  ) : (
-                    <div className="preview-empty-slot">
-                      <span>Uses 1st color variant&apos;s main photo automatically</span>
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="photo-inputs-grid">
-                <div className="photo-input-card">
-                  <label>
-                    <span className="photo-field-title">Main Saree Photo</span>
-                    <span className="field-hint">Initial storefront photo (saree flat lay / folded).</span>
-                    <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
-                  </label>
-                  {form.image ? (
-                    <div className="preview-thumb-card">
-                      <img src={form.image} alt="Main Saree Preview" />
-                      <span className="preview-chip chip-primary">Default Saree View</span>
-                    </div>
-                  ) : (
-                    <div className="preview-empty-slot">
-                      <span>No main photo selected</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="photo-input-card">
-                  <label>
-                    <span className="photo-field-title">Hover Photo (Model Wearing Saree)</span>
-                    <span className="field-hint">Revealed when shopper hovers over the product card.</span>
-                    <input type="file" accept="image/*" ref={hoverFileInput} onChange={handleHoverImage} />
-                  </label>
-                  {form.hoverImage ? (
-                    <div className="preview-thumb-card">
-                      <img src={form.hoverImage} alt="Hover Model Preview" />
-                      <span className="preview-chip chip-model">Hover / Wearing View</span>
-                      <button
-                        type="button"
-                        className="photo-clear-btn"
-                        onClick={removeHoverImage}
-                        title="Remove hover model photo"
-                      >
-                        <CloseIcon width={12} height={12} /> Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="preview-empty-slot">
-                      <span>Optional · Fallbacks to main photo on hover</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <label style={{ marginTop: 10 }}>
-              Gallery photos
-              <span className="field-hint">Extra angles or close-ups shown as thumbnails on the product page. Any size works — they're cropped to fit.</span>
-            </label>
-
-            {form.images?.length > 0 && (
-              <div className="gallery-grid">
-                {form.images.map((src, i) => (
-                  <div className="gallery-thumb" key={i}>
-                    <img src={src} alt="" />
-                    <button type="button" className="gallery-remove" onClick={() => removeGalleryImage(i)} aria-label="Remove image">
-                      <CloseIcon width={12} height={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button type="button" className="btn btn-outline" disabled={galleryBusy} onClick={() => galleryInput.current?.click()}>
-              {galleryBusy ? 'Uploading…' : '+ Add gallery photo'}
+            <button
+              type="button"
+              className="btn-close-cms"
+              onClick={() => setShowHeroBannerCMS(false)}
+              aria-label="Close hero settings"
+            >
+              <CloseIcon width={14} height={14} />
             </button>
-            <input ref={galleryInput} type="file" accept="image/*" multiple hidden onChange={handleGalleryFiles} />
           </div>
 
-          <div className="form-section">
-            <p className="section-label">SEO &amp; discovery</p>
-            <label>
-              Tags (comma separated)
+          <div className="hero-fields-grid">
+            <label className="field-label">
+              Badge Text
               <input
                 type="text"
-                placeholder="e.g. bridal, festive, gold zari, pure silk"
-                value={form.tags}
-                onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+                value={heroDraft.badge || ''}
+                placeholder="e.g. HERITAGE HANDLOOMS"
+                onChange={(e) => setHeroDraft((h) => ({ ...h, badge: e.target.value }))}
               />
             </label>
-            <div className="form-row">
-              <label>
-                SEO Title
-                <input
-                  type="text"
-                  placeholder="Custom title tag for search engines"
-                  value={form.seoTitle}
-                  onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))}
-                />
-              </label>
-              <label>
-                URL Slug
-                <input
-                  type="text"
-                  placeholder="e.g. purple-kanjivaram-gold-zari"
-                  value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                />
-              </label>
-            </div>
-            <label>
-              SEO Meta Description
-              <textarea
-                rows="2"
-                placeholder="Brief summary for Google search results"
-                value={form.seoDescription}
-                onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
+            <label className="field-label">
+              Header Title
+              <input
+                type="text"
+                value={heroDraft.title || ''}
+                placeholder="e.g. Our Collection"
+                onChange={(e) => setHeroDraft((h) => ({ ...h, title: e.target.value }))}
               />
             </label>
           </div>
 
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary">
-              {editingId ? 'Save Changes' : 'Add Product'}
+          <label className="field-label" style={{ marginTop: 12 }}>
+            Subtitle Description
+            <textarea
+              rows={2}
+              value={heroDraft.description || ''}
+              placeholder="Rooted in Andhra Pradesh's weaving heritage..."
+              onChange={(e) => setHeroDraft((h) => ({ ...h, description: e.target.value }))}
+            />
+          </label>
+
+          <div className="hero-photo-row">
+            <label className="field-label" style={{ flex: 1 }}>
+              Banner Image
+              <input type="file" accept="image/*" ref={heroFileInput} onChange={handleHeroImageUpload} />
+              <span className="field-hint">Upload high-res weaver or model photo — auto-scaled into the curved banner.</span>
+            </label>
+
+            {(heroDraft.image || '/images/collection-hero-artisan.jpg') && (
+              <div className="hero-preview-curved">
+                <img src={heroDraft.image || '/images/collection-hero-artisan.jpg'} alt="Curved Preview" />
+                <span className="hero-preview-tag">Storefront Preview</span>
+              </div>
+            )}
+          </div>
+
+          <div className="hero-cms-actions">
+            <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveHeroBanner}>
+              Save Hero Banner
             </button>
-            {editingId && (
-              <button type="button" className="btn btn-outline" onClick={resetForm}>Cancel</button>
+            {heroSaved && (
+              <span className="hero-saved-status">
+                <CheckIcon width={14} height={14} /> Banner Saved
+              </span>
             )}
           </div>
-        </form>
+        </div>
+      )}
 
-        <div className="cms-list">
-          <div className="cms-list-header">
-            <div>
-              <h4 className="cms-list-title">All Products ({products.length})</h4>
-              <p className="cms-list-subtitle">Click Edit or any product card to update details</p>
-            </div>
-            {editingId && (
-              <button
-                type="button"
-                className="btn btn-outline btn-sm add-new-product-btn"
-                onClick={() => {
-                  resetForm();
-                  scrollToFormTop();
-                }}
-              >
-                + Add New Product
-              </button>
-            )}
-          </div>
-
-          {products.length === 0 && <p className="empty">No products yet.</p>}
-          {products.map((p) => {
-            const hasDiscount = p.mrp > p.price;
-            const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
-            const hasHover = Boolean(p.hoverImage || p.hover_image);
-            const isEditing = editingId === p.id;
+      {/* --- Category Tabs Navigation --- */}
+      <div className="category-tabs-container">
+        <div className="category-tabs-scroll">
+          <button
+            type="button"
+            className={`category-tab-pill ${selectedCategory === 'all' ? 'active' : ''}`}
+            onClick={() => setSelectedCategory('all')}
+          >
+            <CategoriesIcon width={14} height={14} />
+            <span>All Sarees</span>
+            <span className="tab-count-badge">{products.length}</span>
+          </button>
+          {categories.map((c) => {
+            const count = categoryCounts[c.id] || 0;
+            const isActive = selectedCategory === c.id;
             return (
-              <div
-                className={`cms-row ${p.active === false ? 'is-hidden' : ''} ${isEditing ? 'is-editing' : ''}`}
-                key={p.id}
+              <button
+                type="button"
+                key={c.id}
+                className={`category-tab-pill ${isActive ? 'active' : ''}`}
+                onClick={() => setSelectedCategory(c.id)}
               >
-                {/* Main info section */}
-                <div
-                  className="cms-row-main"
-                  onClick={() => handleEdit(p)}
-                  title={`Click to edit ${p.name}`}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div
-                    className="admin-row-thumb-container"
-                    title={hasHover ? "Hover to see model wearing saree" : "Main saree photo"}
-                  >
-                    <img src={p.image} alt="" className="row-thumb-sq" />
-                    {hasHover && (
-                      <img src={p.hoverImage || p.hover_image} alt="" className="row-thumb-sq row-thumb-hover" />
-                    )}
-                  </div>
-
-                  <div className="row-info">
-                    <div className="row-title-line">
-                      <strong className="row-product-name">{p.name}</strong>
-                      {hasHover && (
-                        <span className="row-hover-badge" title="Model wearing photo configured for hover effect">
-                          Model Hover
-                        </span>
-                      )}
-                      {p.variants?.length > 0 && (
-                        <span className="row-variants-badge" title={p.variants.map((v) => v.colorName || v.color_name).join(', ')}>
-                          {p.variants.slice(0, 4).map((v, idx) => (
-                            <span
-                              key={idx}
-                              className="row-variant-dot"
-                              style={{ backgroundColor: v.colorCode || v.color_code || '#8B0000' }}
-                            />
-                          ))}
-                          {p.variants.length} {p.variants.length === 1 ? 'Color' : 'Colors'}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="row-meta-line">
-                      <span className="row-category">{categoryName(p.category)}</span>
-                      <span className="row-meta-sep">•</span>
-                      <span className="row-price-line">
-                        <span className="row-price">{formatINR(p.price)}</span>
-                        {hasDiscount && (
-                          <>
-                            <span className="row-mrp">{formatINR(p.mrp)}</span>
-                            <span className="row-discount">{discountPct}% off</span>
-                          </>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="row-status-badges">
-                    {isEditing && <span className="editing-badge">Editing</span>}
-                    {p.active === false && <span className="hidden-badge">Hidden</span>}
-                    <span className={`stock-badge ${stockTone(p.stock)}`}>{stockLabel(p.stock)}</span>
-                  </div>
-                </div>
-
-                {/* Bottom actions bar */}
-                <div className="row-actions-bar">
-                  <div className="row-move-wrap">
-                    <span className="row-move-label">Category:</span>
-                    <select
-                      className="row-move-select"
-                      value={p.category}
-                      disabled={movingId === p.id}
-                      onChange={(e) => handleMoveCategory(p, e.target.value)}
-                      aria-label={`Move ${p.name} to a different category`}
-                      title="Move to a different category"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="row-action-btns">
-                    <button
-                      type="button"
-                      className={`btn-row-action edit-btn ${isEditing ? 'is-active' : ''}`}
-                      onClick={() => handleEdit(p)}
-                    >
-                      {isEditing ? 'Editing' : 'Edit'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-row-action toggle-btn"
-                      onClick={() => handleToggleActive(p)}
-                      disabled={movingId === p.id}
-                    >
-                      {p.active === false ? 'Show' : 'Hide'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-row-action delete-btn"
-                      onClick={() => handleDelete(p.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+                <span>{c.name}</span>
+                <span className="tab-count-badge">{count}</span>
+              </button>
             );
           })}
         </div>
       </div>
 
-      <style>{`
-        .admin-page-head { margin-bottom: 30px; }
-        .admin-page-head h1 { font-size: 26px; margin-bottom: 8px; }
-        .admin-page-head p { font-size: 13px; color: var(--ink-400); max-width: 560px; line-height: 1.6; }
-        .admin-error { font-size: 12.5px; color: #a13a3a; margin-bottom: 16px; }
+      {/* --- Search, Filter & View Controls Bar --- */}
+      <div className="catalog-toolbar">
+        <div className="toolbar-search-box">
+          <SearchIcon width={16} height={16} className="search-icon-svg" />
+          <input
+            type="text"
+            value={searchQuery}
+            placeholder="Search sarees by name, SKU, price, tags..."
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button type="button" className="clear-search-btn" onClick={() => setSearchQuery('')}>
+              <CloseIcon width={14} height={14} />
+            </button>
+          )}
+        </div>
 
-        .cms-layout {
-          display: grid;
-          grid-template-columns: minmax(420px, 490px) minmax(0, 1fr);
-          gap: 28px;
-          align-items: flex-start;
-        }
-        .cms-form {
-          background: var(--paper);
-          border-radius: var(--radius-md);
-          padding: 26px;
-          display: flex;
-          flex-direction: column;
-          gap: 22px;
-          min-width: 0;
+        <div className="toolbar-filters">
+          <select
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value)}
+            className="filter-select"
+            aria-label="Filter by Stock Status"
+          >
+            <option value="all">All Stock</option>
+            <option value="in">In Stock (&gt;5)</option>
+            <option value="low">Low Stock (≤5)</option>
+            <option value="out">Out of Stock (0)</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="filter-select"
+            aria-label="Filter by Visibility"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active on Store</option>
+            <option value="hidden">Hidden from Store</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="filter-select"
+            aria-label="Sort products"
+          >
+            <option value="newest">Sort: Newest First</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="stock-asc">Stock: Low to High</option>
+            <option value="name-asc">Name: A to Z</option>
+          </select>
+
+          <div className="view-toggle-btns">
+            <button
+              type="button"
+              className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              title="Side-by-side Grid View"
+            >
+              ⊞ Grid
+            </button>
+            <button
+              type="button"
+              className={`view-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+              title="Compact Table View"
+            >
+              ☰ Table
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Header Count */}
+      <div className="catalog-status-bar">
+        <span>
+          Showing <strong>{filteredProducts.length}</strong> {filteredProducts.length === 1 ? 'saree' : 'sarees'}
+          {selectedCategory !== 'all' && (
+            <>
+              {' in '}
+              <strong className="active-cat-name">{categoryName(selectedCategory)}</strong>
+              <button
+                type="button"
+                className="btn-clear-category"
+                onClick={() => setSelectedCategory('all')}
+              >
+                (Show All)
+              </button>
+            </>
+          )}
+          {searchQuery && <> matching &quot;{searchQuery}&quot;</>}
+        </span>
+      </div>
+
+      {/* --- Side-by-Side Products Grid Layout --- */}
+      {filteredProducts.length === 0 ? (
+        <div className="catalog-empty-state">
+          <p className="empty-title">No sarees found</p>
+          <p className="empty-sub">
+            {searchQuery || stockFilter !== 'all' || statusFilter !== 'all' || selectedCategory !== 'all'
+              ? 'Try clearing your filters or search terms.'
+              : 'Start adding sarees to your catalog!'}
+          </p>
+          <button type="button" className="btn btn-primary" onClick={handleOpenCreate}>
+            + Add First Saree
+          </button>
+        </div>
+      ) : viewMode === 'grid' ? (
+        <div className="products-side-by-side-grid">
+          {filteredProducts.map((p) => {
+            const hasDiscount = p.mrp > p.price;
+            const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+            const hasHover = Boolean(p.hoverImage || p.hover_image);
+
+            return (
+              <div
+                key={p.id}
+                className={`product-card ${p.active === false ? 'is-hidden-card' : ''}`}
+              >
+                {/* Product Thumbnail with Model Hover */}
+                <div
+                  className="product-card-media"
+                  onClick={() => handleOpenEdit(p)}
+                  title="Click to edit saree"
+                >
+                  <img src={p.image} alt={p.name} className="product-media-img" loading="lazy" />
+                  {hasHover && (
+                    <img
+                      src={p.hoverImage || p.hover_image}
+                      alt="Hover View"
+                      className="product-media-img product-media-hover"
+                      loading="lazy"
+                    />
+                  )}
+
+                  {/* Badges on image */}
+                  <div className="card-top-badges">
+                    <span className="card-cat-badge">{categoryName(p.category)}</span>
+                    {p.active === false && <span className="card-hidden-badge">Hidden</span>}
+                  </div>
+
+                  <div className="card-bottom-badges">
+                    <span className={`stock-badge ${stockTone(p.stock)}`}>
+                      {stockLabel(p.stock)}
+                    </span>
+                    {hasHover && <span className="card-hover-tag">Model Hover</span>}
+                  </div>
+                </div>
+
+                {/* Card Information */}
+                <div className="product-card-body" onClick={() => handleOpenEdit(p)}>
+                  <h4 className="product-card-title" title={p.name}>
+                    {p.name}
+                  </h4>
+                  {p.sku && <span className="product-card-sku">SKU: {p.sku}</span>}
+
+                  {/* Color Swatch Dots */}
+                  {p.variants?.length > 0 && (
+                    <div className="card-swatches-row" title={`${p.variants.length} color variants`}>
+                      {p.variants.slice(0, 5).map((v, idx) => (
+                        <span
+                          key={idx}
+                          className="card-swatch-dot"
+                          style={{ backgroundColor: v.colorCode || v.color_code || '#8B0000' }}
+                          title={v.colorName || v.color_name || 'Color'}
+                        />
+                      ))}
+                      <span className="card-swatches-count">
+                        {p.variants.length} {p.variants.length === 1 ? 'Color' : 'Colors'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Pricing line */}
+                  <div className="card-price-row">
+                    <span className="card-price">{formatINR(p.price)}</span>
+                    {hasDiscount && (
+                      <>
+                        <span className="card-mrp">{formatINR(p.mrp)}</span>
+                        <span className="card-discount">{discountPct}% OFF</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Quick Actions Bar */}
+                <div className="product-card-actions">
+                  <button
+                    type="button"
+                    className="btn-card-edit"
+                    onClick={() => handleOpenEdit(p)}
+                    title="Open edit popup"
+                  >
+                    <EditIcon width={13} height={13} />
+                    <span>Edit</span>
+                  </button>
+
+                  <select
+                    className="card-cat-select"
+                    value={p.category}
+                    disabled={movingId === p.id}
+                    onChange={(e) => handleMoveCategory(p, e.target.value)}
+                    title="Quick move category"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    className="btn-card-icon"
+                    onClick={() => handleToggleActive(p)}
+                    disabled={movingId === p.id}
+                    title={p.active === false ? 'Show saree in store' : 'Hide saree from store'}
+                  >
+                    <EyeIcon width={14} height={14} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-card-icon btn-card-delete"
+                    onClick={() => handleDelete(p.id, p.name)}
+                    title="Delete saree"
+                  >
+                    <TrashIcon width={14} height={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* --- Compact Table View Alternative --- */
+        <div className="catalog-table-wrapper">
+          <table className="catalog-table">
+            <thead>
+              <tr>
+                <th style={{ width: 64 }}>Photo</th>
+                <th>Saree Name</th>
+                <th>Category</th>
+                <th>SKU</th>
+                <th>Price &amp; MRP</th>
+                <th>Stock</th>
+                <th>Colors</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map((p) => {
+                const hasDiscount = p.mrp > p.price;
+                const discountPct = hasDiscount ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+                return (
+                  <tr key={p.id} className={p.active === false ? 'is-hidden-row' : ''}>
+                    <td>
+                      <div className="table-thumb" onClick={() => handleOpenEdit(p)}>
+                        <img src={p.image} alt="" />
+                      </div>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="table-name-btn"
+                        onClick={() => handleOpenEdit(p)}
+                      >
+                        {p.name}
+                      </button>
+                    </td>
+                    <td>
+                      <span className="table-cat-chip">{categoryName(p.category)}</span>
+                    </td>
+                    <td className="table-sku-cell">{p.sku || '—'}</td>
+                    <td>
+                      <span className="table-price-bold">{formatINR(p.price)}</span>
+                      {hasDiscount && (
+                        <div className="table-mrp-sub">
+                          <span className="table-mrp-del">{formatINR(p.mrp)}</span>
+                          <span className="table-disc-badge">{discountPct}% off</span>
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <span className={`stock-badge ${stockTone(p.stock)}`}>
+                        {stockLabel(p.stock)}
+                      </span>
+                    </td>
+                    <td>
+                      {p.variants?.length > 0 ? (
+                        <span className="table-color-count">{p.variants.length} colors</span>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td>
+                      {p.active === false ? (
+                        <span className="table-badge-hidden">Hidden</span>
+                      ) : (
+                        <span className="table-badge-active">Active</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="table-action-group">
+                        <button
+                          type="button"
+                          className="btn-table-edit"
+                          onClick={() => handleOpenEdit(p)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-table-toggle"
+                          onClick={() => handleToggleActive(p)}
+                          disabled={movingId === p.id}
+                        >
+                          {p.active === false ? 'Show' : 'Hide'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-table-delete"
+                          onClick={() => handleDelete(p.id, p.name)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* =========================================================================
+          POP-UP EDITING MODAL (The requested "pop up editing screen")
+         ========================================================================= */}
+      {isModalOpen && (
+        <div className="admin-modal-backdrop" onClick={closeModal}>
+          <div className="admin-modal-card" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="admin-modal-header">
+              <div className="modal-title-group">
+                <span className="modal-tag">
+                  {editingId ? 'EDITING SAREE' : 'ADD NEW SAREE'}
+                </span>
+                <h2 className="modal-title">
+                  {editingId ? form.name || 'Edit Product' : 'Add a New Saree to Catalog'}
+                </h2>
+                {editingId && (
+                  <span className="modal-cat-sub">
+                    In {categoryName(form.category)}
+                    {currentModalIndex >= 0 && (
+                      <span className="modal-index-counter">
+                        {' '}&bull; Saree {currentModalIndex + 1} of {filteredProducts.length}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+
+              {/* Navigation & Close */}
+              <div className="modal-header-nav">
+                {editingId && (
+                  <div className="modal-prev-next-btns">
+                    <button
+                      type="button"
+                      className="btn-modal-nav"
+                      disabled={!hasPrev}
+                      onClick={() => handleNavigateModal(currentModalIndex - 1)}
+                      title="Previous saree in list"
+                    >
+                      &larr; Prev
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-modal-nav"
+                      disabled={!hasNext}
+                      onClick={() => handleNavigateModal(currentModalIndex + 1)}
+                      title="Next saree in list"
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="btn-modal-close"
+                  onClick={closeModal}
+                  aria-label="Close editing modal"
+                >
+                  <CloseIcon width={18} height={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="admin-modal-body" ref={modalBodyRef}>
+              <form id="productModalForm" onSubmit={(e) => handleSaveForm(e, false)}>
+                {/* 1. Basic Details */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">1. Basic Details</h4>
+                  <div className="modal-form-grid">
+                    <label className="modal-field full-width">
+                      <span>Saree Name <span className="req">*</span></span>
+                      <input
+                        type="text"
+                        value={form.name}
+                        placeholder="e.g. Pure Dharmavaram Silk Saree with Gold Zari"
+                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                        required
+                        autoFocus
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>Category <span className="req">*</span></span>
+                      <select
+                        value={form.category}
+                        onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                        required
+                      >
+                        <option value="" disabled>Select category</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="modal-field">
+                      <span>SKU (Stock Keeping Unit)</span>
+                      <input
+                        type="text"
+                        value={form.sku}
+                        placeholder="e.g. SK-DHR-001"
+                        onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                      />
+                    </label>
+
+                    <label className="modal-field full-width">
+                      <span>Short Description (Highlights)</span>
+                      <input
+                        type="text"
+                        value={form.shortDescription}
+                        placeholder="e.g. Handwoven pure mulberry silk with rich contrast pallu"
+                        onChange={(e) => setForm((f) => ({ ...f, shortDescription: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* 2. Pricing & Stock */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">2. Pricing &amp; Inventory</h4>
+                  <p className="modal-section-sub">
+                    Enter MRP and Selling Price, or type a Discount % — other fields calculate automatically.
+                  </p>
+                  <div className="modal-pricing-grid">
+                    <label className="modal-field">
+                      <span>Selling Price (₹) <span className="req">*</span></span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.price}
+                        placeholder="e.g. 12500"
+                        onChange={(e) => handlePricingFieldChange('price', e.target.value)}
+                        required
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>Original MRP (₹)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.mrp}
+                        placeholder="e.g. 16000"
+                        onChange={(e) => handlePricingFieldChange('mrp', e.target.value)}
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>Discount (%)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        step="1"
+                        value={form.discountPercent}
+                        placeholder="e.g. 22"
+                        onChange={(e) => handlePricingFieldChange('discountPercent', e.target.value)}
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>Available Stock <span className="req">*</span></span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.stock}
+                        placeholder="e.g. 10 (0 = out of stock)"
+                        onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
+                        required
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* 3. Color Variants with Images & Hover */}
+                <div className="modal-form-section">
+                  <div className="section-header-flex">
+                    <div>
+                      <h4 className="modal-section-title">3. Color Variants &amp; Swatches</h4>
+                      <p className="modal-section-sub">
+                        Add individual colors (e.g., Maroon, Peacock Blue). Each variant can have its own main photo &amp; model hover photo.
+                      </p>
+                    </div>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={addVariant}>
+                      + Add Color Variant
+                    </button>
+                  </div>
+
+                  {(!form.variants || form.variants.length === 0) ? (
+                    <div className="empty-variants-box">
+                      <p>No color variants added yet. Click &quot;+ Add Color Variant&quot; if this saree is available in multiple colors.</p>
+                    </div>
+                  ) : (
+                    <div className="modal-variants-list">
+                      {form.variants.map((v, vIdx) => (
+                        <div key={vIdx} className="variant-card-item">
+                          <div className="variant-card-head">
+                            <div className="variant-color-input-wrap">
+                              <input
+                                type="color"
+                                value={v.colorCode || '#8B0000'}
+                                onChange={(e) => updateVariantField(vIdx, 'colorCode', e.target.value)}
+                                title="Pick color swatch"
+                              />
+                              <input
+                                type="text"
+                                className="variant-name-input"
+                                value={v.colorName || ''}
+                                placeholder="Color name (e.g. Royal Maroon)"
+                                onChange={(e) => updateVariantField(vIdx, 'colorName', e.target.value)}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className="btn-remove-variant"
+                              onClick={() => removeVariant(vIdx)}
+                              title="Remove color variant"
+                            >
+                              <CloseIcon width={12} height={12} /> Remove
+                            </button>
+                          </div>
+
+                          <div className="variant-card-fields">
+                            <label className="modal-field">
+                              <span>Stock for this Color</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.stock}
+                                onChange={(e) => updateVariantField(vIdx, 'stock', Number(e.target.value))}
+                              />
+                            </label>
+                            <label className="modal-field">
+                              <span>Color SKU</span>
+                              <input
+                                type="text"
+                                value={v.sku}
+                                placeholder="e.g. SK-DHR-001-MRN"
+                                onChange={(e) => updateVariantField(vIdx, 'sku', e.target.value)}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Photos for this color */}
+                          <div className="variant-card-photos">
+                            <div className="variant-photo-col">
+                              <span className="variant-photo-heading">Main Photo ({v.colorName || `Color ${vIdx + 1}`})</span>
+                              <div className="variant-photo-preview">
+                                {v.images?.[0] ? (
+                                  <img src={v.images[0]} alt="" />
+                                ) : (
+                                  <div className="no-photo-slot">No photo</div>
+                                )}
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleVariantMainImage(vIdx, e)}
+                                disabled={variantImgBusy === vIdx}
+                              />
+                            </div>
+
+                            <div className="variant-photo-col">
+                              <span className="variant-photo-heading">Model Hover Photo (Wearing Saree)</span>
+                              <div className="variant-photo-preview">
+                                {v.hoverImage ? (
+                                  <>
+                                    <img src={v.hoverImage} alt="" />
+                                    <button
+                                      type="button"
+                                      className="btn-remove-hover"
+                                      onClick={() => removeVariantHoverImage(vIdx)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="no-photo-slot">No hover photo</div>
+                                )}
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleVariantHoverImage(vIdx, e)}
+                                disabled={variantHoverBusy === vIdx}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Photos & Hover Preview (Fallback & Gallery) */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">4. Main Saree Photos &amp; Gallery</h4>
+                  <p className="modal-section-sub">
+                    Default fallback photo, model hover photo (shown on product card hover), and multi-angle thumbnails.
+                  </p>
+
+                  <div className="modal-dual-photos">
+                    <div className="photo-box">
+                      <span className="photo-box-title">Main Saree Photo</span>
+                      <span className="field-hint">Initial storefront view (saree flat lay / folded).</span>
+                      <input type="file" accept="image/*" ref={fileInput} onChange={handleImage} />
+                      {form.image ? (
+                        <div className="modal-thumb-preview">
+                          <img src={form.image} alt="Main Preview" />
+                          <span className="badge-overlay">Main Saree Photo</span>
+                        </div>
+                      ) : (
+                        <div className="empty-photo-slot">
+                          <span>{form.variants?.length ? 'Uses 1st variant photo automatically' : 'No photo uploaded'}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="photo-box">
+                      <span className="photo-box-title">Hover Photo (Model Wearing Saree)</span>
+                      <span className="field-hint">Revealed when shopper hovers mouse over card.</span>
+                      <input type="file" accept="image/*" ref={hoverFileInput} onChange={handleHoverImage} />
+                      {form.hoverImage ? (
+                        <div className="modal-thumb-preview">
+                          <img src={form.hoverImage} alt="Hover Preview" />
+                          <span className="badge-overlay badge-hover">Model Wearing Photo</span>
+                          <button type="button" className="photo-remove-btn" onClick={removeHoverImage}>
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="empty-photo-slot">
+                          <span>Optional (fallback to main)</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Additional Gallery Photos */}
+                  <div className="modal-gallery-area">
+                    <div className="gallery-header-row">
+                      <span className="photo-box-title">Additional Gallery Photos ({form.images?.length || 0})</span>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-xs"
+                        disabled={galleryBusy}
+                        onClick={() => galleryInput.current?.click()}
+                      >
+                        {galleryBusy ? 'Uploading…' : '+ Add Gallery Photos'}
+                      </button>
+                      <input ref={galleryInput} type="file" accept="image/*" multiple hidden onChange={handleGalleryFiles} />
+                    </div>
+
+                    {form.images?.length > 0 && (
+                      <div className="modal-gallery-thumbs">
+                        {form.images.map((src, i) => (
+                          <div className="gallery-thumb-item" key={i}>
+                            <img src={src} alt="" />
+                            <button
+                              type="button"
+                              className="thumb-delete-btn"
+                              onClick={() => removeGalleryImage(i)}
+                              title="Delete photo"
+                            >
+                              <CloseIcon width={10} height={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 5. Return & Cancellation Policy */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">5. Returns &amp; Cancellation Policy</h4>
+                  <div className="policy-checkbox-grid">
+                    <label className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={form.returnAvailable}
+                        onChange={(e) => setForm((f) => ({ ...f, returnAvailable: e.target.checked }))}
+                      />
+                      <span>Allow Customer Returns for this Saree</span>
+                    </label>
+
+                    {form.returnAvailable && (
+                      <label className="modal-field" style={{ marginLeft: 28, maxWidth: 220 }}>
+                        <span>Return Window</span>
+                        <select
+                          value={form.returnWindowHours}
+                          onChange={(e) => setForm((f) => ({ ...f, returnWindowHours: Number(e.target.value) }))}
+                        >
+                          <option value={24}>24 Hours after delivery</option>
+                          <option value={48}>48 Hours after delivery</option>
+                          <option value={72}>72 Hours (3 Days)</option>
+                          <option value={168}>7 Days</option>
+                        </select>
+                      </label>
+                    )}
+
+                    <label className="checkbox-item" style={{ marginTop: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={form.cancellationAvailable}
+                        onChange={(e) => setForm((f) => ({ ...f, cancellationAvailable: e.target.checked }))}
+                      />
+                      <span>Allow Cancellation before Dispatch</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 6. Full Description & Dimensions */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">6. Description &amp; Specifications</h4>
+                  <label className="modal-field full-width">
+                    <span>Full Product Description</span>
+                    <textarea
+                      rows={4}
+                      value={form.description}
+                      placeholder="Detailed craftsmanship story, fabric purity, border details, zari work, blouse piece..."
+                      onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                    />
+                  </label>
+
+                  <div className="dimensions-grid">
+                    <label className="modal-field">
+                      <span>Weight (grams)</span>
+                      <input
+                        type="number"
+                        value={form.weightGrams}
+                        onChange={(e) => setForm((f) => ({ ...f, weightGrams: e.target.value }))}
+                      />
+                    </label>
+                    <label className="modal-field">
+                      <span>Length (cm)</span>
+                      <input
+                        type="number"
+                        value={form.lengthCm}
+                        onChange={(e) => setForm((f) => ({ ...f, lengthCm: e.target.value }))}
+                      />
+                    </label>
+                    <label className="modal-field">
+                      <span>Width (cm)</span>
+                      <input
+                        type="number"
+                        value={form.widthCm}
+                        onChange={(e) => setForm((f) => ({ ...f, widthCm: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* 7. SEO & Discovery */}
+                <div className="modal-form-section">
+                  <h4 className="modal-section-title">7. SEO &amp; Search Tags</h4>
+                  <div className="modal-form-grid">
+                    <label className="modal-field full-width">
+                      <span>Search Tags (comma separated)</span>
+                      <input
+                        type="text"
+                        value={form.tags}
+                        placeholder="e.g. bridal, wedding silk, gold zari, dharmavaram, pure pattu"
+                        onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>SEO Page Title</span>
+                      <input
+                        type="text"
+                        value={form.seoTitle}
+                        placeholder="Custom title tag for Google"
+                        onChange={(e) => setForm((f) => ({ ...f, seoTitle: e.target.value }))}
+                      />
+                    </label>
+
+                    <label className="modal-field">
+                      <span>URL Slug</span>
+                      <input
+                        type="text"
+                        value={form.slug}
+                        placeholder="e.g. pure-dharmavaram-silk-saree"
+                        onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Sticky Footer Actions */}
+            <div className="admin-modal-footer">
+              <button type="button" className="btn btn-outline" onClick={closeModal} disabled={isSaving}>
+                Cancel
+              </button>
+
+              <div className="footer-right-actions">
+                <button
+                  type="submit"
+                  form="productModalForm"
+                  className="btn btn-primary"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving…' : editingId ? 'Save Changes' : 'Add Saree to Catalog'}
+                </button>
+
+                {editingId && hasNext && (
+                  <button
+                    type="button"
+                    className="btn btn-save-next"
+                    disabled={isSaving}
+                    onClick={(e) => handleSaveForm(e, true)}
+                    title="Save current saree and open the next saree immediately"
+                  >
+                    <span>Save &amp; Next Saree</span>
+                    <span className="arrow-next">&rarr;</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          STYLES (Responsive Side-by-Side Grid, Category Tabs, Modal Dialog)
+         ========================================================================= */}
+      <style>{`
+        .admin-products-page {
           width: 100%;
+          min-width: 0;
           box-sizing: border-box;
-          overflow: hidden;
+          padding-bottom: 60px;
         }
-        .form-header-bar {
+
+        .admin-save-toast {
+          position: fixed;
+          top: 24px;
+          right: 28px;
+          background: #20080b;
+          color: #fbdba2;
+          border: 1px solid rgba(251, 219, 162, 0.35);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          border-radius: 8px;
+          padding: 12px 20px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13.5px;
+          font-weight: 600;
+          z-index: 9999;
+          animation: slideInToast 0.25s ease-out;
+        }
+        @keyframes slideInToast {
+          from { transform: translateY(-16px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+
+        .admin-page-head-row {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 22px;
+          flex-wrap: wrap;
+        }
+        .admin-page-title {
+          font-size: 26px;
+          font-family: var(--font-display, serif);
+          color: var(--brand-primary, #20080b);
+          margin: 0 0 6px;
+        }
+        .admin-page-desc {
+          font-size: 13.5px;
+          color: var(--ink-500, #666);
+          margin: 0;
+          max-width: 600px;
+          line-height: 1.5;
+        }
+        .admin-head-actions {
+          display: flex;
+          align-items: center;
           gap: 12px;
+          flex-shrink: 0;
         }
-        .form-mode-tag {
-          display: inline-block;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          color: var(--maroon-700);
-          background: #fbf1e8;
-          padding: 2px 8px;
-          border-radius: 4px;
-          margin-bottom: 4px;
-        }
-        .form-title { font-family: var(--font-display); font-size: 18px; color: var(--maroon-900); margin: 0; }
-        .btn-cancel-edit {
-          font-size: 12px;
+        .btn-add-product {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
           font-weight: 600;
-          color: var(--maroon-900);
-          background: var(--stone-100);
-          border: 1px solid var(--stone-200);
-          padding: 5px 11px;
-          border-radius: 6px;
+          padding: 10px 18px;
+          border-radius: 8px;
+          box-shadow: 0 4px 14px rgba(128, 0, 32, 0.25);
+        }
+        .btn-hero-toggle {
+          font-size: 13px;
+          padding: 9px 14px;
+          border-radius: 8px;
+        }
+
+        .admin-error-banner {
+          background: #fdf2f2;
+          border: 1px solid #f8b4b4;
+          color: #9b1c1c;
+          padding: 12px 16px;
+          border-radius: 8px;
+          font-size: 13px;
+          margin-bottom: 20px;
+        }
+
+        /* Hero CMS Card */
+        .hero-cms-card {
+          background: var(--paper, #fff);
+          border-radius: 12px;
+          padding: 22px 24px;
+          margin-bottom: 24px;
+          border: 1px solid rgba(197, 139, 56, 0.25);
+          box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+        }
+        .hero-cms-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .hero-cms-title {
+          font-family: var(--font-display, serif);
+          font-size: 18px;
+          color: var(--brand-primary, #20080b);
+          margin: 0 0 4px;
+        }
+        .hero-cms-sub {
+          font-size: 12.5px;
+          color: var(--ink-500, #666);
+          margin: 0;
+        }
+        .btn-close-cms {
+          background: none;
+          border: none;
           cursor: pointer;
+          color: var(--ink-400);
+          padding: 4px;
+          border-radius: 4px;
+        }
+        .btn-close-cms:hover { background: var(--stone-100); color: var(--ink-900); }
+        .hero-fields-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+        }
+        .hero-photo-row {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          margin-top: 14px;
+        }
+        .hero-preview-curved {
+          position: relative;
+          width: 240px;
+          height: 90px;
+          border-radius: 8px 36px 36px 8px;
+          overflow: hidden;
+          border: 1px solid rgba(197, 139, 56, 0.4);
+          flex-shrink: 0;
+        }
+        .hero-preview-curved img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .hero-preview-tag {
+          position: absolute;
+          bottom: 4px;
+          left: 6px;
+          font-size: 9.5px;
+          background: rgba(0,0,0,0.65);
+          color: #fff;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .hero-cms-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 14px;
+          border-top: 1px solid var(--stone-200);
+        }
+        .hero-saved-status {
+          color: #2e7d32;
+          font-weight: 600;
+          font-size: 13px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        /* Category Tabs Navigation Bar */
+        .category-tabs-container {
+          margin-bottom: 18px;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+        }
+        .category-tabs-scroll {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: max-content;
+        }
+        .category-tab-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 999px;
+          background: var(--paper, #fff);
+          border: 1px solid var(--stone-200, #e2e8f0);
+          color: var(--ink-700, #475569);
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s ease;
           white-space: nowrap;
+        }
+        .category-tab-pill:hover {
+          border-color: var(--maroon-700, #800020);
+          color: var(--maroon-900, #20080b);
+          background: #fdfaf9;
+        }
+        .category-tab-pill.active {
+          background: var(--maroon-900, #20080b);
+          color: #ffffff;
+          border-color: var(--maroon-900, #20080b);
+          box-shadow: 0 2px 8px rgba(32, 8, 11, 0.2);
+        }
+        .tab-count-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 999px;
+          background: var(--stone-100, #f1f5f9);
+          color: var(--ink-600, #64748b);
+        }
+        .category-tab-pill.active .tab-count-badge {
+          background: rgba(255, 255, 255, 0.22);
+          color: #ffffff;
+        }
+
+        /* Toolbar (Search & Filters) */
+        .catalog-toolbar {
+          background: var(--paper, #fff);
+          border: 1px solid var(--stone-200, #e2e8f0);
+          border-radius: 10px;
+          padding: 12px 16px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+        }
+        .toolbar-search-box {
+          position: relative;
+          flex: 1 1 280px;
+          max-width: 440px;
+        }
+        .search-icon-svg {
+          position: absolute;
+          left: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--ink-400);
+          pointer-events: none;
+        }
+        .toolbar-search-box input {
+          width: 100%;
+          padding: 9px 34px 9px 36px;
+          border-radius: 8px;
+          border: 1px solid var(--stone-300, #cbd5e1);
+          font-size: 13.5px;
+          background: #fff;
+          box-sizing: border-box;
+          outline: none;
+        }
+        .toolbar-search-box input:focus {
+          border-color: var(--maroon-700);
+          box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.12);
+        }
+        .clear-search-btn {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          color: var(--ink-400);
+          cursor: pointer;
+          padding: 4px;
+        }
+        .toolbar-filters {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .filter-select {
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1px solid var(--stone-300, #cbd5e1);
+          background: #fff;
+          font-size: 12.5px;
+          color: var(--ink-700);
+          cursor: pointer;
+        }
+        .view-toggle-btns {
+          display: inline-flex;
+          border: 1px solid var(--stone-300);
+          border-radius: 8px;
+          overflow: hidden;
+          background: #fff;
+        }
+        .view-btn {
+          background: none;
+          border: none;
+          padding: 7px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--ink-600);
+          cursor: pointer;
           transition: all 0.15s ease;
         }
-        .btn-cancel-edit:hover {
+        .view-btn.active {
+          background: var(--maroon-900, #20080b);
+          color: #fff;
+        }
+
+        .catalog-status-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 13px;
+          color: var(--ink-500);
+          margin-bottom: 18px;
+          padding: 0 2px;
+        }
+        .active-cat-name { color: var(--maroon-900); }
+        .btn-clear-category {
+          background: none;
+          border: none;
+          color: var(--maroon-700);
+          cursor: pointer;
+          margin-left: 6px;
+          font-size: 12px;
+          text-decoration: underline;
+        }
+
+        /* --- SIDE-BY-SIDE PRODUCTS GRID --- */
+        .products-side-by-side-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 22px;
+        }
+        .product-card {
+          background: var(--paper, #fff);
+          border: 1px solid var(--stone-200, #e2e8f0);
+          border-radius: 12px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .product-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+          border-color: rgba(128, 0, 32, 0.3);
+        }
+        .product-card.is-hidden-card {
+          opacity: 0.72;
+          background: #fafafa;
+        }
+
+        /* Saree Image Container */
+        .product-card-media {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 4 / 5;
+          overflow: hidden;
+          background: #fbf7f2;
+          cursor: pointer;
+        }
+        .product-media-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top center;
+          display: block;
+          transition: opacity 0.3s ease;
+        }
+        .product-media-hover {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+        }
+        .product-card-media:hover .product-media-hover {
+          opacity: 1;
+        }
+
+        .card-top-badges {
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          right: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+          pointer-events: none;
+        }
+        .card-cat-badge {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          background: rgba(32, 8, 11, 0.82);
+          color: #fbdba2;
+          padding: 3px 8px;
+          border-radius: 4px;
+          backdrop-filter: blur(4px);
+        }
+        .card-hidden-badge {
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          background: #475569;
+          color: #fff;
+          padding: 2px 7px;
+          border-radius: 4px;
+        }
+
+        .card-bottom-badges {
+          position: absolute;
+          bottom: 8px;
+          left: 8px;
+          right: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+          pointer-events: none;
+        }
+        .stock-badge {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 999px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .stock-ok { background: #e8f5e9; color: #1e7e34; }
+        .stock-low { background: #fef3c7; color: #b45309; }
+        .stock-out { background: #fee2e2; color: #b91c1c; }
+
+        .card-hover-tag {
+          font-size: 9.5px;
+          font-weight: 600;
+          background: rgba(0, 0, 0, 0.65);
+          color: #fff;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        /* Card Body */
+        .product-card-body {
+          padding: 14px 14px 10px;
+          flex: 1 1 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          cursor: pointer;
+        }
+        .product-card-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--ink-900, #1e293b);
+          margin: 0;
+          line-height: 1.35;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .product-card-body:hover .product-card-title {
+          color: var(--maroon-800, #800020);
+        }
+        .product-card-sku {
+          font-size: 11px;
+          color: var(--ink-400, #94a3b8);
+          font-family: monospace;
+        }
+
+        .card-swatches-row {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 2px;
+        }
+        .card-swatch-dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+          border: 1px solid rgba(0,0,0,0.2);
+          display: inline-block;
+        }
+        .card-swatches-count {
+          font-size: 11px;
+          color: var(--ink-500);
+          margin-left: 3px;
+        }
+
+        .card-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+          margin-top: 4px;
+        }
+        .card-price {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--maroon-900, #20080b);
+        }
+        .card-mrp {
+          font-size: 12px;
+          color: var(--ink-400);
+          text-decoration: line-through;
+        }
+        .card-discount {
+          font-size: 10px;
+          font-weight: 700;
+          color: #1e7e34;
+          background: #e8f5e9;
+          padding: 1px 5px;
+          border-radius: 4px;
+        }
+
+        /* Card Action Footer */
+        .product-card-actions {
+          padding: 10px 14px 12px;
+          border-top: 1px solid var(--stone-100, #f1f5f9);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .btn-card-edit {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #fbf1e8;
+          border: 1px solid rgba(184, 125, 43, 0.3);
+          color: #8c5d1e;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 6px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .btn-card-edit:hover {
+          background: var(--maroon-900, #20080b);
+          color: #fff;
+          border-color: var(--maroon-900);
+        }
+        .card-cat-select {
+          font-size: 11px;
+          padding: 5px 6px;
+          border-radius: 6px;
+          border: 1px solid var(--stone-200);
+          background: #fff;
+          color: var(--ink-700);
+          max-width: 90px;
+          cursor: pointer;
+        }
+        .btn-card-icon {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          color: var(--ink-600);
+          border-radius: 6px;
+          padding: 5px 7px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .btn-card-icon:hover { background: var(--stone-100); color: var(--ink-900); }
+        .btn-card-delete { color: #b91c1c; border-color: #fee2e2; background: #fef2f2; }
+        .btn-card-delete:hover { background: #fee2e2; color: #991b1b; }
+
+        /* Table View */
+        .catalog-table-wrapper {
+          background: var(--paper, #fff);
+          border: 1px solid var(--stone-200);
+          border-radius: 10px;
+          overflow-x: auto;
+        }
+        .catalog-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+        .catalog-table th {
+          background: var(--stone-50);
+          padding: 12px 14px;
+          text-align: left;
+          font-weight: 600;
+          color: var(--ink-700);
+          border-bottom: 1px solid var(--stone-200);
+        }
+        .catalog-table td {
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--stone-100);
+          vertical-align: middle;
+        }
+        .table-thumb {
+          width: 48px;
+          height: 56px;
+          border-radius: 6px;
+          overflow: hidden;
+          background: var(--stone-100);
+          cursor: pointer;
+        }
+        .table-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .table-name-btn {
+          background: none;
+          border: none;
+          padding: 0;
+          text-align: left;
+          font-size: 13.5px;
+          font-weight: 600;
+          color: var(--ink-900);
+          cursor: pointer;
+        }
+        .table-name-btn:hover { color: var(--maroon-800); text-decoration: underline; }
+        .table-cat-chip {
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--ink-700);
+          background: var(--stone-100);
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+        .table-sku-cell { font-family: monospace; font-size: 11.5px; color: var(--ink-500); }
+        .table-price-bold { font-weight: 700; color: var(--maroon-900); }
+        .table-mrp-sub { display: flex; gap: 6px; font-size: 10.5px; align-items: center; margin-top: 2px; }
+        .table-mrp-del { color: var(--ink-400); text-decoration: line-through; }
+        .table-disc-badge { color: #1e7e34; font-weight: 600; }
+        .table-color-count { font-size: 11.5px; color: var(--ink-600); }
+        .table-badge-active { color: #1e7e34; font-weight: 600; font-size: 11px; }
+        .table-badge-hidden { color: #64748b; font-weight: 600; font-size: 11px; }
+        .table-action-group { display: flex; gap: 6px; justify-content: flex-end; }
+        .btn-table-edit {
+          background: #fbf1e8;
+          border: 1px solid rgba(184, 125, 43, 0.3);
+          color: #8c5d1e;
+          font-size: 11.5px;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .btn-table-toggle {
+          background: var(--stone-50);
+          border: 1px solid var(--stone-200);
+          font-size: 11.5px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .btn-table-delete {
+          background: #fef2f2;
+          border: 1px solid #fee2e2;
+          color: #b91c1c;
+          font-size: 11.5px;
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        /* Empty state */
+        .catalog-empty-state {
+          text-align: center;
+          padding: 60px 20px;
+          background: var(--paper, #fff);
+          border: 1px dashed var(--stone-300);
+          border-radius: 12px;
+          margin-top: 20px;
+        }
+        .empty-title { font-size: 18px; font-weight: 600; color: var(--ink-800); margin: 0 0 6px; }
+        .empty-sub { font-size: 13.5px; color: var(--ink-500); margin: 0 0 18px; }
+
+        /* =========================================================================
+           POP-UP EDITING MODAL WINDOW STYLES
+           ========================================================================= */
+        .admin-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(18, 6, 8, 0.65);
+          backdrop-filter: blur(4px);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          box-sizing: border-box;
+          animation: modalFadeIn 0.2s ease-out;
+        }
+        @keyframes modalFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .admin-modal-card {
+          background: #ffffff;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 860px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+          overflow: hidden;
+          animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalSlideUp {
+          from { transform: translateY(24px) scale(0.98); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Modal Header */
+        .admin-modal-header {
+          padding: 18px 24px;
+          border-bottom: 1px solid var(--stone-200, #e2e8f0);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #fdfbf9;
+          flex-shrink: 0;
+        }
+        .modal-title-group {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+        .modal-tag {
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          color: var(--maroon-700, #800020);
+          text-transform: uppercase;
+        }
+        .modal-title {
+          font-family: var(--font-display, serif);
+          font-size: 18px;
+          color: var(--brand-primary, #20080b);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 500px;
+        }
+        .modal-cat-sub {
+          font-size: 12px;
+          color: var(--ink-500);
+        }
+        .modal-index-counter {
+          color: var(--ink-400);
+          font-weight: 500;
+        }
+        .modal-header-nav {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+        .modal-prev-next-btns {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .btn-modal-nav {
+          padding: 5px 11px;
+          font-size: 12px;
+          font-weight: 600;
+          border-radius: 6px;
+          border: 1px solid var(--stone-300);
+          background: #fff;
+          color: var(--ink-700);
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .btn-modal-nav:hover:not(:disabled) {
           background: var(--maroon-900);
           color: #fff;
           border-color: var(--maroon-900);
         }
-
-        .form-section { display: flex; flex-direction: column; gap: 14px; padding-top: 18px; border-top: 1px solid var(--stone-100); min-width: 0; }
-        .form-section:first-of-type { padding-top: 0; border-top: none; }
-        .section-label {
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: var(--maroon-700, var(--maroon-900));
-          margin: 0;
+        .btn-modal-nav:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
         }
-
-        .cms-form label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-600); min-width: 0; }
-        .required-mark { color: #a13a3a; }
-        .cms-form input:not([type="checkbox"]):not([type="color"]),
-        .cms-form select,
-        .cms-form textarea {
-          padding: 10px 12px;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--stone-200);
-          font-family: var(--font-body);
-          font-size: 13.5px;
-          background: var(--paper);
-          width: 100%;
-          min-width: 0;
-          max-width: 100%;
-          box-sizing: border-box;
-        }
-        .form-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; min-width: 0; }
-        .field-hint { font-size: 11.5px; color: var(--ink-400); line-height: 1.5; }
-        .pricing-hint { margin: -4px 0 12px; }
-
-        .category-picker { display: flex; gap: 14px; align-items: flex-start; min-width: 0; }
-        .category-picker > label { flex: 1; min-width: 0; }
-        .category-preview {
-          flex: 0 0 165px;
-          border: 1px solid var(--stone-200);
-          border-radius: var(--radius-sm);
-          padding: 10px;
-          max-height: 168px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          min-width: 0;
-          box-sizing: border-box;
-        }
-        .category-preview-title { font-size: 11px; font-weight: 600; color: var(--ink-600); margin: 0; }
-        .category-preview-empty { font-size: 11.5px; color: var(--ink-400); margin: 0; line-height: 1.5; }
-        .category-preview-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
-        .category-preview-item { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--ink-600); min-width: 0; }
-        .category-preview-item img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
-        .category-preview-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .stock-warning {
-          font-size: 11.5px;
-          color: #8a5a10;
-          background: #fbeacb;
-          border-radius: var(--radius-sm);
-          padding: 10px 12px;
-          line-height: 1.6;
-          margin: 0;
-        }
-
-        .policy-checkboxes { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-        .checkbox-row { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-700); cursor: pointer; }
-        .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--maroon-900); flex: 0 0 auto; }
-        .return-window-select { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-600); margin-left: 24px; }
-        .return-window-select select { font-size: 12.5px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--stone-300); }
-
-        .section-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
-        .add-variant-btn { padding: 5px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
-        .empty-hint { font-size: 12px; color: var(--ink-400); margin: 0; }
-        .variants-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; min-width: 0; }
-        .variant-item-card {
-          background: var(--stone-50);
-          border: 1px solid var(--stone-200);
-          border-radius: var(--radius-sm);
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          min-width: 0;
-          box-sizing: border-box;
-        }
-        .variant-top-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .color-swatch-picker {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          background: #fff;
-          border: 1px solid var(--stone-300);
-          border-radius: 6px;
-          padding: 3px 8px;
-          flex-shrink: 0;
-        }
-        .color-swatch-picker input[type="color"] {
-          width: 22px;
-          height: 22px;
-          border: none;
-          padding: 0;
-          background: none;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        .swatch-code { font-size: 11px; font-family: monospace; color: var(--ink-600); }
-        .variant-name-input {
-          flex: 1;
-          min-width: 0 !important;
-          font-size: 13px !important;
-          padding: 7px 10px !important;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--stone-300);
-        }
-        .variant-remove-btn {
+        .btn-modal-close {
           background: none;
           border: none;
-          color: #a13a3a;
-          font-size: 14px;
-          cursor: pointer;
-          padding: 4px 6px;
-          border-radius: 4px;
-          flex-shrink: 0;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .variant-remove-btn:hover { background: #f6e3e3; }
-        .variant-fields-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 8px;
-          min-width: 0;
-        }
-        .variant-fields-grid label {
-          font-size: 11px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          color: var(--ink-600);
-          min-width: 0;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .variant-fields-grid input {
-          font-size: 12.5px !important;
-          padding: 6px 8px !important;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--stone-300);
-          width: 100%;
-          min-width: 0;
-          box-sizing: border-box;
-        }
-        .opt-tag { font-size: 9.5px; color: var(--ink-400); font-weight: normal; }
-
-        .variant-photos-box {
-          background: #ffffff;
-          border: 1px dashed var(--stone-300);
-          border-radius: var(--radius-sm);
-          padding: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          min-width: 0;
-        }
-        .variant-photos-head {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .variant-photos-label {
-          font-size: 11.5px;
-          font-weight: 600;
-          color: var(--ink-800);
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .variant-dot-inline {
-          width: 11px;
-          height: 11px;
-          border-radius: 50%;
-          border: 1px solid rgba(0, 0, 0, 0.2);
-          flex-shrink: 0;
-        }
-        .variant-dual-photos {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 8px;
-          min-width: 0;
-        }
-        .variant-photo-slot {
-          background: var(--stone-50);
-          border: 1px solid var(--stone-200);
-          border-radius: 6px;
-          padding: 8px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          min-width: 0;
-        }
-        .variant-slot-top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 4px;
-        }
-        .variant-slot-title {
-          font-size: 10.5px;
-          font-weight: 600;
-          color: var(--ink-700);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .variant-slot-preview {
-          position: relative;
-          width: 100%;
-          height: 100px;
-          border-radius: 5px;
-          overflow: hidden;
-          border: 1px solid var(--stone-200);
-          background: #fbf7f2;
-        }
-        .variant-slot-preview img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: top center;
-          display: block;
-        }
-        .variant-slot-badge {
-          position: absolute;
-          bottom: 4px;
-          left: 4px;
-          font-size: 8.5px;
-          font-weight: 600;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          padding: 2px 5px;
-          border-radius: 3px;
-        }
-        .badge-main {
-          background: rgba(32, 8, 11, 0.8);
-          color: #ffffff;
-        }
-        .badge-hover {
-          background: rgba(88, 30, 21, 0.9);
-          color: #fbdba2;
-          border: 1px solid rgba(251, 219, 162, 0.35);
-        }
-        .variant-slot-empty {
-          height: 60px;
-          border: 1px dashed var(--stone-300);
-          border-radius: 5px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          font-size: 10px;
-          color: var(--ink-400);
           padding: 6px;
-          background: rgba(255, 255, 255, 0.65);
-        }
-        .variant-extra-gallery {
-          padding-top: 6px;
-          border-top: 1px solid var(--stone-100);
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .variant-upload-btn {
-          display: inline-flex !important;
-          flex-direction: row !important;
-          align-items: center;
-          gap: 4px;
-          font-size: 10.5px !important;
-          font-weight: 600;
-          color: var(--maroon-900) !important;
-          background: #fdf6f5;
-          border: 1px solid rgba(88, 30, 21, 0.25);
-          padding: 3px 8px;
-          border-radius: 999px;
-          cursor: pointer;
-          white-space: nowrap;
-          flex-shrink: 0;
-          transition: all 0.15s ease;
-        }
-        .variant-upload-btn:hover {
-          background: var(--maroon-900);
-          color: #ffffff !important;
-        }
-        .variant-thumbs-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        .variant-thumb-item {
-          position: relative;
-          width: 52px;
-          height: 64px;
           border-radius: 6px;
-          overflow: hidden;
-          border: 1.5px solid var(--stone-200);
-          background: var(--stone-100);
+          color: var(--ink-400);
           cursor: pointer;
-          flex-shrink: 0;
-        }
-        .variant-thumb-item.is-primary {
-          border-color: var(--maroon-900);
-          box-shadow: 0 0 0 1px var(--maroon-900);
-        }
-        .variant-thumb-item img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: top center;
-          display: block;
-        }
-        .variant-primary-tag {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: rgba(88, 30, 21, 0.88);
-          color: #ffffff;
-          font-size: 8.5px;
-          font-weight: 600;
-          text-transform: uppercase;
-          text-align: center;
-          padding: 1.5px 0;
-          letter-spacing: 0.04em;
-        }
-        .variant-thumb-remove {
-          position: absolute;
-          top: 2px;
-          right: 2px;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: rgba(0, 0, 0, 0.65);
-          color: #ffffff;
-          border: none;
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          padding: 0;
         }
-        .variant-thumb-remove:hover {
-          background: #a13a3a;
+        .btn-modal-close:hover {
+          background: var(--stone-100);
+          color: var(--ink-900);
         }
-        .variant-photos-empty {
-          font-size: 11px;
+
+        /* Modal Body */
+        .admin-modal-body {
+          padding: 24px 28px;
+          overflow-y: auto;
+          flex: 1 1 auto;
+          box-sizing: border-box;
+          background: #fff;
+        }
+        .modal-form-section {
+          padding-bottom: 24px;
+          margin-bottom: 24px;
+          border-bottom: 1px solid var(--stone-200);
+        }
+        .modal-form-section:last-of-type {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+        }
+        .modal-section-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--maroon-900, #20080b);
+          margin: 0 0 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+        .modal-section-sub {
+          font-size: 12px;
           color: var(--ink-400);
-          margin: 0;
+          margin: 0 0 14px;
           line-height: 1.45;
         }
 
-        .photo-inputs-grid {
+        .modal-form-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 10px;
-          min-width: 0;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
         }
-        .photo-input-card {
-          background: var(--stone-50);
-          border: 1px solid var(--stone-200);
-          border-radius: var(--radius-sm);
-          padding: 10px;
+        .modal-pricing-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        .modal-field {
           display: flex;
           flex-direction: column;
-          gap: 8px;
-          min-width: 0;
-          box-sizing: border-box;
-          overflow: hidden;
+          gap: 6px;
+          font-size: 12.5px;
+          font-weight: 500;
+          color: var(--ink-700);
         }
-        .photo-input-card input[type="file"] {
-          font-size: 11px !important;
-          padding: 6px 8px !important;
+        .modal-field.full-width { grid-column: 1 / -1; }
+        .req { color: #dc2626; }
+        .modal-field input:not([type="checkbox"]):not([type="color"]),
+        .modal-field select,
+        .modal-field textarea {
+          padding: 9px 12px;
+          border: 1px solid var(--stone-300, #cbd5e1);
+          border-radius: 8px;
+          font-size: 13.5px;
+          font-family: inherit;
+          box-sizing: border-box;
           width: 100%;
-          min-width: 0;
-          max-width: 100%;
-          box-sizing: border-box;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
-        .photo-field-title {
+        .modal-field input:focus,
+        .modal-field select:focus,
+        .modal-field textarea:focus {
+          border-color: var(--maroon-700);
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.12);
+        }
+
+        /* Color Variants Manager */
+        .section-header-flex {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+        .empty-variants-box {
+          background: #fbf7f2;
+          border: 1px dashed var(--stone-300);
+          border-radius: 8px;
+          padding: 18px;
+          text-align: center;
+          font-size: 12.5px;
+          color: var(--ink-500);
+        }
+        .modal-variants-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .variant-card-item {
+          background: #faf8f6;
+          border: 1px solid var(--stone-200);
+          border-radius: 10px;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .variant-card-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .variant-color-input-wrap {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+        }
+        .variant-color-input-wrap input[type="color"] {
+          width: 28px;
+          height: 28px;
+          border: 1px solid var(--stone-300);
+          border-radius: 6px;
+          padding: 0;
+          cursor: pointer;
+        }
+        .variant-name-input {
+          flex: 1;
+          max-width: 280px;
+          padding: 6px 10px !important;
+          font-size: 13px !important;
+        }
+        .btn-remove-variant {
+          background: none;
+          border: none;
+          color: #dc2626;
+          font-size: 11.5px;
+          font-weight: 500;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .variant-card-fields {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .variant-card-photos {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 14px;
+          padding-top: 10px;
+          border-top: 1px dashed var(--stone-200);
+        }
+        .variant-photo-col {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .variant-photo-heading {
+          font-size: 11.5px;
           font-weight: 600;
-          color: var(--ink-800);
-          font-size: 12px;
-          display: block;
-          line-height: 1.3;
+          color: var(--ink-700);
         }
-        .preview-thumb-card {
+        .variant-photo-preview {
           position: relative;
           width: 100%;
-          height: 140px;
-          border-radius: var(--radius-sm);
+          height: 110px;
+          border-radius: 8px;
           overflow: hidden;
-          background: #fbf7f2;
+          background: #f1ede8;
           border: 1px solid var(--stone-200);
         }
-        .preview-thumb-card img {
+        .variant-photo-preview img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           object-position: top center;
         }
-        .preview-chip {
+        .no-photo-slot {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          color: var(--ink-400);
+        }
+        .btn-remove-hover {
           position: absolute;
-          bottom: 8px;
-          left: 8px;
-          font-size: 9.5px;
-          font-weight: 600;
-          letter-spacing: 0.04em;
-          padding: 3px 7px;
+          top: 6px;
+          right: 6px;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(0, 0, 0, 0.2);
           border-radius: 4px;
-          text-transform: uppercase;
+          font-size: 10px;
+          padding: 2px 6px;
+          color: #b91c1c;
+          cursor: pointer;
         }
-        .chip-primary {
-          background: rgba(32, 8, 11, 0.78);
-          color: #ffffff;
+
+        /* Dual Photos */
+        .modal-dual-photos {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
         }
-        .chip-model {
-          background: rgba(88, 30, 21, 0.88);
+        .photo-box {
+          background: #faf8f6;
+          border: 1px solid var(--stone-200);
+          border-radius: 10px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .photo-box-title {
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--ink-800);
+        }
+        .field-hint { font-size: 11px; color: var(--ink-400); }
+        .modal-thumb-preview {
+          position: relative;
+          width: 100%;
+          height: 140px;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid var(--stone-300);
+        }
+        .modal-thumb-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: top center;
+        }
+        .badge-overlay {
+          position: absolute;
+          bottom: 6px;
+          left: 6px;
+          font-size: 9.5px;
+          font-weight: 700;
+          background: rgba(32, 8, 11, 0.85);
           color: #fbdba2;
-          border: 1px solid rgba(251, 219, 162, 0.35);
+          padding: 2px 6px;
+          border-radius: 4px;
         }
-        .photo-clear-btn {
+        .badge-overlay.badge-hover {
+          background: rgba(88, 30, 21, 0.9);
+        }
+        .photo-remove-btn {
           position: absolute;
           top: 6px;
           right: 6px;
           background: rgba(255, 255, 255, 0.92);
           border: 1px solid rgba(0, 0, 0, 0.15);
           border-radius: 4px;
-          font-size: 11px;
-          padding: 3px 7px;
-          color: #a13a3a;
+          font-size: 10.5px;
+          color: #dc2626;
+          padding: 2px 6px;
           cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          transition: background 0.2s ease;
         }
-        .photo-clear-btn:hover {
-          background: #f6e3e3;
-        }
-        .preview-empty-slot {
+        .empty-photo-slot {
           height: 70px;
           border: 1px dashed var(--stone-300);
-          border-radius: var(--radius-sm);
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           text-align: center;
-          padding: 8px;
-          font-size: 11px;
+          font-size: 11.5px;
           color: var(--ink-400);
-          background: rgba(255, 255, 255, 0.6);
         }
 
-        .preview-thumb { width: 72px; height: 72px; border-radius: var(--radius-sm); overflow: hidden; }
-        .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .gallery-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .gallery-thumb {
-          position: relative;
-          width: 60px;
-          height: 60px;
-          border-radius: var(--radius-sm);
-          overflow: hidden;
-          border: 1px solid var(--stone-200);
-          background: var(--stone-100);
+        /* Gallery */
+        .modal-gallery-area {
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid var(--stone-200);
         }
-        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .gallery-remove {
-          position: absolute;
-          top: 2px;
-          right: 2px;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: rgba(0,0,0,0.6);
-          color: #fff;
-          border: none;
-          font-size: 11px;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-        .gallery-remove:hover {
-          background: #a13a3a;
-        }
-        .form-actions { display: flex; gap: 10px; }
-        .form-actions .btn { padding: 11px 20px; font-size: 13px; }
-
-        .cms-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-        .cms-list-header {
+        .gallery-header-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          padding: 4px 2px 10px;
-          border-bottom: 1px solid var(--stone-200);
-          margin-bottom: 2px;
+          margin-bottom: 10px;
         }
-        .cms-list-title {
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--maroon-900);
-          margin: 0;
-        }
-        .cms-list-subtitle {
-          font-size: 12px;
-          color: var(--ink-500);
-          margin: 2px 0 0;
-        }
-        .add-new-product-btn {
-          font-size: 12px;
-          padding: 5px 12px;
-          border-radius: 6px;
-          white-space: nowrap;
-          cursor: pointer;
-        }
-        .cms-row {
-          background: var(--paper);
-          border-radius: var(--radius-md);
-          padding: 14px 16px;
+        .btn-xs { font-size: 11.5px; padding: 4px 10px; border-radius: 6px; }
+        .modal-gallery-thumbs {
           display: flex;
-          flex-direction: column;
-          gap: 12px;
-          min-width: 0;
-          border: 1px solid var(--stone-200);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-          transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+          flex-wrap: wrap;
+          gap: 10px;
         }
-        .cms-row:hover {
-          border-color: var(--stone-300);
-          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
-        }
-        .cms-row.is-editing {
-          border-color: var(--maroon-700);
-          background: #fffafa;
-          box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.25), 0 4px 14px rgba(128, 0, 32, 0.08);
-        }
-
-        .cms-row-main {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-          min-width: 0;
-          width: 100%;
-          cursor: pointer;
-        }
-        .cms-row-main:hover .row-product-name {
-          color: var(--maroon-800);
-          text-decoration: underline;
-        }
-
-        .admin-row-thumb-container {
+        .gallery-thumb-item {
           position: relative;
-          width: 56px;
-          height: 56px;
-          border-radius: var(--radius-sm);
+          width: 64px;
+          height: 76px;
+          border-radius: 6px;
           overflow: hidden;
-          flex: 0 0 56px;
-          background: var(--stone-100);
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-          cursor: pointer;
+          border: 1px solid var(--stone-300);
         }
-        .admin-row-thumb-container .row-thumb-sq {
+        .gallery-thumb-item img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: opacity 0.3s ease;
-          display: block;
         }
-        .admin-row-thumb-container .row-thumb-hover {
+        .thumb-delete-btn {
           position: absolute;
-          inset: 0;
-          opacity: 0;
-        }
-        .admin-row-thumb-container:hover .row-thumb-hover {
-          opacity: 1;
-        }
-
-        .row-info {
-          flex: 1 1 auto;
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .row-title-line {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .row-product-name {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--ink-900);
-          word-break: break-word;
-          line-height: 1.35;
-        }
-
-        .row-hover-badge {
-          font-size: 9.5px;
-          font-weight: 600;
-          color: #581e15;
-          background: #fdf2ea;
-          border: 1px solid rgba(88, 30, 21, 0.22);
-          padding: 1px 6px;
-          border-radius: 4px;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          white-space: nowrap;
-        }
-        .row-variants-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 10.5px;
-          font-weight: 600;
-          color: var(--ink-700);
-          background: var(--stone-100);
-          border: 1px solid var(--stone-200);
-          padding: 1px 8px;
-          border-radius: 999px;
-          white-space: nowrap;
-        }
-        .row-variant-dot {
-          width: 8px;
-          height: 8px;
+          top: 3px;
+          right: 3px;
+          width: 18px;
+          height: 18px;
           border-radius: 50%;
-          border: 1px solid rgba(0, 0, 0, 0.2);
-          display: inline-block;
-          flex-shrink: 0;
-        }
-
-        .row-meta-line {
+          background: rgba(0, 0, 0, 0.65);
+          color: #fff;
+          border: none;
+          cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-size: 12px;
-          flex-wrap: wrap;
-        }
-        .row-category {
-          color: var(--ink-500);
-          font-weight: 500;
-        }
-        .row-meta-sep {
-          color: var(--stone-400);
-          font-size: 10px;
-        }
-        .row-price-line {
-          display: inline-flex;
-          align-items: baseline;
-          gap: 6px;
-        }
-        .row-price {
-          font-size: 13.5px;
-          font-weight: 700;
-          color: var(--maroon-900);
-        }
-        .row-mrp {
-          font-size: 11.5px;
-          color: var(--ink-400);
-          text-decoration: line-through;
-        }
-        .row-discount {
-          font-size: 10.5px;
-          color: #2e7d32;
-          font-weight: 600;
-          background: #e8f5e9;
-          padding: 1px 5px;
-          border-radius: 4px;
+          justify-content: center;
+          padding: 0;
         }
 
-        .row-status-badges {
+        /* Policy & Dimensions */
+        .policy-checkbox-grid {
           display: flex;
           flex-direction: column;
-          align-items: flex-end;
-          gap: 5px;
-          flex: 0 0 auto;
-          margin-left: auto;
+          gap: 10px;
         }
-        .stock-badge {
-          font-size: 11px;
-          font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 999px;
-          white-space: nowrap;
-          display: inline-block;
+        .checkbox-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--ink-800);
+          cursor: pointer;
         }
-        .stock-ok { background: #e8f2e6; color: #2e7d32; }
-        .stock-low { background: #fef3d6; color: #8a5a10; }
-        .stock-out { background: #fee2e2; color: #b91c1c; }
-
-        .editing-badge {
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          color: #fff;
-          background: var(--maroon-900);
-          border-radius: 999px;
-          padding: 2px 8px;
-          white-space: nowrap;
-          display: inline-block;
+        .checkbox-item input[type="checkbox"] {
+          width: 17px;
+          height: 17px;
+          accent-color: var(--maroon-900);
+        }
+        .dimensions-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-top: 12px;
         }
 
-        .hidden-badge {
-          font-size: 10px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          color: var(--ink-500);
-          background: var(--stone-100);
-          border: 1px solid var(--stone-200);
-          border-radius: 999px;
-          padding: 2px 7px;
-          white-space: nowrap;
-        }
-
-        /* Actions row */
-        .row-actions-bar {
+        /* Modal Footer */
+        .admin-modal-footer {
+          padding: 16px 24px;
+          border-top: 1px solid var(--stone-200, #e2e8f0);
+          background: #fdfbf9;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          padding-top: 10px;
-          border-top: 1px solid var(--stone-100);
-          width: 100%;
-          box-sizing: border-box;
-          flex-wrap: wrap;
+          flex-shrink: 0;
         }
-
-        .row-move-wrap {
+        .footer-right-actions {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 10px;
         }
-        .row-move-label {
-          font-size: 11px;
-          color: var(--ink-400);
-          font-weight: 500;
-        }
-        .row-move-select {
-          font-size: 11.5px;
-          padding: 5px 8px;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--stone-200);
-          background: var(--paper);
-          color: var(--ink-700);
-          max-width: 160px;
+        .btn-save-next {
+          background: #fbf1e8;
+          border: 1px solid rgba(184, 125, 43, 0.4);
+          color: #8c5d1e;
+          font-weight: 600;
+          padding: 10px 18px;
+          border-radius: 8px;
           cursor: pointer;
-        }
-        .row-move-select:hover {
-          border-color: var(--stone-400);
-        }
-
-        .row-action-btns {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .btn-row-action {
-          background: var(--stone-50);
-          border: 1px solid var(--stone-200);
-          color: var(--maroon-900);
-          padding: 5px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.15s ease;
           display: inline-flex;
           align-items: center;
-          justify-content: center;
+          gap: 6px;
+          transition: all 0.15s ease;
         }
-        .btn-row-action:hover {
-          background: var(--stone-100);
-          color: var(--ink-900);
-        }
-        .btn-row-action.edit-btn:hover {
-          background: #fbf1e8;
-          border-color: rgba(184, 125, 43, 0.35);
-          color: #8c5d1e;
-        }
-        .btn-row-action.edit-btn.is-active {
+        .btn-save-next:hover:not(:disabled) {
           background: var(--maroon-900);
-          border-color: var(--maroon-900);
           color: #fff;
-          font-weight: 600;
+          border-color: var(--maroon-900);
         }
-        .btn-row-action.delete-btn {
-          color: #b91c1c;
-          border-color: #fee2e2;
-          background: #fef2f2;
+        .btn-save-next:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
-        .btn-row-action.delete-btn:hover {
-          background: #fee2e2;
-          border-color: #fca5a5;
-          color: #991b1b;
+        .arrow-next {
+          font-size: 15px;
+          line-height: 1;
         }
 
-        .cms-row.is-hidden { opacity: 0.65; }
-        .empty { color: var(--ink-400); font-size: 13.5px; }
-
-        @media (max-width: 1080px) {
-          .cms-layout { grid-template-columns: 1fr; gap: 20px; }
-        }
-
-        @media (max-width: 680px) {
-          .admin-page-head { margin-bottom: 18px; }
-          .admin-page-head h1 { font-size: 22px; margin-bottom: 6px; }
-          .cms-form { padding: 18px 14px; gap: 18px; }
-          .form-row { grid-template-columns: 1fr; }
-          .category-picker { flex-direction: column; }
-          .category-preview { flex-basis: auto; width: 100%; max-height: 140px; box-sizing: border-box; }
-          
-          .variant-top-row { gap: 8px; }
-          .color-swatch-picker { padding: 2px 6px; }
-          .variant-fields-grid {
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+        /* Responsive Breakpoints */
+        @media (max-width: 900px) {
+          .modal-pricing-grid { grid-template-columns: 1fr 1fr; }
+          .products-side-by-side-grid {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
           }
-          .variant-fields-grid label:last-child {
-            grid-column: span 2;
+        }
+        @media (max-width: 640px) {
+          .admin-page-head-row { flex-direction: column; align-items: stretch; }
+          .admin-head-actions { width: 100%; justify-content: space-between; }
+          .toolbar-search-box { max-width: none; width: 100%; }
+          .modal-form-grid,
+          .hero-fields-grid,
+          .modal-dual-photos,
+          .variant-card-fields,
+          .variant-card-photos { grid-template-columns: 1fr; }
+          .admin-modal-card { max-height: 96vh; }
+          .admin-modal-header { padding: 14px 18px; }
+          .admin-modal-body { padding: 18px 16px; }
+          .admin-modal-footer {
+            flex-direction: column-reverse;
+            gap: 10px;
+            padding: 12px 16px;
           }
-
-          .form-actions {
-            flex-direction: column;
-            gap: 8px;
-          }
-          .form-actions .btn {
+          .admin-modal-footer .btn,
+          .footer-right-actions {
             width: 100%;
-            text-align: center;
+          }
+          .btn-save-next {
+            flex: 1;
             justify-content: center;
-          }
-
-          .photo-inputs-grid { grid-template-columns: 1fr; }
-
-          .cms-row {
-            padding: 12px 14px;
-            gap: 10px;
-          }
-          .row-actions-bar {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-          }
-          .row-move-wrap {
-            justify-content: space-between;
-          }
-          .row-move-select {
-            flex: 1;
-            max-width: none;
-          }
-          .row-action-btns {
-            width: 100%;
-            display: flex;
-            gap: 6px;
-          }
-          .btn-row-action {
-            flex: 1;
-            padding: 7px 10px;
-            font-size: 12px;
-          }
-        }
-
-        @media (max-width: 440px) {
-          .variant-fields-grid {
-            grid-template-columns: 1fr;
-          }
-          .variant-fields-grid label:last-child {
-            grid-column: span 1;
-          }
-
-          .cms-row-main {
-            gap: 10px;
-          }
-          .admin-row-thumb-container {
-            width: 46px;
-            height: 46px;
-            flex: 0 0 46px;
-          }
-          .row-status-badges {
-            align-self: flex-start;
-          }
-          .stock-badge {
-            font-size: 10px;
-            padding: 3px 7px;
           }
         }
       `}</style>
