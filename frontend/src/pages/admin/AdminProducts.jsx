@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { formatINR } from '../../data/store';
 import { compressImageFile } from '../../utils/compressImage';
+import { clearHomeCache } from '../Home';
 import {
   CloseIcon,
   CheckIcon,
@@ -490,12 +491,31 @@ export default function AdminProducts() {
 
     try {
       const { product: full } = await api.getProduct(product.id);
-      setForm((f) => ({
-        ...f,
-        hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
-        images: full.images || f.images,
-        variants: full.variants ? normalizeVariantsForForm(full.variants) : f.variants,
-      }));
+      if (full) {
+        setForm((f) => ({
+          ...f,
+          name: full.name || f.name,
+          category: full.category || full.categoryId || f.category,
+          price: full.price ?? f.price,
+          mrp: full.mrp ?? f.mrp,
+          discountPercent: discountFromPrices(full.mrp ?? f.mrp, full.price ?? f.price),
+          stock: full.stock ?? f.stock,
+          sku: full.sku || f.sku,
+          shortDescription: full.shortDescription || full.short_description || f.shortDescription,
+          description: full.description || f.description,
+          tags: Array.isArray(full.tags) ? full.tags.join(', ') : (full.tags || f.tags),
+          seoTitle: full.seoTitle || full.seo_title || f.seoTitle,
+          seoDescription: full.seoDescription || full.seo_description || f.seoDescription,
+          slug: full.slug || f.slug,
+          image: full.image || f.image,
+          hoverImage: full.hoverImage || full.hover_image || f.hoverImage,
+          images: Array.isArray(full.images) ? full.images : (typeof full.images === 'string' ? (() => { try { return JSON.parse(full.images); } catch { return f.images; } })() : f.images),
+          variants: full.variants ? normalizeVariantsForForm(full.variants) : f.variants,
+          returnAvailable: full.returnAvailable ?? full.return_available ?? f.returnAvailable,
+          returnWindowHours: full.returnWindowHours ?? full.return_window_hours ?? f.returnWindowHours,
+          cancellationAvailable: full.cancellationAvailable ?? full.cancellation_available ?? f.cancellationAvailable,
+        }));
+      }
     } catch {
       /* fallback to row data */
     }
@@ -584,6 +604,7 @@ export default function AdminProducts() {
         await api.createProduct(payload);
         setSaveToast(`✓ Added "${form.name}"`);
       }
+      clearHomeCache();
       setTimeout(() => setSaveToast(''), 3000);
       refresh();
 
@@ -605,6 +626,7 @@ export default function AdminProducts() {
     try {
       await api.deleteProduct(id);
       if (editingId === id) closeModal();
+      clearHomeCache();
       refresh();
       setSaveToast('✓ Product deleted.');
       setTimeout(() => setSaveToast(''), 2500);
@@ -618,6 +640,7 @@ export default function AdminProducts() {
     setMovingId(product.id);
     try {
       await api.updateProduct(product.id, { category: newCategoryId });
+      clearHomeCache();
       refresh();
       setSaveToast(`✓ Moved to ${categoryName(newCategoryId)}`);
       setTimeout(() => setSaveToast(''), 2500);
@@ -632,6 +655,7 @@ export default function AdminProducts() {
     setMovingId(product.id);
     try {
       await api.updateProduct(product.id, { active: !product.active });
+      clearHomeCache();
       refresh();
     } catch (err) {
       setError(err.message);

@@ -37,8 +37,22 @@ export default function ProductCard({ product, hidePrice = false, isNew = false 
     setSelectedVariant(v);
   }
 
-  const variantPrimaryImg = activeVariant?.images?.[0] || null;
-  const variantHoverImg = activeVariant?.hoverImage || activeVariant?.hover_image || activeVariant?.images?.[1] || null;
+  const parseImgs = (imgs) => {
+    if (Array.isArray(imgs)) return imgs.filter(Boolean);
+    if (typeof imgs === 'string' && imgs.trim()) {
+      try {
+        const parsed = JSON.parse(imgs);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch {
+        return [imgs.trim()];
+      }
+    }
+    return [];
+  };
+
+  const activeVariantImgs = parseImgs(activeVariant?.images);
+  const variantPrimaryImg = activeVariantImgs[0] || null;
+  const variantHoverImg = activeVariant?.hoverImage || activeVariant?.hover_image || activeVariantImgs[1] || null;
   const displayImage = variantPrimaryImg || product.image;
   const hoverImg = activeVariant
     ? (variantHoverImg || (!selectedVariant ? (product.hoverImage || product.hover_image) : null))

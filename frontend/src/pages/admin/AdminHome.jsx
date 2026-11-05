@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
+import { clearHomeCache } from '../Home';
 import ScrollingTicker from '../../components/ScrollingTicker';
 import { TICKER_ICONS, renderTickerSvg } from '../../components/TickerIcons';
 import { RulerIcon, UploadIcon, VideoIcon, CheckIcon, ReviewsIcon } from '../../components/admin/AdminIcons';
@@ -1228,6 +1229,7 @@ export default function AdminHome() {
         enabled,
         title: sectionLabels[key],
       });
+      clearHomeCache();
       setSections((prev) => {
         const exists = prev.some((s) => s.section_key === key);
         if (!exists) return [...prev, section];
@@ -1250,6 +1252,7 @@ export default function AdminHome() {
         payload.content = content;
       }
       const { section } = await api.updateHomeSection(key, payload);
+      clearHomeCache();
       setSections((prev) => {
         const exists = prev.some((s) => s.section_key === key);
         if (!exists) return [...prev, section || { section_key: key, enabled: nextEnabled }];

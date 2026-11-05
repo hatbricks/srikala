@@ -5,6 +5,19 @@ import { saveImageToDisk, saveImagesArrayToDisk } from '../lib/storage.js';
 
 const router = Router();
 
+function parseJsonArray(val) {
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === 'string' && val.trim()) {
+    try {
+      const parsed = JSON.parse(val);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      return [val.trim()];
+    }
+  }
+  return [];
+}
+
 function mapProduct(p, variants = []) {
   return {
     id: p.id,
@@ -20,7 +33,7 @@ function mapProduct(p, variants = []) {
     image: p.image || '',
     hoverImage: p.hover_image || '',
     hover_image: p.hover_image || '',
-    images: Array.isArray(p.images) ? p.images : [],
+    images: parseJsonArray(p.images),
     weightGrams: p.weight_grams ?? 500,
     weight_grams: p.weight_grams ?? 500,
     lengthCm: p.length_cm ?? 30,
@@ -56,12 +69,12 @@ function mapVariant(v) {
     colorCode: v.color_code || '',
     color_code: v.color_code || '',
     sku: v.sku || '',
-    price: v.price != null ? Number(v.price) : null,
-    mrp: v.mrp != null ? Number(v.mrp) : null,
+    price: v.price != null && v.price !== '' ? Number(v.price) : null,
+    mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
     stock: Number(v.stock) || 0,
-    weightGrams: v.weight_grams != null ? Number(v.weight_grams) : null,
-    weight_grams: v.weight_grams != null ? Number(v.weight_grams) : null,
-    images: Array.isArray(v.images) ? v.images : [],
+    weightGrams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : null,
+    weight_grams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : null,
+    images: parseJsonArray(v.images),
     hoverImage: v.hover_image || '',
     hover_image: v.hover_image || '',
     active: v.active ?? true,
@@ -69,12 +82,12 @@ function mapVariant(v) {
   };
 }
 
-// GET /api/products — public catalog with lightweight columns + color swatches
+// GET /api/products — public catalog with lightweight columns + color swatches & variant images
 router.get('/', async (req, res) => {
   const { category, page, limit } = req.query;
   const listColumns = `
     id, name, category_id, price, mrp, stock, sku, short_description,
-    image, hover_image, weight_grams, return_available, return_window_hours, cancellation_available,
+    image, hover_image, images, weight_grams, return_available, return_window_hours, cancellation_available,
     active, created_at
   `;
 
@@ -97,9 +110,9 @@ router.get('/', async (req, res) => {
   if (!rows.length) return res.json({ products: [] });
 
   const productIds = rows.map((p) => p.id);
-  // Swatches only for catalog cards (omits heavy variant image arrays)
+  // Swatches & primary photos for catalog cards
   const { rows: variantRows } = await query(
-    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, active
+    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, images, hover_image, active
      FROM product_variants
      WHERE product_id = ANY($1) AND active = true
      ORDER BY id ASC`,
@@ -115,32 +128,32 @@ router.get('/', async (req, res) => {
       colorName: v.color_name,
       colorCode: v.color_code || '',
       sku: v.sku || '',
-      price: v.price != null ? Number(v.price) : null,
-      mrp: v.mrp != null ? Number(v.mrp) : null,
+      price: v.price != null && v.price !== '' ? Number(v.price) : null,
+      mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
       stock: Number(v.stock) || 0,
       active: v.active,
+      images: parseJsonArray(v.images),
+      hoverImage: v.hover_image || '',
     });
   }
 
   res.json({
-    products: rows.map((p) => ({
-      ...mapProduct(p, variantsByProduct[p.id] || []),
-      images: [], // Omit full gallery in list view for sub-second loading
-    })),
+    products: rows.map((p) => mapProduct(p, variantsByProduct[p.id] || [])),
   });
 });
 
-// GET /api/products/admin/all — ultra-lightweight list for admin table
+// GET /api/products/admin/all — complete list with variants & photos for admin management
 router.get('/admin/all', requireAdmin, async (_req, res) => {
   const listColumns = `
-    id, name, category_id, price, mrp, stock, sku, image, hover_image, active, created_at
+    id, name, category_id, price, mrp, stock, sku, image, hover_image, images,
+    short_description, description, active, created_at
   `;
   const { rows } = await query(`SELECT ${listColumns} FROM products ORDER BY created_at DESC`);
   if (!rows.length) return res.json({ products: [] });
 
   const productIds = rows.map((p) => p.id);
   const { rows: variantRows } = await query(
-    `SELECT id, product_id, color_name, color_code, stock, active
+    `SELECT id, product_id, color_name, color_code, sku, price, mrp, stock, images, hover_image, active
      FROM product_variants
      WHERE product_id = ANY($1)
      ORDER BY id ASC`,
@@ -155,26 +168,22 @@ router.get('/admin/all', requireAdmin, async (_req, res) => {
       productId: v.product_id,
       colorName: v.color_name,
       colorCode: v.color_code || '',
+      sku: v.sku || '',
+      price: v.price != null && v.price !== '' ? Number(v.price) : null,
+      mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
       stock: Number(v.stock) || 0,
       active: v.active,
+      images: parseJsonArray(v.images),
+      hoverImage: v.hover_image || '',
     });
   }
 
   res.json({
     products: rows.map((p) => ({
-      id: p.id,
-      name: p.name,
+      ...mapProduct(p, variantsByProduct[p.id] || []),
       category: p.category_id,
       categoryId: p.category_id,
-      price: p.price,
-      mrp: p.mrp,
-      stock: p.stock,
-      sku: p.sku || '',
-      image: p.image || '',
-      hoverImage: p.hover_image || '',
-      active: p.active ?? true,
       createdAt: p.created_at,
-      variants: variantsByProduct[p.id] || [],
     })),
   });
 });
@@ -288,6 +297,10 @@ router.post('/', requireAdmin, async (req, res) => {
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
+        const vPrice = v.price != null && v.price !== '' ? Number(v.price) : null;
+        const vMrp = v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null;
+        const vWeight = v.weightGrams != null && v.weightGrams !== '' ? Number(v.weightGrams) : null;
+
         const vResult = await client.query(
           `INSERT INTO product_variants (
              product_id, color_name, color_code, sku, price, mrp, stock, weight_grams, images, hover_image, active
@@ -297,10 +310,10 @@ router.post('/', requireAdmin, async (req, res) => {
             v.colorName.trim(),
             v.colorCode || '',
             v.sku || `${cleanSku}-${v.colorName.trim().toUpperCase().slice(0, 3)}`,
-            v.price != null ? Number(v.price) : null,
-            v.mrp != null ? Number(v.mrp) : null,
+            vPrice,
+            vMrp,
             Number(v.stock) || 0,
-            v.weightGrams != null ? Number(v.weightGrams) : null,
+            vWeight,
             JSON.stringify(vImages),
             vHover,
             v.active !== false,
@@ -439,6 +452,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
+        const vPrice = v.price != null && v.price !== '' ? Number(v.price) : null;
+        const vMrp = v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null;
+        const vWeight = v.weightGrams != null && v.weightGrams !== '' ? Number(v.weightGrams) : null;
+
         if (v.id) {
           await client.query(
             `UPDATE product_variants SET
@@ -449,10 +466,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.colorName.trim(),
               v.colorCode || '',
               v.sku || '',
-              v.price != null ? Number(v.price) : null,
-              v.mrp != null ? Number(v.mrp) : null,
+              vPrice,
+              vMrp,
               Number(v.stock) || 0,
-              v.weightGrams != null ? Number(v.weightGrams) : null,
+              vWeight,
               JSON.stringify(vImages),
               vHover,
               v.active !== false,
@@ -470,10 +487,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
               v.colorName.trim(),
               v.colorCode || '',
               v.sku || '',
-              v.price != null ? Number(v.price) : null,
-              v.mrp != null ? Number(v.mrp) : null,
+              vPrice,
+              vMrp,
               Number(v.stock) || 0,
-              v.weightGrams != null ? Number(v.weightGrams) : null,
+              vWeight,
               JSON.stringify(vImages),
               vHover,
               v.active !== false,

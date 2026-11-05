@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../data/api';
 import { compressImageFile } from '../../utils/compressImage';
+import { clearHomeCache } from '../Home';
 
 const emptyForm = { id: null, name: '', tagline: '', image: '' };
 
@@ -50,6 +51,7 @@ export default function AdminCategories() {
         });
       }
       resetForm();
+      clearHomeCache();
       refresh();
     } catch (err) {
       setError(err.message);
@@ -66,6 +68,7 @@ export default function AdminCategories() {
     try {
       await api.deleteCategory(id);
       if (editingId === id) resetForm();
+      clearHomeCache();
       refresh();
     } catch (err) {
       setError(err.message);
@@ -83,6 +86,7 @@ export default function AdminCategories() {
     setTogglingId(category.id);
     try {
       await api.updateCategory(category.id, { active: !category.active });
+      clearHomeCache();
       refresh();
     } catch (err) {
       setError(err.message);

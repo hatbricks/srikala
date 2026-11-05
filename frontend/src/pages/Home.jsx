@@ -13,7 +13,7 @@ import ScrollingTicker from '../components/ScrollingTicker';
 import ProcessSection from '../components/ProcessSection';
 import DifferenceSection from '../components/DifferenceSection';
 import { api } from '../data/api';
-import { getCategories, getProducts } from '../data/store';
+import { getCategories, getProducts, saveProducts } from '../data/store';
 
 import BRAND from '../config/brand';
 
@@ -121,7 +121,7 @@ const defaults = {
 
 // Module-scoped cache to prevent layout collapse and ensure instant scroll restoration
 // when the user navigates back from a product detail page to the home sections
-const homeCache = {
+export const homeCache = {
   categories: null,
   products: null,
   hero: null,
@@ -141,6 +141,20 @@ const homeCache = {
   ticker: null,
   tickerEnabled: true,
 };
+
+export function clearHomeCache() {
+  homeCache.categories = null;
+  homeCache.products = null;
+  homeCache.hero = null;
+  homeCache.heroReady = false;
+  homeCache.showcase = null;
+  homeCache.newArrivals = null;
+  homeCache.recommended = null;
+  homeCache.story = null;
+  homeCache.promo = null;
+  homeCache.ticker = null;
+  homeCache.googleReviews = null;
+}
 
 export default function Home() {
   const [categories, setCategories] = useState(() => homeCache.categories || getCategories());
@@ -180,6 +194,7 @@ export default function Home() {
       .then(({ products }) => {
         homeCache.products = products;
         setProducts(products);
+        try { saveProducts(products); } catch {}
       })
       .catch(() => {
         const fallback = getProducts();
