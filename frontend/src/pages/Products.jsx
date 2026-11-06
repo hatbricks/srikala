@@ -24,18 +24,77 @@ const PRESET_PRICE_RANGES = [
   { id: 'above-20000', label: 'Above ₹20,000', min: 20000 },
 ];
 
-const COLOR_MAP = [
-  { name: 'Red', hex: '#b91c1c', keywords: ['red', 'crimson', 'scarlet', 'ruby'] },
-  { name: 'Maroon', hex: '#581e15', keywords: ['maroon', 'burgundy', 'wine', 'plum'] },
-  { name: 'Pink', hex: '#db2777', keywords: ['pink', 'rose', 'blush', 'magenta', 'fuchsia'] },
-  { name: 'Gold & Yellow', hex: '#d97706', keywords: ['gold', 'yellow', 'mustard', 'amber', 'zari'] },
-  { name: 'Green', hex: '#059669', keywords: ['green', 'emerald', 'olive', 'mint', 'sage', 'pista'] },
-  { name: 'Blue', hex: '#2563eb', keywords: ['blue', 'peacock', 'navy', 'royal', 'sky', 'indigo', 'teal'] },
-  { name: 'Purple', hex: '#7c3aed', keywords: ['purple', 'violet', 'lavender', 'lilac'] },
-  { name: 'Orange', hex: '#ea580c', keywords: ['orange', 'rust', 'copper', 'peach', 'coral'] },
-  { name: 'Ivory & White', hex: '#fdfbf7', border: '#d1c7b7', keywords: ['ivory', 'white', 'cream', 'off-white', 'silver'] },
-  { name: 'Black', hex: '#1c1917', keywords: ['black', 'charcoal', 'dark'] },
+export const COLOR_MAP = [
+  { name: 'Red', hex: '#b91c1c', keywords: ['red', 'crimson', 'scarlet', 'ruby', 'sindoor', 'kumkum', 'cherry', 'vermilion', 'maroon'] },
+  { name: 'Maroon', hex: '#581e15', keywords: ['maroon', 'burgundy', 'wine', 'plum', 'dark red', 'deep red', 'berry'] },
+  { name: 'Pink', hex: '#db2777', keywords: ['pink', 'rose', 'blush', 'magenta', 'fuchsia', 'rani', 'rani pink', 'baby pink', 'lotus'] },
+  { name: 'Gold & Yellow', hex: '#d97706', keywords: ['gold', 'yellow', 'mustard', 'amber', 'zari', 'haldi', 'golden', 'pithambari', 'lemon'] },
+  { name: 'Green', hex: '#059669', keywords: ['green', 'emerald', 'olive', 'mint', 'sage', 'pista', 'bottle green', 'parrot', 'mehendi', 'rama green'] },
+  { name: 'Blue', hex: '#2563eb', keywords: ['blue', 'peacock', 'navy', 'royal', 'sky', 'indigo', 'teal', 'rama', 'rama blue', 'ink blue', 'cyan', 'turquoise'] },
+  { name: 'Purple', hex: '#7c3aed', keywords: ['purple', 'violet', 'lavender', 'lilac', 'jamun', 'eggplant', 'aubergine'] },
+  { name: 'Orange', hex: '#ea580c', keywords: ['orange', 'rust', 'copper', 'peach', 'coral', 'kesar', 'bhagwa', 'tangerine'] },
+  { name: 'Ivory & White', hex: '#fdfbf7', border: '#d1c7b7', keywords: ['ivory', 'white', 'cream', 'off-white', 'silver', 'milky', 'beige'] },
+  { name: 'Black', hex: '#1c1917', keywords: ['black', 'charcoal', 'dark', 'jet black', 'slate'] },
 ];
+
+export function hexToColorFamily(hex) {
+  if (!hex || typeof hex !== 'string') return null;
+  const cleanHex = hex.replace('#', '').trim();
+  if (cleanHex.length !== 6 && cleanHex.length !== 3) return null;
+  
+  let r, g, b;
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else {
+    r = parseInt(cleanHex.slice(0, 2), 16);
+    g = parseInt(cleanHex.slice(2, 4), 16);
+    b = parseInt(cleanHex.slice(4, 6), 16);
+  }
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  const delta = max - min;
+
+  const lightness = (max + min) / 2;
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+
+  if (lightness < 0.18) return 'Black';
+  if (lightness > 0.90 && saturation < 0.25) return 'Ivory & White';
+  if (saturation < 0.12) {
+    return lightness < 0.4 ? 'Black' : 'Ivory & White';
+  }
+
+  let hue = 0;
+  if (delta !== 0) {
+    if (max === rNorm) {
+      hue = ((gNorm - bNorm) / delta) % 6;
+    } else if (max === gNorm) {
+      hue = (bNorm - rNorm) / delta + 2;
+    } else {
+      hue = (rNorm - gNorm) / delta + 4;
+    }
+    hue = Math.round(hue * 60);
+    if (hue < 0) hue += 360;
+  }
+
+  if ((hue >= 345 || hue <= 20) && lightness < 0.38) return 'Maroon';
+  if (hue >= 345 || hue <= 18) return 'Red';
+  if (hue > 18 && hue <= 45) return 'Orange';
+  if (hue > 45 && hue <= 70) return 'Gold & Yellow';
+  if (hue > 70 && hue <= 165) return 'Green';
+  if (hue > 165 && hue <= 260) return 'Blue';
+  if (hue > 260 && hue <= 325) return 'Purple';
+  if (hue > 325 && hue < 345) return 'Pink';
+
+  return null;
+}
 
 // Module-scoped cache to render catalog immediately on back navigation without layout jump
 export const productsPageCache = {
@@ -138,19 +197,50 @@ export default function Products() {
   // Product helper to extract matchable colors
   function productMatchesColor(product, targetColorObj) {
     if (!targetColorObj) return true;
-    const textToScan = `${product.name} ${product.description || ''} ${product.category || ''} ${(product.tags || []).join(' ')}`.toLowerCase();
-    
-    // Check main text match
-    const matchesKeyword = targetColorObj.keywords.some((kw) => textToScan.includes(kw));
-    if (matchesKeyword) return true;
 
-    // Check color variants if any
-    if (Array.isArray(product.variants)) {
+    // 1. Check all text fields of product (name, short description, description, category, SKU, tags)
+    const textToScan = [
+      product.name,
+      product.short_description,
+      product.shortDescription,
+      product.description,
+      product.category,
+      product.categoryId,
+      product.sku,
+      ...(Array.isArray(product.tags) ? product.tags : []),
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if (targetColorObj.keywords.some((kw) => textToScan.includes(kw))) {
+      return true;
+    }
+
+    // 2. Check variants (colorName, colorCode, sku)
+    if (Array.isArray(product.variants) && product.variants.length > 0) {
       return product.variants.some((v) => {
         const vName = (v.color_name || v.colorName || '').toLowerCase();
-        return targetColorObj.keywords.some((kw) => vName.includes(kw));
+        const vSku = (v.sku || '').toLowerCase();
+        const vCode = (v.color_code || v.colorCode || '').trim();
+
+        // Match keyword in variant name or SKU
+        if (targetColorObj.keywords.some((kw) => (vName && vName.includes(kw)) || (vSku && vSku.includes(kw)))) {
+          return true;
+        }
+
+        // Match swatch hex code to color family
+        const hexFamily = hexToColorFamily(vCode);
+        if (hexFamily && hexFamily.toLowerCase() === targetColorObj.name.toLowerCase()) {
+          return true;
+        }
+
+        // If target is Red and swatch family is Maroon, also consider match
+        if (targetColorObj.name === 'Red' && hexFamily === 'Maroon') {
+          return true;
+        }
+
+        return false;
       });
     }
+
     return false;
   }
 

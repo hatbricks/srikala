@@ -73,25 +73,26 @@ function mapProduct(p, variants = []) {
 }
 
 function mapVariant(v) {
+  if (!v) return null;
   return {
     id: v.id,
-    productId: v.product_id,
-    product_id: v.product_id,
-    colorName: v.color_name,
-    color_name: v.color_name,
-    colorCode: v.color_code || '',
-    color_code: v.color_code || '',
+    productId: v.product_id || v.productId,
+    product_id: v.product_id || v.productId,
+    colorName: v.color_name ?? v.colorName ?? '',
+    color_name: v.color_name ?? v.colorName ?? '',
+    colorCode: v.color_code ?? v.colorCode ?? '',
+    color_code: v.color_code ?? v.colorCode ?? '',
     sku: v.sku || '',
     price: v.price != null && v.price !== '' ? Number(v.price) : null,
     mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
     stock: Number(v.stock) || 0,
-    weightGrams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : null,
-    weight_grams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : null,
+    weightGrams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : (v.weightGrams != null ? Number(v.weightGrams) : null),
+    weight_grams: v.weight_grams != null && v.weight_grams !== '' ? Number(v.weight_grams) : (v.weightGrams != null ? Number(v.weightGrams) : null),
     images: parseJsonArray(v.images),
-    hoverImage: v.hover_image || '',
-    hover_image: v.hover_image || '',
+    hoverImage: v.hover_image || v.hoverImage || '',
+    hover_image: v.hover_image || v.hoverImage || '',
     active: v.active ?? true,
-    createdAt: v.created_at,
+    createdAt: v.created_at || v.createdAt,
   };
 }
 
@@ -135,19 +136,7 @@ router.get('/', async (req, res) => {
   const variantsByProduct = {};
   for (const v of variantRows) {
     if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-    variantsByProduct[v.product_id].push({
-      id: v.id,
-      productId: v.product_id,
-      colorName: v.color_name,
-      colorCode: v.color_code || '',
-      sku: v.sku || '',
-      price: v.price != null && v.price !== '' ? Number(v.price) : null,
-      mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
-      stock: Number(v.stock) || 0,
-      active: v.active,
-      images: parseJsonArray(v.images),
-      hoverImage: v.hover_image || '',
-    });
+    variantsByProduct[v.product_id].push(v);
   }
 
   res.json({
@@ -176,19 +165,7 @@ router.get('/admin/all', requireAdmin, async (_req, res) => {
   const variantsByProduct = {};
   for (const v of variantRows) {
     if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
-    variantsByProduct[v.product_id].push({
-      id: v.id,
-      productId: v.product_id,
-      colorName: v.color_name,
-      colorCode: v.color_code || '',
-      sku: v.sku || '',
-      price: v.price != null && v.price !== '' ? Number(v.price) : null,
-      mrp: v.mrp != null && v.mrp !== '' ? Number(v.mrp) : null,
-      stock: Number(v.stock) || 0,
-      active: v.active,
-      images: parseJsonArray(v.images),
-      hoverImage: v.hover_image || '',
-    });
+    variantsByProduct[v.product_id].push(v);
   }
 
   res.json({
@@ -311,7 +288,11 @@ router.post('/', requireAdmin, async (req, res) => {
     const insertedVariants = [];
     if (Array.isArray(variants) && variants.length) {
       for (const v of variants) {
-        if (!v.colorName?.trim()) continue;
+        const cName = (v.colorName || v.color_name || '').trim();
+        const cCode = (v.colorCode || v.color_code || '').trim();
+        if (!cName && !cCode && !v.id) continue;
+        const finalColorName = cName || 'Color';
+
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
@@ -325,9 +306,9 @@ router.post('/', requireAdmin, async (req, res) => {
            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11) RETURNING *`,
           [
             id,
-            v.colorName.trim(),
-            v.colorCode || '',
-            v.sku || `${cleanSku}-${v.colorName.trim().toUpperCase().slice(0, 3)}`,
+            finalColorName,
+            cCode,
+            v.sku || `${cleanSku}-${finalColorName.toUpperCase().slice(0, 3)}`,
             vPrice,
             vMrp,
             Number(v.stock) || 0,
@@ -478,7 +459,11 @@ router.put('/:id', requireAdmin, async (req, res) => {
       }
 
       for (const v of variants) {
-        if (!v.colorName?.trim()) continue;
+        const cName = (v.colorName || v.color_name || '').trim();
+        const cCode = (v.colorCode || v.color_code || '').trim();
+        if (!cName && !cCode && !v.id) continue;
+        const finalColorName = cName || 'Color';
+
         const vHover = await saveImageToDisk(v.hoverImage ?? v.hover_image ?? '', 'products');
         const vImages = await saveImagesArrayToDisk(v.images, 'products');
 
@@ -495,8 +480,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
                weight_grams = $7, images = $8::jsonb, hover_image = $9, active = $10, updated_at = now()
              WHERE id = $11 AND product_id = $12`,
             [
-              v.colorName.trim(),
-              v.colorCode || '',
+              finalColorName,
+              cCode,
               v.sku || '',
               vPrice,
               vMrp,
@@ -516,8 +501,8 @@ router.put('/:id', requireAdmin, async (req, res) => {
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)`,
             [
               req.params.id,
-              v.colorName.trim(),
-              v.colorCode || '',
+              finalColorName,
+              cCode,
               v.sku || '',
               vPrice,
               vMrp,
