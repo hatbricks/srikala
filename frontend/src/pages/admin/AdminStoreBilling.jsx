@@ -559,77 +559,61 @@ export default function AdminStoreBilling() {
                 margin: 0 auto;
                 background: #ffffff;
                 border: 1px solid #d5cbbf;
-                padding: 16px 20px;
-              }
-              .sheet-ornament-header {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 12px;
-                margin-bottom: 6px;
-              }
-              .ornament-line {
-                flex: 1;
-                height: 1px;
-                background: #b87d2b;
-              }
-              .ornament-gem {
-                color: #b87d2b;
-                font-size: 11px;
+                padding: 12px 18px;
               }
               .sheet-brand-header {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 text-align: center;
-                padding-bottom: 8px;
-                margin-bottom: 6px;
-                border-bottom: 2px solid #581e15;
+                padding-bottom: 5px;
+                margin-bottom: 5px;
+                border-bottom: 1.5px solid #581e15;
               }
               .sheet-logo-wrap {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                margin-bottom: 3px;
+                margin-bottom: 2px;
               }
               .sheet-emblem-img {
-                height: 38px !important;
-                max-width: 42px !important;
+                height: 34px !important;
+                max-width: 38px !important;
                 width: auto !important;
                 object-fit: contain !important;
                 display: block !important;
               }
               .sheet-brand-title {
                 margin: 0;
-                font-size: 15.5px;
+                font-size: 15px;
                 font-weight: 800;
                 color: #581e15;
-                letter-spacing: 0.04em;
-                line-height: 1.15;
+                letter-spacing: 0.03em;
+                line-height: 1.1;
                 text-transform: uppercase;
               }
               .sheet-store-tagline {
                 font-size: 8px;
                 font-weight: 700;
                 color: #8c5d1e;
-                margin: 2px 0 0 0;
-                line-height: 1.25;
+                margin: 1px 0 0 0;
+                line-height: 1.15;
               }
               .sheet-store-address {
-                font-size: 7.8px;
+                font-size: 7.5px;
                 color: #333333;
-                margin: 3px 0 0 0;
-                line-height: 1.35;
+                margin: 1px 0 0 0;
+                line-height: 1.2;
               }
               .sheet-store-contact {
-                font-size: 7.4px;
+                font-size: 7.2px;
                 color: #555555;
-                margin: 2px 0 0 0;
-                line-height: 1.35;
+                margin: 1px 0 0 0;
+                line-height: 1.2;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 6px;
               }
               .contact-separator {
                 color: #b87d2b;
@@ -1683,13 +1667,6 @@ export default function AdminStoreBilling() {
                 id="printable-bill-sheet"
                 className="bill-sheet sheet-size-a4"
               >
-                {/* Traditional Ornament Line */}
-                <div className="sheet-ornament-header">
-                  <div className="ornament-line" />
-                  <span className="ornament-gem">❖</span>
-                  <div className="ornament-line" />
-                </div>
-
                 {/* Brand Header — Middle Top Logo, Centered Brand & Showroom Details */}
                 <header className="sheet-brand-header centered-brand-header">
                   <div className="sheet-logo-wrap">
@@ -3065,27 +3042,8 @@ export default function AdminStoreBilling() {
           box-shadow: 0 4px 24px rgba(0,0,0,0.18);
           border: 1px solid #d5cbbf;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-          padding: 18px 22px;
+          padding: 14px 20px;
           margin: 0 auto;
-        }
-
-        .sheet-ornament-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          margin-bottom: 6px;
-        }
-
-        .ornament-line {
-          flex: 1;
-          height: 1px;
-          background: linear-gradient(to right, transparent, #b87d2b, transparent);
-        }
-
-        .ornament-gem {
-          color: #b87d2b;
-          font-size: 11px;
         }
 
         /* Centered Brand Header: Middle Top Logo, Centered Store Details */
@@ -3094,60 +3052,60 @@ export default function AdminStoreBilling() {
           flex-direction: column;
           align-items: center;
           text-align: center;
-          padding-bottom: 10px;
-          margin-bottom: 8px;
-          border-bottom: 2px solid #581e15;
+          padding-bottom: 6px;
+          margin-bottom: 6px;
+          border-bottom: 1.5px solid #581e15;
         }
 
         .sheet-logo-wrap {
           display: flex;
           justify-content: center;
           align-items: center;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         .sheet-emblem-img {
-          height: 42px;
+          height: 36px;
           width: auto;
-          max-width: 44px;
+          max-width: 40px;
           object-fit: contain;
           display: block;
         }
 
         .sheet-brand-title {
-          font-size: 17.5px;
+          font-size: 15.5px;
           font-weight: 800;
           color: #581e15;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.03em;
           margin: 0;
-          line-height: 1.2;
+          line-height: 1.15;
           text-transform: uppercase;
         }
 
         .sheet-store-tagline {
-          font-size: 8.8px;
+          font-size: 8.2px;
           font-weight: 700;
           color: #8c5d1e;
-          margin: 2px 0 0 0;
-          line-height: 1.25;
+          margin: 1px 0 0 0;
+          line-height: 1.2;
         }
 
         .sheet-store-address {
-          font-size: 8.5px;
+          font-size: 7.8px;
           color: #333333;
-          margin: 3px 0 0 0;
-          line-height: 1.35;
+          margin: 1.5px 0 0 0;
+          line-height: 1.25;
         }
 
         .sheet-store-contact {
-          font-size: 8px;
+          font-size: 7.5px;
           color: #555555;
-          margin: 2px 0 0 0;
-          line-height: 1.35;
+          margin: 1.5px 0 0 0;
+          line-height: 1.25;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 6px;
         }
 
         .contact-separator {

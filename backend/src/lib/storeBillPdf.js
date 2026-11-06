@@ -118,28 +118,11 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
      .strokeColor(GOLD)
      .stroke();
 
-  let curY = margin + 8;
+  let curY = margin + 4;
 
-  // 1. Top Decorative Ornament
-  doc.moveTo(margin + 40, curY)
-     .lineTo(margin + (contentWidth / 2) - 20, curY)
-     .lineWidth(0.8)
-     .strokeColor(GOLD)
-     .stroke();
-
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 11 : 9).text('*', margin + (contentWidth / 2) - 4, curY - (isA3 ? 6 : 5));
-
-  doc.moveTo(margin + (contentWidth / 2) + 20, curY)
-     .lineTo(margin + contentWidth - 40, curY)
-     .lineWidth(0.8)
-     .strokeColor(GOLD)
-     .stroke();
-
-  curY += isA3 ? 12 : 9;
-
-  // 2. Middle Top Logo (Proportional Sacred Temple Emblem)
-  const emblemWidth = isA3 ? 34 : 26;
-  const emblemHeight = isA3 ? 51 : 39;
+  // Middle Top Logo (Proportional Sacred Temple Emblem)
+  const emblemWidth = isA3 ? 30 : 22;
+  const emblemHeight = isA3 ? 45 : 33;
   const emblemX = margin + (contentWidth - emblemWidth) / 2;
 
   try {
@@ -152,31 +135,31 @@ export function renderStoreBillPDF(res, bill, requestedSize = 'A4') {
     }
   }
 
-  curY += emblemHeight + (isA3 ? 7 : 5);
+  curY += emblemHeight + (isA3 ? 4 : 3);
 
   // Brand Name: Centered Bold Royal Maroon
-  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 20 : 15.5)
+  doc.fillColor(MAROON).font('Helvetica-Bold').fontSize(isA3 ? 18 : 14.5)
      .text(STORE_INFO.name.toUpperCase(), margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 22 : 17;
+  curY += isA3 ? 18 : 13;
 
   // Store Tagline (Gold, Centered)
-  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 10 : 8)
+  doc.fillColor(GOLD).font('Helvetica-Bold').fontSize(isA3 ? 9 : 7.2)
      .text(STORE_INFO.tagline, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 13 : 11;
+  curY += isA3 ? 9 : 7;
 
   // Store Address (Centered)
-  doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 9 : 7.6)
+  doc.fillColor(INK).font('Helvetica').fontSize(isA3 ? 8 : 6.8)
      .text(STORE_INFO.address, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 12 : 10;
+  curY += isA3 ? 9 : 7;
 
   // Store Phone & Email (Centered)
-  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 8.5 : 7.2)
+  doc.fillColor(INK_LIGHT).font('Helvetica').fontSize(isA3 ? 7.5 : 6.5)
      .text(`Phone: ${STORE_INFO.phone}   |   Email: ${STORE_INFO.email}`, margin, curY, { width: contentWidth, align: 'center' });
-  curY += isA3 ? 14 : 11;
+  curY += isA3 ? 9 : 7;
 
   // Maroon Separator Line
-  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.6).strokeColor(MAROON).stroke();
-  curY += isA3 ? 10 : 8;
+  doc.moveTo(margin, curY).lineTo(margin + contentWidth, curY).lineWidth(1.2).strokeColor(MAROON).stroke();
+  curY += isA3 ? 7 : 5;
 
   // 3. Customer & Bill Particulars Box
   const isSplit = String(bill.payment_method || '').toLowerCase().includes('split') ||
